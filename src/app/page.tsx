@@ -2,467 +2,257 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import Image from "next/image";
 
-type MailCountsResponse = {
-  totalMails: number;
-  totalCount: number;
-  hadData: boolean;
-};
-
+type BreakdownItem = { template: string; count: number };
+type MailCountsResponse = { totalMails: number; totalCount: number; hadData: boolean; breakdown?: BreakdownItem[] };
 type FetchStatus = "idle" | "loading" | "success" | "error";
 
-type OverviewCard = {
-  et: string;
-  totalMails: number;
-  totalCount: number;
-  hadData: boolean;
-};
-
 export default function Home() {
-  const [todayIso, setTodayIso] = useState("");
+  // Application Loading State for Preloader
+  const [isAppLoading, setIsAppLoading] = useState(true);
+
+  // Core App States
   const [date, setDate] = useState("");
   const [ets, setEts] = useState<string[]>([]);
   const [selectedEt, setSelectedEt] = useState("");
   const [campaigns, setCampaigns] = useState<string[]>([]);
   const [selectedCampaign, setSelectedCampaign] = useState("");
+  const [rawTemplates, setRawTemplates] = useState<string[]>([]);
+  const [selectedTemplate, setSelectedTemplate] = useState("");
 
   const [result, setResult] = useState<MailCountsResponse | null>(null);
   const [status, setStatus] = useState<FetchStatus>("idle");
-  const [errorMessage, setErrorMessage] = useState("");
-  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
 
-  const [overviewCards, setOverviewCards] = useState<OverviewCard[]>([]);
-  const [overviewStatus, setOverviewStatus] = useState<FetchStatus>("idle");
-  const [overviewError, setOverviewError] = useState("");
-
-  // Initialize today's date on the client only to avoid hydration mismatch.
+  // Dismiss the preloader screen after critical initial elements load
   useEffect(() => {
     const iso = new Date().toISOString().slice(0, 10);
-    setTodayIso(iso);
-    setDate((prev) => prev || iso);
+    setDate(iso);
+    
+    fetch("/api/ets")
+      .then((res) => res.json())
+      .then((data) => {
+        setEts(data.ets ?? []);
+        setTimeout(() => {
+          setIsAppLoading(false);
+        }, 800); 
+      })
+      .catch(() => {
+        setIsAppLoading(false);
+      });
   }, []);
 
-  const filtersReady = useMemo(
-    () => Boolean(date && selectedEt && selectedCampaign),
-    [date, selectedEt, selectedCampaign],
-  );
-
-  // Load ET list on mount.
+  // Cascade 1: (Date + ET) -> Smarter active-only Campaign list
   useEffect(() => {
-    async function loadEts() {
-      try {
-        const res = await fetch("/api/ets");
-        if (!res.ok) throw new Error("Failed to load ET list");
-        const data = (await res.json()) as { ets: string[] };
-        const allEts = data.ets ?? [];
-        setEts(allEts);
-      } catch (error) {
-        console.error(error);
-        setErrorMessage("Unable to load ET list from Google Sheets.");
-      }
+    if (!selectedEt || !date) { 
+      setCampaigns([]); 
+      setSelectedCampaign(""); 
+      setRawTemplates([]); 
+      setSelectedTemplate(""); 
+      return; 
     }
-
-    loadEts();
-  }, []);
-
-  // Load campaigns whenever ET changes.
-  useEffect(() => {
-    async function loadCampaigns() {
-      if (!selectedEt) {
-        setCampaigns([]);
-        setSelectedCampaign("");
-        return;
-      }
-
-      try {
-        const params = new URLSearchParams({
-          et:
-            selectedEt.trim().toUpperCase() === "ALL" ||
-            selectedEt.trim().toUpperCase().startsWith("ALL ET")
-              ? "ALL"
-              : selectedEt,
-        });
-        const res = await fetch(`/api/campaigns?${params.toString()}`);
-        if (!res.ok) throw new Error("Failed to load campaign list");
-        const data = (await res.json()) as { campaigns: string[] };
+    const lookupEt = selectedEt.toUpperCase().startsWith("ALL") ? "ALL" : selectedEt;
+    fetch(`/api/campaigns?et=${encodeURIComponent(lookupEt)}&date=${encodeURIComponent(date)}`)
+      .then((res) => res.json())
+      .then((data) => {
         setCampaigns(data.campaigns ?? []);
         setSelectedCampaign("");
-      } catch (error) {
-        console.error(error);
-        setErrorMessage("Unable to load campaign list from Google Sheets.");
-      }
-    }
+        setRawTemplates([]);
+        setSelectedTemplate("");
+      })
+      .catch(() => {});
+  }, [selectedEt, date]);
 
-    loadCampaigns();
-  }, [selectedEt]);
+  // Cascade 2: Campaign -> Raw Template list fetcher
+  useEffect(() => {
+    if (!selectedCampaign || !selectedEt || !date) { setRawTemplates([]); return; }
+    const lookupEt = selectedEt.toUpperCase().startsWith("ALL") ? "ALL" : selectedEt;
+    fetch(`/api/templates?date=${date}&et=${encodeURIComponent(lookupEt)}&campaign=${encodeURIComponent(selectedCampaign)}`)
+      .then((res) => res.json())
+      .then((data) => {
+        setRawTemplates(data.templates ?? []);
+        setSelectedTemplate("");
+      });
+  }, [selectedCampaign, selectedEt, date]);
+
+  // Prefix naming convention mapping system
+  const filteredTemplates = useMemo(() => {
+    if (!selectedCampaign) return [];
+    let searchSubstring = selectedCampaign.split("_")[0].toUpperCase(); 
+    if (selectedCampaign.toUpperCase() === "ASSURITI_DB") {
+      searchSubstring = "AAW";
+    }
+    return rawTemplates.filter((templateName) => 
+      templateName.toUpperCase().includes(searchSubstring)
+    );
+  }, [rawTemplates, selectedCampaign]);
+
+  const filtersReady = useMemo(() => {
+    return Boolean(date && selectedEt && selectedCampaign && selectedTemplate);
+  }, [date, selectedEt, selectedCampaign, selectedTemplate]);
 
   async function fetchCounts() {
     if (!filtersReady) return;
     setStatus("loading");
-    setErrorMessage("");
-
     try {
-      const params = new URLSearchParams({
-        date,
-        campaign: selectedCampaign,
-        et:
-          selectedEt.trim().toUpperCase() === "ALL" ||
-          selectedEt.trim().toUpperCase().startsWith("ALL ET")
-            ? "ALL"
-            : selectedEt,
-      });
+      const lookupEt = selectedEt.toUpperCase().startsWith("ALL") ? "ALL" : selectedEt;
+      const res = await fetch(`/api/mailCounts?date=${date}&campaign=${encodeURIComponent(selectedCampaign)}&et=${encodeURIComponent(lookupEt)}&template=${encodeURIComponent(selectedTemplate)}`);
+      const data = (await res.json()) as MailCountsResponse;
 
-      const res = await fetch(`/api/mailCounts?${params.toString()}`);
-      if (!res.ok) {
-        throw new Error("Failed to fetch mail counts");
+      if (data.breakdown) {
+        let searchSubstring = selectedCampaign.split("_")[0].toUpperCase();
+        if (selectedCampaign.toUpperCase() === "ASSURITI_DB") searchSubstring = "AAW";
+        
+        data.breakdown = data.breakdown.filter((item) => 
+          item.template.toUpperCase().includes(searchSubstring)
+        );
+        data.totalMails = data.breakdown.length;
+        data.totalCount = data.breakdown.reduce((sum, item) => sum + item.count, 0);
       }
 
-      const data = (await res.json()) as MailCountsResponse;
       setResult(data);
       setStatus("success");
-      setLastUpdated(new Date());
-    } catch (error) {
-      console.error(error);
+    } catch {
       setStatus("error");
-      setErrorMessage("Unable to fetch mail counts. Please try again.");
     }
   }
 
-  // Auto-refresh every 30 seconds when filters are ready.
   useEffect(() => {
-    if (!filtersReady) return;
-
-    void fetchCounts();
-
-    const id = setInterval(() => {
-      void fetchCounts();
-    }, 30_000);
-
-    return () => clearInterval(id);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filtersReady, date, selectedEt, selectedCampaign]);
-
-  function handleManualSync() {
-    void fetchCounts();
-  }
-
-  const showResultCard = filtersReady && result !== null;
-
-  const allEtOptions = useMemo(() => {
-    const existing = ets ?? [];
-    const hasAll = existing.some(
-      (et) => et.trim().toUpperCase() === "ALL ET'S" || et.trim().toUpperCase() === "ALL",
-    );
-    const base = hasAll ? existing : ["ALL ET'S", ...existing];
-    return base;
-  }, [ets]);
-
-  // Overview for today: first 5 ETs, RGR campaign.
-  useEffect(() => {
-    async function loadOverview() {
-      if (!todayIso || !ets || ets.length === 0) return;
-
-      setOverviewStatus("loading");
-      setOverviewError("");
-
-      const sampleEts = ets.slice(0, 5);
-
-      try {
-        const results = await Promise.all(
-          sampleEts.map(async (et) => {
-            const params = new URLSearchParams({
-              date: todayIso,
-              campaign: "RGR",
-              et,
-            });
-            const res = await fetch(`/api/mailCounts?${params.toString()}`);
-            if (!res.ok) {
-              return {
-                et,
-                totalMails: 0,
-                totalCount: 0,
-                hadData: false,
-              };
-            }
-            const data = (await res.json()) as MailCountsResponse;
-            return {
-              et,
-              totalMails: data.totalMails,
-              totalCount: data.totalCount,
-              hadData: data.hadData,
-            };
-          }),
-        );
-
-        setOverviewCards(results);
-        setOverviewStatus("success");
-      } catch (error) {
-        console.error(error);
-        setOverviewStatus("error");
-        setOverviewError("Unable to load today overview for RGR.");
-      }
+    if (filtersReady) {
+      fetchCounts();
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filtersReady, date, selectedEt, selectedCampaign, selectedTemplate]);
 
-    void loadOverview();
-  }, [ets, todayIso]);
+  const structuralTotalCountSum = useMemo(() => {
+    if (!result) return 0;
+    return result.totalCount * 5000;
+  }, [result]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-950 via-slate-950 to-slate-900 text-zinc-50">
-      <div className="mx-auto flex min-h-screen max-w-5xl flex-col px-4 pb-6 pt-4 sm:px-6 sm:pt-6 lg:px-8">
-        {/* Navbar */}
-        <header className="sticky top-0 z-20 mb-6 flex flex-col gap-3 border-b border-white/10 bg-slate-950/80 pb-3 backdrop-blur sm:flex-row sm:items-center sm:justify-between sm:pb-4">
-          <div>
-            <h1 className="text-xl font-semibold tracking-tight text-white sm:text-2xl">
-              MM-COUNT REPORT ANALYZER
-            </h1>
-            <p className="mt-1 text-xs text-zinc-400 sm:text-sm">
-              Smart overview of campaign mail volume across ET&apos;s.
+    <>
+      {/* Dynamic Logo Preloader Layer Overlay */}
+      {isAppLoading && (
+        <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-slate-950 transition-all duration-500">
+          <div className="flex flex-col items-center gap-6">
+            {/* Expanded Big Preloader Logo Frame */}
+            <div className="relative h-40 w-40 animate-pulse">
+              <Image
+                src="/logo.png"
+                alt="App Logo"
+                fill
+                priority
+                className="object-contain"
+              />
+            </div>
+            {/* Spinning Indicator Element */}
+            <div className="h-6 w-6 animate-spin rounded-full border-2 border-emerald-500 border-t-transparent" />
+            <p className="text-xs font-semibold tracking-widest text-zinc-400 uppercase">
+              Initializing Dashboard Matrix...
             </p>
           </div>
-          <div className="flex flex-wrap items-center gap-2">
-            <button
-              type="button"
-              onClick={handleManualSync}
-              disabled={!filtersReady || status === "loading"}
-              className="inline-flex items-center justify-center rounded-full border border-emerald-400/60 bg-emerald-500/90 px-3 py-1.5 text-xs font-medium text-white shadow-sm transition hover:bg-emerald-400 disabled:cursor-not-allowed disabled:opacity-60 sm:px-4 sm:py-2 sm:text-sm"
+        </div>
+      )}
+
+      {/* Main Workspace Frame Container */}
+      <div className="min-h-screen bg-slate-950 text-zinc-50 p-6">
+        <div className="mx-auto max-w-5xl flex flex-col gap-6">
+          <header className="border-b border-white/10 pb-5 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 w-full sm:w-auto">
+              {/* Massive Layout Custom Logo Placement replacing text title */}
+              <div className="relative h-20 w-48 shrink-0">
+                <Image src="/logo.png" alt="Logo" fill priority className="object-contain object-left" />
+              </div>
+              <div className="sm:border-l sm:border-white/10 sm:pl-4 sm:py-1">
+                {/* Updated Target Description Content Header */}
+                <p className="text-sm text-zinc-300 max-w-md font-medium leading-relaxed">
+                  Analyze your Count of your respective account's and stacks with custom filters.
+                </p>
+              </div>
+            </div>
+            <button 
+              onClick={fetchCounts} 
+              disabled={!filtersReady || status === "loading"} 
+              className="rounded-full bg-emerald-500 px-5 py-2 text-xs font-semibold text-white hover:bg-emerald-400 disabled:opacity-40 transition shrink-0 shadow-lg shadow-emerald-500/10"
             >
               {status === "loading" ? "Syncing..." : "Sync Sheet"}
             </button>
-            <DownloadPwaButton />
-          </div>
-        </header>
+          </header>
 
-        {/* Filters + results */}
-        <main className="flex flex-1 flex-col gap-5">
-          <section className="rounded-2xl bg-slate-900/80 p-4 shadow-lg ring-1 ring-white/5 sm:p-6">
-            <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-zinc-400">
-              Filters
-            </h2>
-            <div className="grid gap-4 sm:grid-cols-3">
-              {/* Date */}
-              <div className="flex flex-col gap-1.5">
-                <label htmlFor="date" className="text-xs font-medium text-zinc-200 sm:text-sm">
-                  Date
-                </label>
-                <input
-                  id="date"
-                  type="date"
-                  value={date}
-                  onChange={(e) => setDate(e.target.value)}
-                  className="h-9 rounded-lg border border-slate-600 bg-slate-950 px-2 text-xs text-zinc-100 outline-none ring-0 transition focus:border-emerald-400 focus:ring-1 focus:ring-emerald-400 sm:h-10 sm:px-3 sm:text-sm"
-                />
-              </div>
-
-              {/* ET */}
-              <div className="flex flex-col gap-1.5">
-                <label htmlFor="et" className="text-xs font-medium text-zinc-200 sm:text-sm">
-                  ET
-                </label>
-                <select
-                  id="et"
-                  value={selectedEt}
-                  onChange={(e) => setSelectedEt(e.target.value)}
-                  className="h-9 rounded-lg border border-slate-600 bg-slate-950 px-2 text-xs text-zinc-100 outline-none ring-0 transition focus:border-emerald-400 focus:ring-1 focus:ring-emerald-400 sm:h-10 sm:px-3 sm:text-sm"
-                >
-                  <option value="">Select ET</option>
-                  {allEtOptions.map((et) => (
-                    <option key={et} value={et}>
-                      {et}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              {/* Campaign */}
-              <div className="flex flex-col gap-1.5">
-                <label
-                  htmlFor="campaign"
-                  className="text-xs font-medium text-zinc-200 sm:text-sm"
-                >
-                  Campaign
-                </label>
-                <select
-                  id="campaign"
-                  value={selectedCampaign}
-                  onChange={(e) => setSelectedCampaign(e.target.value)}
-                  disabled={campaigns.length === 0}
-                  className="h-9 rounded-lg border border-slate-600 bg-slate-950 px-2 text-xs text-zinc-100 outline-none ring-0 transition focus:border-emerald-400 focus:ring-1 focus:ring-emerald-400 disabled:cursor-not-allowed disabled:bg-slate-800 sm:h-10 sm:px-3 sm:text-sm"
-                >
-                  <option value="">
-                    {selectedEt ? "Select Campaign" : "Select ET first"}
-                  </option>
-                  {campaigns.map((campaign) => (
-                    <option key={campaign} value={campaign}>
-                      {campaign}
-                    </option>
-                  ))}
-                </select>
-              </div>
+          {/* Filters Grid */}
+          <section className="bg-slate-900 rounded-xl p-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4 border border-white/5 shadow-xl">
+            <div className="flex flex-col gap-1">
+              <label className="text-xs font-semibold text-zinc-400">Date</label>
+              <input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="h-10 rounded-lg bg-slate-950 border border-zinc-800 px-3 text-sm text-white outline-none focus:border-emerald-500 transition" />
             </div>
 
-            {errorMessage && (
-              <p className="mt-4 text-xs text-red-400 sm:text-sm">{errorMessage}</p>
-            )}
+            <div className="flex flex-col gap-1">
+              <label className="text-xs font-semibold text-zinc-400">ET</label>
+              <select value={selectedEt} onChange={(e) => setSelectedEt(e.target.value)} className="h-10 rounded-lg bg-slate-950 border border-zinc-800 px-3 text-sm text-white outline-none focus:border-emerald-500 transition">
+                <option value="">Select ET</option>
+                <option value="ALL">ALL ET'S</option>
+                {ets.map((e) => <option key={e} value={e}>{e}</option>)}
+              </select>
+            </div>
+
+            <div className="flex flex-col gap-1">
+              <label className="text-xs font-semibold text-zinc-400">Campaign</label>
+              <select value={selectedCampaign} onChange={(e) => setSelectedCampaign(e.target.value)} className="h-10 rounded-lg bg-slate-950 border border-zinc-800 px-3 text-sm text-white outline-none focus:border-emerald-500 transition">
+                <option value="">Select Campaign</option>
+                {campaigns.map((c) => <option key={c} value={c}>{c}</option>)}
+              </select>
+            </div>
+
+            <div className="flex flex-col gap-1">
+              <label className="text-xs font-semibold text-zinc-400">Template</label>
+              <select value={selectedTemplate} onChange={(e) => setSelectedTemplate(e.target.value)} disabled={filteredTemplates.length === 0} className="h-10 rounded-lg bg-slate-950 border border-zinc-800 px-3 text-sm text-white outline-none focus:border-emerald-500 transition disabled:opacity-40">
+                <option value="">{selectedCampaign ? "Select Template" : "Select Campaign first"}</option>
+                <option value="ALL">ALL TEMPLATES</option>
+                {filteredTemplates.map((t) => <option key={t} value={t}>{t}</option>)}
+              </select>
+            </div>
           </section>
 
-          {/* Result card - hidden until filters are selected */}
-          {showResultCard && result && (
-            <section className="rounded-2xl bg-slate-900/80 p-4 shadow-lg ring-1 ring-white/5 sm:p-6">
-              <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-zinc-400">
-                Summary
-              </h2>
-              <div className="flex flex-col gap-2 text-sm sm:text-base">
-                <p>
-                  <span className="font-medium">Total no. of mails - </span>
-                  {result.totalMails}
-                </p>
-                <p>
-                  <span className="font-medium">Total count = </span>
-                  {result.totalCount.toLocaleString()}
-                </p>
-                {!result.hadData && (
-                  <p className="text-xs text-zinc-400 sm:text-sm">
-                    No data found for this combination. Showing zero values.
-                  </p>
-                )}
+          {/* Output Display Metrics Table UI */}
+          {filtersReady && result && (
+            <section className="bg-slate-900 rounded-xl p-6 border border-white/5 flex flex-col gap-6 shadow-xl">
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="bg-slate-950 p-4 rounded-lg border border-zinc-800">
+                  <span className="text-xs text-zinc-400 font-medium uppercase tracking-wide">Total Matched Templates</span>
+                  <p className="text-2xl font-bold mt-1 text-white">{result.totalMails}</p>
+                </div>
+                <div className="bg-slate-950 p-4 rounded-lg border border-zinc-800">
+                  <span className="text-xs text-zinc-400 font-medium uppercase tracking-wide">Total Count Sum (Mails × 5000)</span>
+                  <p className="text-2xl font-bold mt-1 text-emerald-400">{structuralTotalCountSum.toLocaleString()}</p>
+                </div>
               </div>
 
-              <div className="mt-4 flex flex-col gap-1 text-xs text-zinc-400 sm:flex-row sm:items-center sm:justify-between sm:text-sm">
-                <span>
-                  Date:{" "}
-                  <span className="font-medium">
-                    {date || "-"}
-                  </span>
-                </span>
-                <span>
-                  ET: <span className="font-medium">{selectedEt}</span> • Campaign:{" "}
-                  <span className="font-medium">{selectedCampaign}</span>
-                </span>
-              </div>
-
-              {lastUpdated && (
-                <p className="mt-2 text-xs text-zinc-500 sm:text-sm">
-                  Last updated at {lastUpdated.toLocaleTimeString()}
-                </p>
+              {result.breakdown && result.breakdown.length > 0 && (
+                <div className="rounded-lg border border-zinc-800 overflow-hidden bg-slate-950">
+                  <table className="w-full text-left text-sm">
+                    <thead className="bg-zinc-900 text-zinc-400 text-xs uppercase border-b border-zinc-800 tracking-wider">
+                      <tr>
+                        <th className="p-3.5 pl-4">Template Reference</th>
+                        <th className="p-3.5 text-right">Mails Tracked</th>
+                        <th className="p-3.5 pr-4 text-right text-emerald-400">Calculated Count</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-zinc-800 font-mono text-xs text-zinc-300">
+                      {result.breakdown.map((b, idx) => (
+                        <tr key={idx} className="hover:bg-zinc-900/40 transition-colors">
+                          <td className="p-3.5 pl-4 font-sans text-zinc-200 font-medium">{b.template}</td>
+                          <td className="p-3.5 text-right text-zinc-100 font-semibold">{b.count.toLocaleString()}</td>
+                          <td className="p-3.5 pr-4 text-right font-bold text-emerald-400">{(b.count * 5000).toLocaleString()}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               )}
             </section>
           )}
-
-          {/* Today overview section */}
-          <section className="rounded-2xl bg-slate-900/70 p-4 shadow-lg ring-1 ring-white/5 sm:p-6">
-            <div className="mb-4 flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
-              <div>
-                <h2 className="text-sm font-semibold uppercase tracking-wide text-zinc-400">
-                  Today overview (RGR)
-                </h2>
-                <p className="text-xs text-zinc-500 sm:text-sm">
-                  Quick snapshot of today&apos;s RGR mails across a few ET&apos;s.
-                </p>
-              </div>
-              <div className="text-xs text-zinc-400 sm:text-sm">
-                Date: <span className="font-semibold text-zinc-200">{todayIso}</span>
-              </div>
-            </div>
-
-            {overviewStatus === "loading" && (
-              <p className="text-xs text-zinc-400 sm:text-sm">Loading today&apos;s RGR summary…</p>
-            )}
-            {overviewStatus === "error" && overviewError && (
-              <p className="text-xs text-red-400 sm:text-sm">{overviewError}</p>
-            )}
-
-            {overviewStatus !== "loading" && overviewCards.length > 0 && (
-              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                {overviewCards.map((card) => (
-                  <article
-                    key={card.et}
-                    className="flex flex-col justify-between rounded-xl border border-slate-700 bg-slate-950/60 p-3 text-xs shadow-sm sm:p-4 sm:text-sm"
-                  >
-                    <div className="mb-2">
-                      <h3 className="line-clamp-2 text-sm font-semibold text-zinc-100 sm:text-base">
-                        {card.et}
-                      </h3>
-                      <p className="mt-0.5 text-[11px] text-emerald-300/90 sm:text-xs">
-                        Campaign: RGR
-                      </p>
-                    </div>
-                    <div className="mt-1 flex flex-col gap-1.5">
-                      <p>
-                        <span className="font-medium text-zinc-200">Mails: </span>
-                        <span className="font-semibold text-zinc-100">
-                          {card.totalMails.toLocaleString()}
-                        </span>
-                      </p>
-                      <p>
-                        <span className="font-medium text-zinc-200">Count: </span>
-                        <span className="font-semibold text-emerald-300">
-                          {card.totalCount.toLocaleString()}
-                        </span>
-                      </p>
-                      {!card.hadData && (
-                        <p className="text-[11px] text-zinc-500 sm:text-xs">
-                          No RGR data for today on this ET.
-                        </p>
-                      )}
-                    </div>
-                  </article>
-                ))}
-              </div>
-            )}
-          </section>
-        </main>
-
-        <footer className="mt-6 border-t border-white/10 pt-4 text-center text-[11px] text-zinc-500 sm:text-xs">
-          Made with ❤️ - Ayush Srivastava (F.Stack DEV.)
-        </footer>
+        </div>
       </div>
-    </div>
+    </>
   );
 }
-
-function DownloadPwaButton() {
-  const [deferredPrompt, setDeferredPrompt] = useState<any | null>(null);
-  const [isSupported, setIsSupported] = useState(false);
-
-  useEffect(() => {
-    function handleBeforeInstallPrompt(e: Event) {
-      e.preventDefault();
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      setDeferredPrompt(e as any);
-      setIsSupported(true);
-    }
-
-    window.addEventListener("beforeinstallprompt", handleBeforeInstallPrompt as EventListener);
-
-    return () => {
-      window.removeEventListener(
-        "beforeinstallprompt",
-        handleBeforeInstallPrompt as EventListener,
-      );
-    };
-  }, []);
-
-  async function handleClick() {
-    if (!deferredPrompt) return;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const promptEvent = deferredPrompt as any;
-    promptEvent.prompt();
-    await promptEvent.userChoice;
-    setDeferredPrompt(null);
-  }
-
-  if (!isSupported) {
-    return null;
-  }
-
-  return (
-    <button
-      type="button"
-      onClick={handleClick}
-      className="inline-flex items-center justify-center rounded-full border border-sky-400/70 bg-sky-500/90 px-3 py-1.5 text-xs font-medium text-white shadow-sm transition hover:bg-sky-400 sm:px-4 sm:py-2 sm:text-sm"
-    >
-      DOWNLOAD MOBILE APP
-    </button>
-  );
-}
-

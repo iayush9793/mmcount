@@ -1,21 +1,22 @@
+// src/app/api/campaigns/route.ts
 import { NextResponse } from "next/server";
 import { listCampaigns } from "@/lib/googleSheets";
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
-  const et = searchParams.get("et") ?? "ALL";
+  const et = searchParams.get("et") ?? "";
+  const date = searchParams.get("date") ?? ""; // Capture date parameter
+
+  if (!et) {
+    return NextResponse.json({ error: "Missing ET parameter" }, { status: 400 });
+  }
 
   try {
-    const campaigns = await listCampaigns(et);
+    // Forward both ET and Date constraints to the sheets engine
+    const campaigns = await listCampaigns(et, date);
     return NextResponse.json({ campaigns }, { status: 200 });
   } catch (error) {
-    console.error("[campaigns] Failed to fetch campaign list:", error);
-    return NextResponse.json(
-      {
-        error: "Failed to fetch campaign list from Google Sheets",
-      },
-      { status: 500 },
-    );
+    console.error("[api/campaigns] Failed:", error);
+    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }
 }
-

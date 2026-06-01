@@ -3,35 +3,19 @@ import { getMailCounts } from "@/lib/googleSheets";
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
-  const isoDate = searchParams.get("date") ?? "";
+  const date = searchParams.get("date") ?? "";
   const campaign = searchParams.get("campaign") ?? "";
   const et = searchParams.get("et") ?? "";
+  const template = searchParams.get("template") ?? "ALL TEMPLATES";
 
-  if (!isoDate || !campaign || !et) {
-    return NextResponse.json(
-      {
-        error: "Missing required query parameters: date, campaign, et",
-      },
-      { status: 400 },
-    );
+  if (!date || !campaign || !et) {
+    return NextResponse.json({ error: "Missing parameters" }, { status: 400 });
   }
 
   try {
-    const result = await getMailCounts({
-      isoDate,
-      campaign,
-      etNameOrAll: et,
-    });
-
+    const result = await getMailCounts({ isoDate: date, campaign, etNameOrAll: et, template });
     return NextResponse.json(result, { status: 200 });
   } catch (error) {
-    console.error("[mailCounts] Failed to fetch mail counts:", error);
-    return NextResponse.json(
-      {
-        error: "Failed to fetch mail counts from Google Sheets",
-      },
-      { status: 500 },
-    );
+    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }
 }
-
