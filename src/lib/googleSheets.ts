@@ -1,3 +1,4 @@
+// src/lib/googleSheets.ts
 import { google } from "googleapis";
 
 const SPREADSHEET_ID = process.env.GOOGLE_SHEETS_ID;
@@ -42,21 +43,14 @@ function normalizeCell(value: unknown): string {
 
 export async function listCampaigns(etNameOrAll: string, isoDate?: string): Promise<string[]> {
   if (!SPREADSHEET_ID) return [];
-
   const tabs = await listETTabs();
-  if (tabs.length === 0) return [];
-
-  const targetIsAll = etNameOrAll.toUpperCase().startsWith("ALL");
-  const targetTabs = targetIsAll
-    ? tabs
-    : tabs.filter((t) => normalizeCell(t).toLowerCase() === etNameOrAll.trim().toLowerCase());
+  const targetTabs = etNameOrAll.toUpperCase().startsWith("ALL") 
+    ? tabs 
+    : tabs.filter((t) => t.toLowerCase() === etNameOrAll.trim().toLowerCase());
 
   if (targetTabs.length === 0) return [];
-
   const sheets = await getSheetsClient();
   const activeCampaigns = new Set<string>();
-  
-  // Format the target date to match the sheet (DD-MM-YYYY)
   const formattedDate = isoDate ? isoToSheetDate(isoDate) : "";
 
   for (const tab of targetTabs) {
@@ -66,43 +60,34 @@ export async function listCampaigns(etNameOrAll: string, isoDate?: string): Prom
         range: `'${tab}'!A:ZZ`,
         valueRenderOption: "FORMATTED_VALUE",
       });
-      
       const values = res.data.values ?? [];
-      if (values.length <= 1) continue; // Skip if it only has headers or is empty
+      if (values.length <= 1) continue;
 
       const headerRow = values[0];
-
-      // Step 1: Identify rows that match the selected target date
       const rowsForDate = values.slice(1).filter((row) => {
-        const rawDateCell = normalizeCell(row[0]);
-        if (!formattedDate) return true; // If no date provided, fallback to standard behavior
-        return rawDateCell === formattedDate;
+        if (!formattedDate) return true;
+        return normalizeCell(row[0]) === formattedDate;
       });
 
-      // Step 2: Loop through campaign columns (starting at index 2, skipping Date and Template)
       for (let colIdx = 2; colIdx < headerRow.length; colIdx++) {
         const campaignName = normalizeCell(headerRow[colIdx]);
         if (!campaignName) continue;
 
-        // Step 3: Verify if any row for this date has a valid numerical count > 0
         const hasData = rowsForDate.some((row) => {
           const cellValue = normalizeCell(row[colIdx]);
           if (!cellValue) return false;
-          
           const numericValue = Number(cellValue.replace(/,/g, ""));
           return !Number.isNaN(numericValue) && numericValue > 0;
         });
 
-        // Only add the campaign to our dropdown options if active data exists
         if (hasData || !isoDate) {
           activeCampaigns.add(campaignName);
         }
       }
     } catch (err) {
-      console.error(`[googleSheets] Failed to filter active campaigns for tab "${tab}":`, err);
+      console.error(err);
     }
   }
-
   return Array.from(activeCampaigns).sort((a, b) => a.localeCompare(b));
 }
 
@@ -139,7 +124,7 @@ export async function getTemplatesForCampaign({ isoDate, etNameOrAll }: { isoDat
 }
 
 export async function getMailCounts({ isoDate, campaign, etNameOrAll, template }: { isoDate: string; campaign: string; etNameOrAll: string; template: string }) {
-  if (!SPREADSHEET_ID || !isoDate || !campaign) return { totalMails: 0, totalCount: 0, hadData: false, breakdown: [] };
+  if (!SPREADSHEET_ID || !isoDate || !campaign) return { totalMails: 0, totalCount: 0, calculatedVolume: 0, hadData: false, breakdown: [] };
 
   const tabs = await listETTabs();
   const targetTabs = etNameOrAll.toUpperCase().startsWith("ALL") 
@@ -151,12 +136,17 @@ export async function getMailCounts({ isoDate, campaign, etNameOrAll, template }
   const targetCampaign = campaign.trim().toLowerCase();
   const isAllTemplates = template.toUpperCase().startsWith("ALL");
 
-  const breakdownMap = new Map<string, number>();
+  const breakdownMap = new Map<string, { count: number; multiplier: number }>();
   let grandTotalMails = 0;
-  let grandTotalCount = 0;
+  let grandTotalCalculatedVolume = 0;
+  let grandTotalRawMailsTracked = 0;
 
   for (const tab of targetTabs) {
     try {
+      // Step 1: Compute dynamic multiplier specific to the processing sheet tab instance
+      const tabUpper = tab.toUpperCase().replace(/\s+/g, "");
+      const rowMultiplier = (tabUpper.includes("JSG40") || tabUpper.includes("JSG38")) ? 2000 : 5000;
+
       const res = await sheets.spreadsheets.values.get({
         spreadsheetId: SPREADSHEET_ID,
         range: `'${tab}'!A:ZZ`,
@@ -180,8 +170,14 @@ export async function getMailCounts({ isoDate, campaign, etNameOrAll, template }
 
         if (countValue > 0) {
           grandTotalMails += 1;
-          grandTotalCount += countValue;
-          breakdownMap.set(currentTemplate, (breakdownMap.get(currentTemplate) ?? 0) + countValue);
+          grandTotalRawMailsTracked += countValue;
+          grandTotalCalculatedVolume += (countValue * rowMultiplier);
+
+          const existingItem = breakdownMap.get(currentTemplate) || { count: 0, multiplier: rowMultiplier };
+          breakdownMap.set(currentTemplate, {
+            count: existingItem.count + countValue,
+            multiplier: rowMultiplier // Retains structural context rule safely
+          });
         }
       }
     } catch (err) {
@@ -191,8 +187,13 @@ export async function getMailCounts({ isoDate, campaign, etNameOrAll, template }
 
   return {
     totalMails: grandTotalMails,
-    totalCount: grandTotalCount,
-    hadData: grandTotalCount > 0,
-    breakdown: Array.from(breakdownMap.entries()).map(([template, count]) => ({ template, count })),
+    totalCount: grandTotalRawMailsTracked,
+    calculatedVolume: grandTotalCalculatedVolume, // Calculated backend payload sum
+    hadData: grandTotalCalculatedVolume > 0,
+    breakdown: Array.from(breakdownMap.entries()).map(([tmplName, metadata]) => ({
+      template: tmplName,
+      count: metadata.count,
+      multiplier: metadata.multiplier
+    })).sort((a, b) => a.template.localeCompare(b.template)),
   };
 }

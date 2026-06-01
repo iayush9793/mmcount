@@ -4,8 +4,8 @@
 import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 
-type BreakdownItem = { template: string; count: number };
-type MailCountsResponse = { totalMails: number; totalCount: number; hadData: boolean; breakdown?: BreakdownItem[] };
+type BreakdownItem = { template: string; count: number; multiplier: number };
+type MailCountsResponse = { totalMails: number; totalCount: number; calculatedVolume: number; hadData: boolean; breakdown?: BreakdownItem[] };
 type FetchStatus = "idle" | "loading" | "success" | "error";
 
 export default function Home() {
@@ -104,15 +104,6 @@ export default function Home() {
     return Boolean(date && selectedEt && selectedCampaign && selectedTemplate);
   }, [date, selectedEt, selectedCampaign, selectedTemplate]);
 
-  // Refactored Multiplier Logic to strictly capture structural variations of JSG 40 and JSG 38
-  const currentMultiplier = useMemo(() => {
-    const etUpper = selectedEt.toUpperCase().replace(/\s+/g, "");
-    if (etUpper.includes("JSG40") || etUpper.includes("JSG38")) {
-      return 2000;
-    }
-    return 5000;
-  }, [selectedEt]);
-
   async function fetchCounts() {
     if (!filtersReady) return;
     setStatus("loading");
@@ -130,6 +121,8 @@ export default function Home() {
         );
         data.totalMails = data.breakdown.length;
         data.totalCount = data.breakdown.reduce((sum, item) => sum + item.count, 0);
+        // Compute combined dynamic sums from backend multi-context structures natively
+        data.calculatedVolume = data.breakdown.reduce((sum, item) => sum + (item.count * item.multiplier), 0);
       }
 
       setResult(data);
@@ -145,11 +138,6 @@ export default function Home() {
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filtersReady, date, selectedEt, selectedCampaign, selectedTemplate]);
-
-  const calculatedTotalVolume = useMemo(() => {
-    if (!result) return 0;
-    return result.totalCount * currentMultiplier;
-  }, [result, currentMultiplier]);
 
   async function handleAppDownloadClick() {
     if (!deferredPrompt) return;
@@ -287,8 +275,8 @@ export default function Home() {
                 </div>
 
                 <div className={`p-4 rounded-lg border transition-colors duration-500 ${isDarkMode ? "bg-slate-950 border-zinc-800" : "bg-slate-50 border-slate-200"}`}>
-                  <span className={`text-xs font-medium uppercase tracking-wide ${isDarkMode ? "text-zinc-400" : "text-slate-500"}`}>Total Count Sum (Mails × {currentMultiplier})</span>
-                  <p className="text-2xl font-bold mt-1 text-emerald-500">{calculatedTotalVolume.toLocaleString()}</p>
+                  <span className={`text-xs font-medium uppercase tracking-wide ${isDarkMode ? "text-zinc-400" : "text-slate-500"}`}>Total Count Sum</span>
+                  <p className="text-2xl font-bold mt-1 text-emerald-500">{result.calculatedVolume.toLocaleString()}</p>
                 </div>
               </div>
 
@@ -313,7 +301,8 @@ export default function Home() {
                         <tr key={idx} className={`transition-colors ${isDarkMode ? "hover:bg-zinc-900/40 text-zinc-200" : "hover:bg-slate-200/50 text-slate-800"}`}>
                           <td className="p-3.5 pl-4 font-sans font-medium whitespace-nowrap">{b.template}</td>
                           <td className="p-3.5 text-right font-semibold whitespace-nowrap">{b.count.toLocaleString()}</td>
-                          <td className="p-3.5 pr-4 text-right font-bold text-emerald-500 whitespace-nowrap">{(b.count * currentMultiplier).toLocaleString()}</td>
+                          {/* Row calculations dynamically apply their isolated context multipliers */}
+                          <td className="p-3.5 pr-4 text-right font-bold text-emerald-500 whitespace-nowrap">{(b.count * b.multiplier).toLocaleString()}</td>
                         </tr>
                       ))}
                     </tbody>
