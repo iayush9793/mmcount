@@ -44,7 +44,6 @@ export default function Home() {
         setIsAppLoading(false);
       });
 
-    // Intercept native browser PWA installation triggers
     function handleBeforeInstallPrompt(e: Event) {
       e.preventDefault();
       setDeferredPrompt(e);
@@ -151,7 +150,6 @@ export default function Home() {
     return result.totalCount * currentMultiplier;
   }, [result, currentMultiplier]);
 
-  // Handle native app downloading loop trigger execution
   async function handleAppDownloadClick() {
     if (!deferredPrompt) return;
     deferredPrompt.prompt();
@@ -178,7 +176,7 @@ export default function Home() {
       )}
 
       {/* Main Workspace Frame Container */}
-      <div className={`min-h-screen transition-colors duration-500 p-6 flex flex-col justify-between ${
+      <div className={`min-h-screen transition-colors duration-500 p-4 sm:p-6 flex flex-col justify-between ${
         isDarkMode ? "bg-slate-950 text-zinc-50" : "bg-slate-50 text-slate-900"
       }`}>
         <div className="mx-auto max-w-5xl w-full flex flex-col gap-6 flex-1">
@@ -198,7 +196,7 @@ export default function Home() {
             </div>
 
             <div className="flex items-center gap-4 self-end sm:self-auto">
-              {/* Lamp-Style Theme Switch Switcher */}
+              {/* Lamp-Style Theme Switcher */}
               <button onClick={() => setIsDarkMode(!isDarkMode)} title="Toggle Theme Lamp" className="group relative flex flex-col items-center focus:outline-none">
                 <div className={`w-0.5 h-6 transition-colors duration-500 ${isDarkMode ? "bg-zinc-700 group-hover:bg-emerald-400" : "bg-slate-300 group-hover:bg-emerald-500"}`} />
                 <div className={`w-7 h-7 rounded-full flex items-center justify-center shadow-md transition-all duration-500 transform group-active:scale-95 ${
@@ -227,19 +225,19 @@ export default function Home() {
           </header>
 
           {/* Filters Grid */}
-          <section className={`rounded-xl p-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4 border shadow-xl transition-colors duration-500 ${
+          <section className={`rounded-xl p-4 sm:p-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4 border shadow-xl transition-colors duration-500 ${
             isDarkMode ? "bg-slate-900 border-white/5" : "bg-white border-slate-200"
           }`}>
             <div className="flex flex-col gap-1">
               <label className={`text-xs font-semibold ${isDarkMode ? "text-zinc-400" : "text-slate-500"}`}>Date</label>
-              <input type="date" value={date} onChange={(e) => setDate(e.target.value)} className={`h-10 rounded-lg px-3 text-sm outline-none transition duration-500 ${
+              <input type="date" value={date} onChange={(e) => setDate(e.target.value)} className={`h-10 rounded-lg px-3 text-sm outline-none transition duration-500 w-full ${
                 isDarkMode ? "bg-slate-950 border-zinc-800 text-white focus:border-emerald-500" : "bg-slate-50 border-slate-200 text-slate-900 focus:border-emerald-500 border"
               }`} />
             </div>
 
             <div className="flex flex-col gap-1">
               <label className={`text-xs font-semibold ${isDarkMode ? "text-zinc-400" : "text-slate-500"}`}>ET</label>
-              <select value={selectedEt} onChange={(e) => setSelectedEt(e.target.value)} className={`h-10 rounded-lg px-3 text-sm outline-none transition duration-500 ${
+              <select value={selectedEt} onChange={(e) => setSelectedEt(e.target.value)} className={`h-10 rounded-lg px-3 text-sm outline-none transition duration-500 w-full ${
                 isDarkMode ? "bg-slate-950 border-zinc-800 text-white focus:border-emerald-500" : "bg-slate-50 border-slate-200 text-slate-900 focus:border-emerald-500 border"
               }`}>
                 <option value="">Select ET</option>
@@ -250,7 +248,7 @@ export default function Home() {
 
             <div className="flex flex-col gap-1">
               <label className={`text-xs font-semibold ${isDarkMode ? "text-zinc-400" : "text-slate-500"}`}>Campaign</label>
-              <select value={selectedCampaign} onChange={(e) => setSelectedCampaign(e.target.value)} className={`h-10 rounded-lg px-3 text-sm outline-none transition duration-500 ${
+              <select value={selectedCampaign} onChange={(e) => setSelectedCampaign(e.target.value)} className={`h-10 rounded-lg px-3 text-sm outline-none transition duration-500 w-full ${
                 isDarkMode ? "bg-slate-950 border-zinc-800 text-white focus:border-emerald-500" : "bg-slate-50 border-slate-200 text-slate-900 focus:border-emerald-500 border"
               }`}>
                 <option value="">Select Campaign</option>
@@ -260,7 +258,7 @@ export default function Home() {
 
             <div className="flex flex-col gap-1">
               <label className={`text-xs font-semibold ${isDarkMode ? "text-zinc-400" : "text-slate-500"}`}>Template</label>
-              <select value={selectedTemplate} onChange={(e) => setSelectedTemplate(e.target.value)} disabled={filteredTemplates.length === 0} className={`h-10 rounded-lg px-3 text-sm outline-none transition duration-500 disabled:opacity-40 ${
+              <select value={selectedTemplate} onChange={(e) => setSelectedTemplate(e.target.value)} disabled={filteredTemplates.length === 0} className={`h-10 rounded-lg px-3 text-sm outline-none transition duration-500 disabled:opacity-40 w-full ${
                 isDarkMode ? "bg-slate-950 border-zinc-800 text-white focus:border-emerald-500" : "bg-slate-50 border-slate-200 text-slate-900 focus:border-emerald-500 border"
               }`}>
                 <option value="">{selectedCampaign ? "Select Template" : "Select Campaign first"}</option>
@@ -272,11 +270,11 @@ export default function Home() {
 
           {/* Output Display Metrics Area */}
           {filtersReady && result && (
-            <section className={`rounded-xl p-6 border flex flex-col gap-6 shadow-xl transition-colors duration-500 ${
+            <section className={`rounded-xl p-4 sm:p-6 border flex flex-col gap-6 shadow-xl transition-colors duration-500 ${
               isDarkMode ? "bg-slate-900 border-white/5" : "bg-white border-slate-200"
             }`}>
               
-              <div className="grid gap-4 sm:grid-cols-3">
+              <div className="grid gap-4 grid-cols-1 sm:grid-cols-3">
                 <div className={`p-4 rounded-lg border transition-colors duration-500 ${isDarkMode ? "bg-slate-950 border-zinc-800" : "bg-slate-50 border-slate-200"}`}>
                   <span className={`text-xs font-medium uppercase tracking-wide ${isDarkMode ? "text-zinc-400" : "text-slate-500"}`}>Total Matched Templates</span>
                   <p className={`text-2xl font-bold mt-1 ${isDarkMode ? "text-white" : "text-slate-900"}`}>{result.totalMails}</p>
@@ -294,17 +292,18 @@ export default function Home() {
               </div>
 
               {result.breakdown && result.breakdown.length > 0 && (
-                <div className={`rounded-lg border overflow-hidden transition-colors duration-500 ${
+                /* Enhanced layout wrappers with overflow swiping to avoid layout squishing */
+                <div className={`rounded-lg border overflow-x-auto w-full transition-colors duration-500 ${
                   isDarkMode ? "border-zinc-800 bg-slate-950" : "border-slate-200 bg-slate-50"
                 }`}>
-                  <table className="w-full text-left text-sm">
+                  <table className="w-full text-left text-sm min-w-[500px]">
                     <thead className={`text-xs uppercase border-b tracking-wider transition-colors duration-500 ${
                       isDarkMode ? "bg-zinc-900 text-zinc-400 border-zinc-800" : "bg-slate-200 text-slate-600 border-slate-200"
                     }`}>
                       <tr>
-                        <th className="p-3.5 pl-4">Template Reference</th>
-                        <th className="p-3.5 text-right">Mails Tracked</th>
-                        <th className="p-3.5 pr-4 text-right text-emerald-500">Calculated Count</th>
+                        <th className="p-3.5 pl-4 whitespace-nowrap">Template Reference</th>
+                        <th className="p-3.5 text-right whitespace-nowrap">Mails Tracked</th>
+                        <th className="p-3.5 pr-4 text-right text-emerald-500 whitespace-nowrap">Calculated Count</th>
                       </tr>
                     </thead>
                     <tbody className={`divide-y font-mono text-xs transition-colors duration-500 ${
@@ -312,9 +311,9 @@ export default function Home() {
                     }`}>
                       {result.breakdown.map((b, idx) => (
                         <tr key={idx} className={`transition-colors ${isDarkMode ? "hover:bg-zinc-900/40 text-zinc-200" : "hover:bg-slate-200/50 text-slate-800"}`}>
-                          <td className="p-3.5 pl-4 font-sans font-medium">{b.template}</td>
-                          <td className="p-3.5 text-right font-semibold">{b.count.toLocaleString()}</td>
-                          <td className="p-3.5 pr-4 text-right font-bold text-emerald-500">{(b.count * currentMultiplier).toLocaleString()}</td>
+                          <td className="p-3.5 pl-4 font-sans font-medium whitespace-nowrap">{b.template}</td>
+                          <td className="p-3.5 text-right font-semibold whitespace-nowrap">{b.count.toLocaleString()}</td>
+                          <td className="p-3.5 pr-4 text-right font-bold text-emerald-500 whitespace-nowrap">{(b.count * currentMultiplier).toLocaleString()}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -324,15 +323,15 @@ export default function Home() {
             </section>
           )}
 
-          {/* New Smoothly Animated Bottom PWA CTA App Banner */}
+          {/* PWA CTA App Banner */}
           {isPwaSupported && deferredPrompt && (
-            <div className={`mt-6 rounded-2xl p-4 border flex flex-col sm:flex-row items-center justify-between gap-4 animate-bounce shadow-xl transition-all duration-500 ${
+            <div className={`mt-6 rounded-2xl p-4 border flex flex-col sm:flex-row items-center justify-between gap-4 shadow-xl transition-all duration-500 ${
               isDarkMode 
                 ? "bg-slate-900 border-emerald-500/30 shadow-emerald-500/5" 
                 : "bg-white border-emerald-500/20 shadow-slate-900/5"
             }`}>
-              <div className="flex items-center gap-3 text-center sm:text-left">
-                <div className="p-2 rounded-xl bg-emerald-500/10 text-emerald-400">
+              <div className="flex items-center gap-3 flex-col sm:flex-row text-center sm:text-left">
+                <div className="p-2 rounded-xl bg-emerald-500/10 text-emerald-400 shrink-0">
                   <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-6 h-6">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 1.5H8.25A2.25 2.25 0 006 3.75v16.5a2.25 2.25 0 002.25 2.25h7.5A2.25 2.25 0 0018 20.25V3.75a2.25 2.25 0 00-2.25-2.25H13.5m-3 0V3h3V1.5m-3 0h3m-6 15h9.75M9 19.5h6" />
                   </svg>
