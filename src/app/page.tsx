@@ -104,9 +104,10 @@ export default function Home() {
     return Boolean(date && selectedEt && selectedCampaign && selectedTemplate);
   }, [date, selectedEt, selectedCampaign, selectedTemplate]);
 
+  // Refactored Multiplier Logic to strictly capture structural variations of JSG 40 and JSG 38
   const currentMultiplier = useMemo(() => {
-    const etUpper = selectedEt.toUpperCase();
-    if (etUpper.includes("JSG 40") || etUpper.includes("JSG 38") || etUpper.includes("JSG38") || etUpper.includes("JSG40")) {
+    const etUpper = selectedEt.toUpperCase().replace(/\s+/g, "");
+    if (etUpper.includes("JSG40") || etUpper.includes("JSG38")) {
       return 2000;
     }
     return 5000;
@@ -292,7 +293,6 @@ export default function Home() {
               </div>
 
               {result.breakdown && result.breakdown.length > 0 && (
-                /* Enhanced layout wrappers with overflow swiping to avoid layout squishing */
                 <div className={`rounded-lg border overflow-x-auto w-full transition-colors duration-500 ${
                   isDarkMode ? "border-zinc-800 bg-slate-950" : "border-slate-200 bg-slate-50"
                 }`}>
