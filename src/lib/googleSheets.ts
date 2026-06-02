@@ -143,7 +143,7 @@ export async function getMailCounts({ isoDate, campaign, etNameOrAll, template }
 
   for (const tab of targetTabs) {
     try {
-      // Step 1: Compute dynamic multiplier specific to the processing sheet tab instance
+      // Step 1: Explicitly compute dynamic multiplier for JSG38 and JSG40 variations
       const tabUpper = tab.toUpperCase().replace(/\s+/g, "");
       const rowMultiplier = (tabUpper.includes("JSG40") || tabUpper.includes("JSG38")) ? 2000 : 5000;
 
@@ -176,7 +176,7 @@ export async function getMailCounts({ isoDate, campaign, etNameOrAll, template }
           const existingItem = breakdownMap.get(currentTemplate) || { count: 0, multiplier: rowMultiplier };
           breakdownMap.set(currentTemplate, {
             count: existingItem.count + countValue,
-            multiplier: rowMultiplier // Retains structural context rule safely
+            multiplier: rowMultiplier 
           });
         }
       }
@@ -188,7 +188,7 @@ export async function getMailCounts({ isoDate, campaign, etNameOrAll, template }
   return {
     totalMails: grandTotalMails,
     totalCount: grandTotalRawMailsTracked,
-    calculatedVolume: grandTotalCalculatedVolume, // Calculated backend payload sum
+    calculatedVolume: grandTotalCalculatedVolume, 
     hadData: grandTotalCalculatedVolume > 0,
     breakdown: Array.from(breakdownMap.entries()).map(([tmplName, metadata]) => ({
       template: tmplName,
