@@ -1,4 +1,3 @@
-// src/lib/googleSheets.ts
 import { google } from "googleapis";
 
 const SPREADSHEET_ID = process.env.GOOGLE_SHEETS_ID;
@@ -136,14 +135,14 @@ export async function getMailCounts({ isoDate, campaign, etNameOrAll, template }
   const targetCampaign = campaign.trim().toLowerCase();
   const isAllTemplates = template.toUpperCase().startsWith("ALL");
 
-  const breakdownMap = new Map<string, { count: number; multiplier: number }>();
+  // Multi-key structural maps separating identities by template and origin sheet account tracking
+  const breakdownMap = new Map<string, { template: string; etSource: string; count: number; multiplier: number }>();
   let grandTotalMails = 0;
   let grandTotalCalculatedVolume = 0;
   let grandTotalRawMailsTracked = 0;
 
   for (const tab of targetTabs) {
     try {
-      // Step 1: Explicitly compute dynamic multiplier for JSG38 and JSG40 variations
       const tabUpper = tab.toUpperCase().replace(/\s+/g, "");
       const rowMultiplier = (tabUpper.includes("JSG40") || tabUpper.includes("JSG38")) ? 2000 : 5000;
 
@@ -173,10 +172,14 @@ export async function getMailCounts({ isoDate, campaign, etNameOrAll, template }
           grandTotalRawMailsTracked += countValue;
           grandTotalCalculatedVolume += (countValue * rowMultiplier);
 
-          const existingItem = breakdownMap.get(currentTemplate) || { count: 0, multiplier: rowMultiplier };
-          breakdownMap.set(currentTemplate, {
+          const groupKey = `${currentTemplate}_${tab}`;
+          const existingItem = breakdownMap.get(groupKey) || { template: currentTemplate, etSource: tab, count: 0, multiplier: rowMultiplier };
+          
+          breakdownMap.set(groupKey, {
+            template: currentTemplate,
+            etSource: tab,
             count: existingItem.count + countValue,
-            multiplier: rowMultiplier 
+            multiplier: rowMultiplier
           });
         }
       }
@@ -190,10 +193,6 @@ export async function getMailCounts({ isoDate, campaign, etNameOrAll, template }
     totalCount: grandTotalRawMailsTracked,
     calculatedVolume: grandTotalCalculatedVolume, 
     hadData: grandTotalCalculatedVolume > 0,
-    breakdown: Array.from(breakdownMap.entries()).map(([tmplName, metadata]) => ({
-      template: tmplName,
-      count: metadata.count,
-      multiplier: metadata.multiplier
-    })).sort((a, b) => a.template.localeCompare(b.template)),
+    breakdown: Array.from(breakdownMap.values()).sort((a, b) => a.template.localeCompare(b.template)),
   };
 }

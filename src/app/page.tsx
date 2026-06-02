@@ -4,7 +4,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 
-type BreakdownItem = { template: string; count: number; multiplier: number };
+type BreakdownItem = { template: string; etSource: string; count: number; multiplier: number };
 type MailCountsResponse = { totalMails: number; totalCount: number; calculatedVolume: number; hadData: boolean; breakdown?: BreakdownItem[] };
 type FetchStatus = "idle" | "loading" | "success" | "error";
 
@@ -121,7 +121,6 @@ export default function Home() {
         );
         data.totalMails = data.breakdown.length;
         data.totalCount = data.breakdown.reduce((sum, item) => sum + item.count, 0);
-        // Compute combined dynamic sums from backend multi-context structures natively
         data.calculatedVolume = data.breakdown.reduce((sum, item) => sum + (item.count * item.multiplier), 0);
       }
 
@@ -257,56 +256,66 @@ export default function Home() {
             </div>
           </section>
 
-         {/* Output Display Metrics Area */}
-{filtersReady && result && (
-  <section className={`rounded-xl p-4 sm:p-6 border flex flex-col gap-6 shadow-xl transition-colors duration-500 ${
-    isDarkMode ? "bg-slate-900 border-white/5" : "bg-white border-slate-200"
-  }`}>
-    
-    <div className="grid gap-4 grid-cols-1 sm:grid-cols-2">
-      <div className={`p-4 rounded-lg border transition-colors duration-500 ${isDarkMode ? "bg-slate-950 border-zinc-800" : "bg-slate-50 border-slate-200"}`}>
-        <span className={`text-xs font-medium uppercase tracking-wide ${isDarkMode ? "text-zinc-400" : "text-slate-500"}`}>Total Matched Templates</span>
-        <p className={`text-2xl font-bold mt-1 ${isDarkMode ? "text-white" : "text-slate-900"}`}>{result.totalMails}</p>
-      </div>
-      
-      <div className={`p-4 rounded-lg border transition-colors duration-500 ${isDarkMode ? "bg-slate-950 border-zinc-800" : "bg-slate-50 border-slate-200"}`}>
-        <span className={`text-xs font-medium uppercase tracking-wide ${isDarkMode ? "text-zinc-400" : "text-slate-500"}`}>
-          Total Count Sum (Mails × {result.totalCount > 0 ? (result.calculatedVolume / result.totalCount) : 2000})
-        </span>
-        <p className="text-2xl font-bold mt-1 text-emerald-500">{result.calculatedVolume.toLocaleString()}</p>
-      </div>
-    </div>
+          {/* Output Display Metrics Area */}
+          {filtersReady && result && (
+            <section className={`rounded-xl p-4 sm:p-6 border flex flex-col gap-6 shadow-xl transition-colors duration-500 ${
+              isDarkMode ? "bg-slate-900 border-white/5" : "bg-white border-slate-200"
+            }`}>
+              
+              <div className="grid gap-4 grid-cols-1 sm:grid-cols-2">
+                <div className={`p-4 rounded-lg border transition-colors duration-500 ${isDarkMode ? "bg-slate-950 border-zinc-800" : "bg-slate-50 border-slate-200"}`}>
+                  <span className={`text-xs font-medium uppercase tracking-wide ${isDarkMode ? "text-zinc-400" : "text-slate-500"}`}>Total Matched Templates</span>
+                  <p className={`text-2xl font-bold mt-1 ${isDarkMode ? "text-white" : "text-slate-900"}`}>{result.totalMails}</p>
+                </div>
+                
+                <div className={`p-4 rounded-lg border transition-colors duration-500 ${isDarkMode ? "bg-slate-950 border-zinc-800" : "bg-slate-50 border-slate-200"}`}>
+                  <span className={`text-xs font-medium uppercase tracking-wide ${isDarkMode ? "text-zinc-400" : "text-slate-500"}`}>
+                    Total Count Sum ({selectedEt.toUpperCase().startsWith("ALL") ? "Dynamic Stacks" : `Mails × ${result.totalCount > 0 ? (result.calculatedVolume / result.totalCount) : 2000}`})
+                  </span>
+                  <p className="text-2xl font-bold mt-1 text-emerald-500">{result.calculatedVolume.toLocaleString()}</p>
+                </div>
+              </div>
 
-    {result.breakdown && result.breakdown.length > 0 && (
-      <div className={`rounded-lg border overflow-x-auto w-full transition-colors duration-500 ${
-        isDarkMode ? "border-zinc-800 bg-slate-950" : "border-slate-200 bg-slate-50"
-      }`}>
-        <table className="w-full text-left text-sm min-w-[500px]">
-          <thead className={`text-xs uppercase border-b tracking-wider transition-colors duration-500 ${
-            isDarkMode ? "bg-zinc-900 text-zinc-400 border-zinc-800" : "bg-slate-200 text-slate-600 border-slate-200"
-          }`}>
-            <tr>
-              <th className="p-3.5 pl-4 whitespace-nowrap">Template Reference</th>
-              <th className="p-3.5 text-right whitespace-nowrap">Mails Tracked</th>
-              <th className="p-3.5 pr-4 text-right text-emerald-500 whitespace-nowrap">Calculated Count</th>
-            </tr>
-          </thead>
-          <tbody className={`divide-y font-mono text-xs transition-colors duration-500 ${
-            isDarkMode ? "divide-zinc-800 text-zinc-300" : "divide-slate-200 text-slate-700"
-          }`}>
-            {result.breakdown.map((b, idx) => (
-              <tr key={idx} className={`transition-colors ${isDarkMode ? "hover:bg-zinc-900/40 text-zinc-200" : "hover:bg-slate-200/50 text-slate-800"}`}>
-                <td className="p-3.5 pl-4 font-sans font-medium whitespace-nowrap">{b.template}</td>
-                <td className="p-3.5 text-right font-semibold whitespace-nowrap">{b.count.toLocaleString()}</td>
-                <td className="p-3.5 pr-4 text-right font-bold text-emerald-500 whitespace-nowrap">{(b.count * b.multiplier).toLocaleString()}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    )}
-  </section>
-)}
+              {result.breakdown && result.breakdown.length > 0 && (
+                <div className={`rounded-lg border overflow-x-auto w-full transition-colors duration-500 ${
+                  isDarkMode ? "border-zinc-800 bg-slate-950" : "border-slate-200 bg-slate-50"
+                }`}>
+                  <table className="w-full text-left text-sm min-w-[650px]">
+                    <thead className={`text-xs uppercase border-b tracking-wider transition-colors duration-500 ${
+                      isDarkMode ? "bg-zinc-900 text-zinc-400 border-zinc-800" : "bg-slate-200 text-slate-600 border-slate-200"
+                    }`}>
+                      <tr>
+                        <th className="p-3.5 pl-4 whitespace-nowrap">Template Reference</th>
+                        <th className="p-3.5 whitespace-nowrap">Origin Account (ET)</th>
+                        <th className="p-3.5 text-right whitespace-nowrap">Mails Tracked</th>
+                        <th className="p-3.5 pr-4 text-right text-emerald-500 whitespace-nowrap">Calculated Count</th>
+                      </tr>
+                    </thead>
+                    <tbody className={`divide-y font-mono text-xs transition-colors duration-500 ${
+                      isDarkMode ? "divide-zinc-800 text-zinc-300" : "divide-slate-200 text-slate-700"
+                    }`}>
+                      {result.breakdown.map((b, idx) => (
+                        <tr key={idx} className={`transition-colors ${isDarkMode ? "hover:bg-zinc-900/40 text-zinc-200" : "hover:bg-slate-200/50 text-slate-800"}`}>
+                          <td className="p-3.5 pl-4 font-sans font-medium whitespace-nowrap">{b.template}</td>
+                          <td className="p-3.5 font-sans whitespace-nowrap">
+                            <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium uppercase tracking-wide ${
+                              b.multiplier === 2000 
+                                ? "bg-amber-500/10 text-amber-400 border border-amber-500/20" 
+                                : "bg-sky-500/10 text-sky-400 border border-sky-500/20"
+                            }`}>
+                              {b.etSource}
+                            </span>
+                          </td>
+                          <td className="p-3.5 text-right font-semibold whitespace-nowrap">{b.count.toLocaleString()}</td>
+                          <td className="p-3.5 pr-4 text-right font-bold text-emerald-500 whitespace-nowrap">{(b.count * b.multiplier).toLocaleString()}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </section>
+          )}
 
           {/* PWA CTA App Banner */}
           {isPwaSupported && deferredPrompt && (
