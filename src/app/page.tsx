@@ -89,11 +89,15 @@ export default function Home() {
       });
   }, [selectedCampaign, selectedEt, date]);
 
-  const filteredTemplates = useMemo(() => {
+const filteredTemplates = useMemo(() => {
     if (!selectedCampaign) return [];
     let searchSubstring = selectedCampaign.split("_")[0].toUpperCase(); 
     if (selectedCampaign.toUpperCase() === "ASSURITI_DB") {
       searchSubstring = "AAW";
+    }
+    // 👇 ADD THIS CONDITION BELOW
+    if (selectedCampaign.toUpperCase() === "QUOTIFII_DB") {
+      searchSubstring = "QTI";
     }
     return rawTemplates.filter((templateName) => 
       templateName.toUpperCase().includes(searchSubstring)
