@@ -108,7 +108,7 @@ const filteredTemplates = useMemo(() => {
     return Boolean(date && selectedEt && selectedCampaign && selectedTemplate);
   }, [date, selectedEt, selectedCampaign, selectedTemplate]);
 
-  async function fetchCounts() {
+async function fetchCounts() {
     if (!filtersReady) return;
     setStatus("loading");
     try {
@@ -119,6 +119,9 @@ const filteredTemplates = useMemo(() => {
       if (data.breakdown) {
         let searchSubstring = selectedCampaign.split("_")[0].toUpperCase();
         if (selectedCampaign.toUpperCase() === "ASSURITI_DB") searchSubstring = "AAW";
+        
+        // 👇 ADD THIS CONDITION BELOW
+        if (selectedCampaign.toUpperCase() === "QUOTIFII_DB") searchSubstring = "QTI";
         
         data.breakdown = data.breakdown.filter((item) => 
           item.template.toUpperCase().includes(searchSubstring)
