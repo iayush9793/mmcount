@@ -89,7 +89,8 @@ export default function Home() {
       });
   }, [selectedCampaign, selectedEt, date]);
 
-const filteredTemplates = useMemo(() => {
+  // Handles dynamic substring overrides for specific campaign codes
+  const filteredTemplates = useMemo(() => {
     if (!selectedCampaign) return [];
     let searchSubstring = selectedCampaign.split("_")[0].toUpperCase(); 
     if (selectedCampaign.toUpperCase() === "ASSURITI_DB") {
@@ -98,7 +99,6 @@ const filteredTemplates = useMemo(() => {
     if (selectedCampaign.toUpperCase() === "QUOTIFII_DB") {
       searchSubstring = "QTI";
     }
-    // 👇 ADD THIS CONDITION BELOW
     if (selectedCampaign.toUpperCase() === "XCE_AIR") {
       searchSubstring = "AIR";
     }
@@ -111,7 +111,7 @@ const filteredTemplates = useMemo(() => {
     return Boolean(date && selectedEt && selectedCampaign && selectedTemplate);
   }, [date, selectedEt, selectedCampaign, selectedTemplate]);
 
-async function fetchCounts() {
+  async function fetchCounts() {
     if (!filtersReady) return;
     setStatus("loading");
     try {
@@ -123,8 +123,6 @@ async function fetchCounts() {
         let searchSubstring = selectedCampaign.split("_")[0].toUpperCase();
         if (selectedCampaign.toUpperCase() === "ASSURITI_DB") searchSubstring = "AAW";
         if (selectedCampaign.toUpperCase() === "QUOTIFII_DB") searchSubstring = "QTI";
-        
-        // 👇 ADD THIS CONDITION BELOW
         if (selectedCampaign.toUpperCase() === "XCE_AIR") searchSubstring = "AIR";
         
         data.breakdown = data.breakdown.filter((item) => 
