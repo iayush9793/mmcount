@@ -89,33 +89,24 @@ export default function Home() {
       });
   }, [selectedCampaign, selectedEt, date]);
 
-  // Handles dynamic substring overrides for specific campaign codes
- const filteredTemplates = useMemo(() => {
+ // Handles contextual string lookup with a safe fallback
+  const filteredTemplates = useMemo(() => {
     if (!selectedCampaign) return [];
+    
     let searchSubstring = selectedCampaign.split("_")[0].toUpperCase(); 
-    if (selectedCampaign.toUpperCase() === "ASSURITI_DB") {
-      searchSubstring = "AAW";
-    }
-    if (selectedCampaign.toUpperCase() === "QUOTIFII_DB") {
-      searchSubstring = "QTI";
-    }
-    if (selectedCampaign.toUpperCase() === "XCE_AIR") {
-      searchSubstring = "AIR";
-    }
-    if (selectedCampaign.toUpperCase() === "VIVINT") {
-      searchSubstring = "VI";
-    }
-    // 👇 ADD THIS CONDITION FOR TRUGREEN
-    if (selectedCampaign.toUpperCase() === "TRUGREEN") {
-      searchSubstring = "TRU";
-    }
-    return rawTemplates.filter((templateName) => 
+    if (selectedCampaign.toUpperCase() === "ASSURITI_DB") searchSubstring = "AAW";
+    if (selectedCampaign.toUpperCase() === "QUOTIFII_DB") searchSubstring = "QTI";
+    if (selectedCampaign.toUpperCase() === "XCE_AIR") searchSubstring = "AIR";
+    if (selectedCampaign.toUpperCase() === "VIVINT") searchSubstring = "VI";
+    if (selectedCampaign.toUpperCase() === "TRUGREEN") searchSubstring = "TRU";
+
+    const filtered = rawTemplates.filter((templateName) => 
       templateName.toUpperCase().includes(searchSubstring)
     );
+
+    // FALLBACK: If nothing matches the strict code prefix, return everything found on that date
+    return filtered.length > 0 ? filtered : rawTemplates;
   }, [rawTemplates, selectedCampaign]);
-  const filtersReady = useMemo(() => {
-    return Boolean(date && selectedEt && selectedCampaign && selectedTemplate);
-  }, [date, selectedEt, selectedCampaign, selectedTemplate]);
 
  async function fetchCounts() {
     if (!filtersReady) return;
@@ -125,19 +116,23 @@ export default function Home() {
       const res = await fetch(`/api/mailCounts?date=${date}&campaign=${encodeURIComponent(selectedCampaign)}&et=${encodeURIComponent(lookupEt)}&template=${encodeURIComponent(selectedTemplate)}`);
       const data = (await res.json()) as MailCountsResponse;
 
-      if (data.breakdown) {
+    if (data.breakdown) {
         let searchSubstring = selectedCampaign.split("_")[0].toUpperCase();
         if (selectedCampaign.toUpperCase() === "ASSURITI_DB") searchSubstring = "AAW";
         if (selectedCampaign.toUpperCase() === "QUOTIFII_DB") searchSubstring = "QTI";
         if (selectedCampaign.toUpperCase() === "XCE_AIR") searchSubstring = "AIR";
         if (selectedCampaign.toUpperCase() === "VIVINT") searchSubstring = "VI";
-        
-        // 👇 ADD THIS CONDITION FOR TRUGREEN
         if (selectedCampaign.toUpperCase() === "TRUGREEN") searchSubstring = "TRU";
         
-        data.breakdown = data.breakdown.filter((item) => 
+        // Filter elements securely with fallback verification
+        const matchedItems = data.breakdown.filter((item) => 
           item.template.toUpperCase().includes(searchSubstring)
         );
+        
+        if (matchedItems.length > 0) {
+          data.breakdown = matchedItems;
+        }
+
         data.totalMails = data.breakdown.length;
         data.totalCount = data.breakdown.reduce((sum, item) => sum + item.count, 0);
         data.calculatedVolume = data.breakdown.reduce((sum, item) => sum + (item.count * item.multiplier), 0);
