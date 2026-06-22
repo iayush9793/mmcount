@@ -90,7 +90,7 @@ export default function Home() {
   }, [selectedCampaign, selectedEt, date]);
 
   // Handles dynamic substring overrides for specific campaign codes
-  const filteredTemplates = useMemo(() => {
+ const filteredTemplates = useMemo(() => {
     if (!selectedCampaign) return [];
     let searchSubstring = selectedCampaign.split("_")[0].toUpperCase(); 
     if (selectedCampaign.toUpperCase() === "ASSURITI_DB") {
@@ -102,16 +102,22 @@ export default function Home() {
     if (selectedCampaign.toUpperCase() === "XCE_AIR") {
       searchSubstring = "AIR";
     }
+    if (selectedCampaign.toUpperCase() === "VIVINT") {
+      searchSubstring = "VI";
+    }
+    // 👇 ADD THIS CONDITION FOR TRUGREEN
+    if (selectedCampaign.toUpperCase() === "TRUGREEN") {
+      searchSubstring = "TRU";
+    }
     return rawTemplates.filter((templateName) => 
       templateName.toUpperCase().includes(searchSubstring)
     );
   }, [rawTemplates, selectedCampaign]);
-
   const filtersReady = useMemo(() => {
     return Boolean(date && selectedEt && selectedCampaign && selectedTemplate);
   }, [date, selectedEt, selectedCampaign, selectedTemplate]);
 
-  async function fetchCounts() {
+ async function fetchCounts() {
     if (!filtersReady) return;
     setStatus("loading");
     try {
@@ -124,6 +130,10 @@ export default function Home() {
         if (selectedCampaign.toUpperCase() === "ASSURITI_DB") searchSubstring = "AAW";
         if (selectedCampaign.toUpperCase() === "QUOTIFII_DB") searchSubstring = "QTI";
         if (selectedCampaign.toUpperCase() === "XCE_AIR") searchSubstring = "AIR";
+        if (selectedCampaign.toUpperCase() === "VIVINT") searchSubstring = "VI";
+        
+        // 👇 ADD THIS CONDITION FOR TRUGREEN
+        if (selectedCampaign.toUpperCase() === "TRUGREEN") searchSubstring = "TRU";
         
         data.breakdown = data.breakdown.filter((item) => 
           item.template.toUpperCase().includes(searchSubstring)
@@ -139,7 +149,6 @@ export default function Home() {
       setStatus("error");
     }
   }
-
   useEffect(() => {
     if (filtersReady) {
       fetchCounts();
