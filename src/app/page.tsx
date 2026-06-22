@@ -89,26 +89,32 @@ export default function Home() {
       });
   }, [selectedCampaign, selectedEt, date]);
 
- // Handles contextual string lookup with a safe fallback
+  // Handles dynamic substring overrides for specific campaign codes safely using .includes()
   const filteredTemplates = useMemo(() => {
     if (!selectedCampaign) return [];
     
-    let searchSubstring = selectedCampaign.split("_")[0].toUpperCase(); 
-    if (selectedCampaign.toUpperCase() === "ASSURITI_DB") searchSubstring = "AAW";
-    if (selectedCampaign.toUpperCase() === "QUOTIFII_DB") searchSubstring = "QTI";
-    if (selectedCampaign.toUpperCase() === "XCE_AIR") searchSubstring = "AIR";
-    if (selectedCampaign.toUpperCase() === "VIVINT") searchSubstring = "VI";
-    if (selectedCampaign.toUpperCase() === "TRUGREEN") searchSubstring = "TRU";
+    const campaignUpper = selectedCampaign.toUpperCase();
+    let searchSubstring = campaignUpper.split("_")[0]; 
+
+    if (campaignUpper.includes("ASSURITI")) searchSubstring = "AAW";
+    if (campaignUpper.includes("QUOTIFII")) searchSubstring = "QTI";
+    if (campaignUpper.includes("XCE_AIR") || campaignUpper.includes("AIR")) searchSubstring = "AIR";
+    if (campaignUpper.includes("VIVINT")) searchSubstring = "VI";
+    if (campaignUpper.includes("TRUGREEN")) searchSubstring = "TRU";
 
     const filtered = rawTemplates.filter((templateName) => 
       templateName.toUpperCase().includes(searchSubstring)
     );
 
-    // FALLBACK: If nothing matches the strict code prefix, return everything found on that date
+    // Fallback: If nothing matches the rule, show everything fetched for that date
     return filtered.length > 0 ? filtered : rawTemplates;
   }, [rawTemplates, selectedCampaign]);
 
- async function fetchCounts() {
+  const filtersReady = useMemo(() => {
+    return Boolean(date && selectedEt && selectedCampaign && selectedTemplate);
+  }, [date, selectedEt, selectedCampaign, selectedTemplate]);
+
+  async function fetchCounts() {
     if (!filtersReady) return;
     setStatus("loading");
     try {
@@ -116,15 +122,16 @@ export default function Home() {
       const res = await fetch(`/api/mailCounts?date=${date}&campaign=${encodeURIComponent(selectedCampaign)}&et=${encodeURIComponent(lookupEt)}&template=${encodeURIComponent(selectedTemplate)}`);
       const data = (await res.json()) as MailCountsResponse;
 
-    if (data.breakdown) {
-        let searchSubstring = selectedCampaign.split("_")[0].toUpperCase();
-        if (selectedCampaign.toUpperCase() === "ASSURITI_DB") searchSubstring = "AAW";
-        if (selectedCampaign.toUpperCase() === "QUOTIFII_DB") searchSubstring = "QTI";
-        if (selectedCampaign.toUpperCase() === "XCE_AIR") searchSubstring = "AIR";
-        if (selectedCampaign.toUpperCase() === "VIVINT") searchSubstring = "VI";
-        if (selectedCampaign.toUpperCase() === "TRUGREEN") searchSubstring = "TRU";
+      if (data.breakdown) {
+        const campaignUpper = selectedCampaign.toUpperCase();
+        let searchSubstring = campaignUpper.split("_")[0];
+
+        if (campaignUpper.includes("ASSURITI")) searchSubstring = "AAW";
+        if (campaignUpper.includes("QUOTIFII")) searchSubstring = "QTI";
+        if (campaignUpper.includes("XCE_AIR") || campaignUpper.includes("AIR")) searchSubstring = "AIR";
+        if (campaignUpper.includes("VIVINT")) searchSubstring = "VI";
+        if (campaignUpper.includes("TRUGREEN")) searchSubstring = "TRU";
         
-        // Filter elements securely with fallback verification
         const matchedItems = data.breakdown.filter((item) => 
           item.template.toUpperCase().includes(searchSubstring)
         );
@@ -144,6 +151,7 @@ export default function Home() {
       setStatus("error");
     }
   }
+
   useEffect(() => {
     if (filtersReady) {
       fetchCounts();
@@ -301,85 +309,4 @@ export default function Home() {
                         <th className="p-3.5 pl-4 whitespace-nowrap">Template Reference</th>
                         <th className="p-3.5 whitespace-nowrap">Origin Account (ET)</th>
                         <th className="p-3.5 text-right whitespace-nowrap">Mails Tracked</th>
-                        <th className="p-3.5 pr-4 text-right text-emerald-500 whitespace-nowrap">Calculated Count</th>
-                      </tr>
-                    </thead>
-                    <tbody className={`divide-y font-mono text-xs transition-colors duration-500 ${
-                      isDarkMode ? "divide-zinc-800 text-zinc-300" : "divide-slate-200 text-slate-700"
-                    }`}>
-                      {result.breakdown.map((b, idx) => (
-                        <tr key={idx} className={`transition-colors ${isDarkMode ? "hover:bg-zinc-900/40 text-zinc-200" : "hover:bg-slate-200/50 text-slate-800"}`}>
-                          <td className="p-3.5 pl-4 font-sans font-medium whitespace-nowrap">{b.template}</td>
-                          <td className="p-3.5 font-sans whitespace-nowrap">
-                            <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium uppercase tracking-wide ${
-                              b.multiplier === 2000 
-                                ? "bg-amber-500/10 text-amber-400 border border-amber-500/20" 
-                                : "bg-sky-500/10 text-sky-400 border border-sky-500/20"
-                            }`}>
-                              {b.etSource}
-                            </span>
-                          </td>
-                          <td className="p-3.5 text-right font-semibold whitespace-nowrap">{b.count.toLocaleString()}</td>
-                          <td className="p-3.5 pr-4 text-right font-bold text-emerald-500 whitespace-nowrap">{(b.count * b.multiplier).toLocaleString()}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-            </section>
-          )}
-
-          {/* PWA CTA App Banner */}
-          {isPwaSupported && deferredPrompt && (
-            <div className={`mt-6 rounded-2xl p-4 border flex flex-col sm:flex-row items-center justify-between gap-4 shadow-xl transition-all duration-500 ${
-              isDarkMode 
-                ? "bg-slate-900 border-emerald-500/30 shadow-emerald-500/5" 
-                : "bg-white border-emerald-500/20 shadow-slate-900/5"
-            }`}>
-              <div className="flex items-center gap-3 flex-col sm:flex-row text-center sm:text-left">
-                <div className="p-2 rounded-xl bg-emerald-500/10 text-emerald-400 shrink-0">
-                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-6 h-6">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 1.5H8.25A2.25 2.25 0 006 3.75v16.5a2.25 2.25 0 002.25 2.25h7.5A2.25 2.25 0 0018 20.25V3.75a2.25 2.25 0 00-2.25-2.25H13.5m-3 0V3h3V1.5m-3 0h3m-6 15h9.75M9 19.5h6" />
-                  </svg>
-                </div>
-                <div>
-                  <h4 className={`text-sm font-bold tracking-wide ${isDarkMode ? "text-white" : "text-slate-900"}`}>
-                    Mobile App Available
-                  </h4>
-                  <p className={`text-xs mt-0.5 ${isDarkMode ? "text-zinc-400" : "text-slate-500"}`}>
-                    Install this report workspace directly onto your device home screen for quick lookups.
-                  </p>
-                </div>
-              </div>
-              <button
-                onClick={handleAppDownloadClick}
-                className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-white font-bold text-xs tracking-wider uppercase transition-all duration-300 transform active:scale-95 shadow-md shadow-emerald-500/20 shrink-0"
-              >
-                Download App
-              </button>
-            </div>
-          )}
-        </div>
-
-        <footer className={`mt-12 border-t pt-4 text-center text-xs transition-colors duration-500 w-full max-w-5xl mx-auto tracking-wide ${
-          isDarkMode ? "border-white/10 text-zinc-500" : "border-slate-200 text-slate-400"
-        }`}>
-          © All Rights Reserved. Designed and Developed by{" "}
-          <a 
-            href="https://www.linkedin.com/in/ayush-srivastava-3240961b5?utm_source=share_via&utm_content=profile&utm_medium=member_android" 
-            target="_blank" 
-            rel="noopener noreferrer" 
-            className={`font-medium transition underline underline-offset-4 ${
-              isDarkMode 
-                ? "text-zinc-400 hover:text-emerald-400 decoration-zinc-600 hover:decoration-emerald-400" 
-                : "text-slate-600 hover:text-emerald-500 decoration-slate-300 hover:decoration-emerald-500"
-            }`}
-          >
-            Ayush Srivastava, Full Stack Developer.
-          </a>
-        </footer>
-      </div>
-    </>
-  );
-}
+                        <th className="p-3.5 pr-4 text-right text-emerald
