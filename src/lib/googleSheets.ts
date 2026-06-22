@@ -101,11 +101,12 @@ export async function getTemplatesForCampaign({ isoDate, etNameOrAll }: { isoDat
   const templatesSet = new Set<string>();
   const formattedDate = isoToSheetDate(isoDate);
 
+  // Use a faster, lighter range lookup to prevent timeout/truncation issues during "ALL ET'S"
   for (const tab of targetTabs) {
     try {
       const res = await sheets.spreadsheets.values.get({
         spreadsheetId: SPREADSHEET_ID,
-        range: `'${tab}'!A:B`,
+        range: `'${tab}'!A:B`, // Focuses directly on Date and Template columns
       });
       const rows = res.data.values ?? [];
       for (let i = 1; i < rows.length; i++) {
@@ -116,7 +117,7 @@ export async function getTemplatesForCampaign({ isoDate, etNameOrAll }: { isoDat
         }
       }
     } catch (err) {
-      console.error(err);
+      console.error(`Error loading templates for tab ${tab}:`, err);
     }
   }
   return Array.from(templatesSet).sort((a, b) => a.localeCompare(b));
