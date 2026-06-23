@@ -86,8 +86,8 @@ export default function Home() {
     if (cleanCamp === "VIVINT_AD" || cleanCamp === "VIVINT") return { includes: ["VI"], excludes: ["XCE", "XC", "ES", "GZ", "DB"] };
     if (cleanCamp === "TRUGREEN_AD") return { includes: ["TRU"], excludes: ["XCE", "XC", "ES", "GZ", "DB"] };
     if (cleanCamp.includes("IAI_GZ")) return { includes: ["IAI"], excludes: [] };
-    if (cleanCamp === "RBA_XCE") return { includes: ["RBA", "XCE"], excludes: ["XC", "ES", "GZ", "DB"] };
-    if (cleanCamp === "JG_XCE") return { includes: ["JG", "XCE"], excludes: ["XC", "ES", "GZ", "DB"] };
+    if (cleanCamp === "RBA_XCE") return { includes: ["RBA", "XCE"], excludes: ["ES", "GZ", "DB"] };
+    if (cleanCamp === "JG_XCE") return { includes: ["JG", "XCE"], excludes: ["ES", "GZ", "DB"] };
     if (cleanCamp === "TRUGREEN_DB") return { includes: ["TRU", "DB"], excludes: ["XC", "ES", "GZ", "XCE"] };
     if (cleanCamp === "ASSURITI_DB") return { includes: ["AAW"], excludes: [] };
     if (cleanCamp === "QUOTIFII_DB") return { includes: ["QTI"], excludes: [] };
