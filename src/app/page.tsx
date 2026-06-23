@@ -33,6 +33,7 @@ export default function Home() {
   const [deferredPrompt, setDeferredPrompt] = useState<any | null>(null);
   const [isPwaSupported, setIsPwaSupported] = useState(false);
 
+  // Initial Boot Loader
   useEffect(() => {
     const iso = new Date().toISOString().slice(0, 10);
     setDate(iso);
@@ -43,7 +44,7 @@ export default function Home() {
         setEts(data.ets ?? []);
         setTimeout(() => {
           setIsAppLoading(false);
-        }, 800); 
+        }, 500); 
       })
       .catch(() => {
         setIsAppLoading(false);
@@ -61,7 +62,7 @@ export default function Home() {
     };
   }, []);
 
-  // Cascade 1: (Date + ET) -> Smarter active-only Campaign list
+  // Lightweight cascade 1: (Date + ET) -> Campaign dropdown builder (Fast and non-lagging)
   useEffect(() => {
     if (!selectedEt || !date) { 
       setCampaigns([]); 
@@ -82,7 +83,7 @@ export default function Home() {
       .catch(() => {});
   }, [selectedEt, date]);
 
-  // Cascade 2: Campaign -> Raw Template list fetcher
+  // Lightweight cascade 2: Campaign -> Template list fetcher
   useEffect(() => {
     if (!selectedCampaign || !selectedEt || !date) { setRawTemplates([]); return; }
     const lookupEt = selectedEt.toUpperCase().startsWith("ALL") ? "ALL" : selectedEt;
@@ -91,14 +92,14 @@ export default function Home() {
       .then((data) => {
         setRawTemplates(data.templates ?? []);
         setSelectedTemplate("");
-      });
+      })
+      .catch(() => {});
   }, [selectedCampaign, selectedEt, date]);
 
   // Comprehensive centralized mapping rules engine configuration
   const getFilterRule = (campaignName: string): FilterRule => {
     const cleanCamp = campaignName.toUpperCase().trim();
     
-    // Explicit Rule Definitions matching requirements perfectly
     if (cleanCamp === "RGR") return { includes: ["RGR"], excludes: [] };
     if (cleanCamp === "ICO") return { includes: ["ICO"], excludes: [] };
     if (cleanCamp === "AHS_AD") return { includes: ["AHS"], excludes: ["DB", "XCE", "GZ", "XC", "ES"] };
@@ -126,11 +127,9 @@ export default function Home() {
     if (cleanCamp === "ASSURITI_DB") return { includes: ["AAW"], excludes: [] };
     if (cleanCamp === "QUOTIFII_DB") return { includes: ["QTI"], excludes: [] };
 
-    // Default dynamic split fallback if campaign is unmapped
     return { includes: [cleanCamp.split("_")[0]], excludes: [] };
   };
 
-  // Filter evaluation predicate checker
   const matchTemplate = (templateName: string, rule: FilterRule): boolean => {
     const tmplUpper = templateName.toUpperCase();
     const matchesIncludes = rule.includes.every(inc => tmplUpper.includes(inc));
@@ -138,7 +137,7 @@ export default function Home() {
     return matchesIncludes && !triggersExcludes;
   };
 
-  // Handles dynamic dropdown list visualization
+  // Dropdown list computation (memoized to maximize UI thread responsiveness)
   const filteredTemplates = useMemo(() => {
     if (!selectedCampaign) return [];
     const rule = getFilterRule(selectedCampaign);
@@ -150,6 +149,7 @@ export default function Home() {
     return Boolean(date && selectedEt && selectedCampaign && selectedTemplate);
   }, [date, selectedEt, selectedCampaign, selectedTemplate]);
 
+  // MANUAL FUNCTION EXECUTED ON CLICK
   async function fetchCounts() {
     if (!filtersReady) return;
     setStatus("loading");
@@ -178,13 +178,6 @@ export default function Home() {
     }
   }
 
-  useEffect(() => {
-    if (filtersReady) {
-      fetchCounts();
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filtersReady, date, selectedEt, selectedCampaign, selectedTemplate]);
-
   async function handleAppDownloadClick() {
     if (!deferredPrompt) return;
     deferredPrompt.prompt();
@@ -195,7 +188,7 @@ export default function Home() {
 
   return (
     <>
-      {/* Dynamic Logo Preloader Layer Overlay */}
+      {/* 1. INITIAL APP BOOT PRELOADER LAYER OVERLAY */}
       {isAppLoading && (
         <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-slate-950 transition-all duration-500">
           <div className="flex flex-col items-center gap-6">
@@ -205,6 +198,19 @@ export default function Home() {
             <div className="h-6 w-6 animate-spin rounded-full border-2 border-emerald-500 border-t-transparent" />
             <p className="text-xs font-semibold tracking-widest text-zinc-400 uppercase">
               Initializing Dashboard Matrix...
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* 2. LIVE RUNTIME CALCULATION WORKSPACE SYNC BLOCK LOADER LAYER OVERLAY */}
+      {status === "loading" && (
+        <div className="fixed inset-0 z-40 flex flex-col items-center justify-center bg-slate-950/80 backdrop-blur-md transition-all duration-300 animate-fadeIn">
+          <div className="flex flex-col items-center gap-4 bg-slate-900 border border-white/5 p-8 rounded-2xl shadow-2xl max-w-sm w-full mx-4 text-center">
+            <div className="h-10 w-10 animate-spin rounded-full border-4 border-emerald-500 border-t-transparent mb-2" />
+            <h3 className="text-sm font-bold text-white tracking-wide uppercase">Syncing Live Sheet Matrix</h3>
+            <p className="text-xs text-zinc-400 leading-relaxed">
+              Fetching records from Google Stacks... This may take a few seconds during global computations.
             </p>
           </div>
         </div>
@@ -252,9 +258,9 @@ export default function Home() {
               <button 
                 onClick={fetchCounts} 
                 disabled={!filtersReady || status === "loading"} 
-                className="rounded-full bg-emerald-500 px-5 py-2 text-xs font-semibold text-white hover:bg-emerald-400 disabled:opacity-40 transition shrink-0 shadow-lg shadow-emerald-500/10 h-10"
+                className="rounded-full bg-emerald-500 px-5 py-2 text-xs font-bold text-white hover:bg-emerald-400 disabled:opacity-40 transition shrink-0 shadow-lg shadow-emerald-500/10 h-10 cursor-pointer active:scale-95 duration-150"
               >
-                {status === "loading" ? "Syncing..." : "Sync Sheet"}
+                Sync Sheet
               </button>
             </div>
           </header>
@@ -304,7 +310,7 @@ export default function Home() {
           </section>
 
           {/* Output Display Metrics Area */}
-          {filtersReady && result && (
+          {status !== "loading" && result && (
             <section className={`rounded-xl p-4 sm:p-6 border flex flex-col gap-6 shadow-xl transition-colors duration-500 ${
               isDarkMode ? "bg-slate-900 border-white/5" : "bg-white border-slate-200"
             }`}>
