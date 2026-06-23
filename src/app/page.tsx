@@ -33,7 +33,7 @@ export default function Home() {
   const [deferredPrompt, setDeferredPrompt] = useState<any | null>(null);
   const [isPwaSupported, setIsPwaSupported] = useState(false);
 
-  // Initial Boot Loader
+  // Initial Boot Loader & Auto Default Selection Trigger
   useEffect(() => {
     const iso = new Date().toISOString().slice(0, 10);
     setDate(iso);
@@ -41,7 +41,23 @@ export default function Home() {
     fetch("/api/ets")
       .then((res) => res.json())
       .then((data) => {
-        setEts(data.ets ?? []);
+        const activeEts = data.ets ?? [];
+        setEts(activeEts);
+        
+        // Auto-initialize parameters to trigger instant initial synchronization load out
+        setSelectedEt("ALL");
+        setSelectedTemplate("ALL");
+
+        // Fetch campaigns for the default global setup to seed dropdown options instantly
+        return fetch(`/api/campaigns?et=ALL&date=${encodeURIComponent(iso)}`);
+      })
+      .then((res) => res ? res.json() : null)
+      .then((data) => {
+        if (data && data.campaigns && data.campaigns.length > 0) {
+          setCampaigns(data.campaigns);
+          // Pick the first available active campaign structure automatically
+          setSelectedCampaign(data.campaigns[0]);
+        }
         setTimeout(() => {
           setIsAppLoading(false);
         }, 500); 
@@ -62,28 +78,29 @@ export default function Home() {
     };
   }, []);
 
-  // Lightweight cascade 1: (Date + ET) -> Campaign dropdown builder (Fast and non-lagging)
+  // Run a standalone manual sync immediately once initial parameters auto-default on boot configuration
   useEffect(() => {
-    if (!selectedEt || !date) { 
-      setCampaigns([]); 
-      setSelectedCampaign(""); 
-      setRawTemplates([]); 
-      setSelectedTemplate(""); 
-      return; 
+    if (date && selectedEt === "ALL" && selectedCampaign && selectedTemplate === "ALL" && status === "idle") {
+      fetchCounts();
     }
-    const lookupEt = selectedEt.toUpperCase().startsWith("ALL") ? "ALL" : selectedEt;
-    fetch(`/api/campaigns?et=${encodeURIComponent(lookupEt)}&date=${encodeURIComponent(date)}`)
-      .then((res) => res.json())
-      .then((data) => {
-        setCampaigns(data.campaigns ?? []);
-        setSelectedCampaign("");
-        setRawTemplates([]);
-        setSelectedTemplate("");
-      })
-      .catch(() => {});
-  }, [selectedEt, date]);
+  }, [date, selectedEt, selectedCampaign, selectedTemplate]);
 
-  // Lightweight cascade 2: Campaign -> Template list fetcher
+  // Lightweight cascade 1: Manual parameter adjustments update campaign arrays safely
+  const handleEtChange = async (etVal: string) => {
+    setSelectedEt(etVal);
+    if (!etVal || !date) return;
+    try {
+      const lookupEt = etVal.toUpperCase().startsWith("ALL") ? "ALL" : etVal;
+      const res = await fetch(`/api/campaigns?et=${encodeURIComponent(lookupEt)}&date=${encodeURIComponent(date)}`);
+      const data = await res.json();
+      setCampaigns(data.campaigns ?? []);
+      setSelectedCampaign(data.campaigns?.[0] ?? "");
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  // Lightweight cascade 2: Campaign selections build related raw templates array lookup safely
   useEffect(() => {
     if (!selectedCampaign || !selectedEt || !date) { setRawTemplates([]); return; }
     const lookupEt = selectedEt.toUpperCase().startsWith("ALL") ? "ALL" : selectedEt;
@@ -91,7 +108,6 @@ export default function Home() {
       .then((res) => res.json())
       .then((data) => {
         setRawTemplates(data.templates ?? []);
-        setSelectedTemplate("");
       })
       .catch(() => {});
   }, [selectedCampaign, selectedEt, date]);
@@ -137,7 +153,6 @@ export default function Home() {
     return matchesIncludes && !triggersExcludes;
   };
 
-  // Dropdown list computation (memoized to maximize UI thread responsiveness)
   const filteredTemplates = useMemo(() => {
     if (!selectedCampaign) return [];
     const rule = getFilterRule(selectedCampaign);
@@ -149,7 +164,7 @@ export default function Home() {
     return Boolean(date && selectedEt && selectedCampaign && selectedTemplate);
   }, [date, selectedEt, selectedCampaign, selectedTemplate]);
 
-  // MANUAL FUNCTION EXECUTED ON CLICK
+  // Sync function triggered explicitly via user action or startup defaults
   async function fetchCounts() {
     if (!filtersReady) return;
     setStatus("loading");
@@ -188,14 +203,14 @@ export default function Home() {
 
   return (
     <>
-      {/* 1. INITIAL APP BOOT PRELOADER LAYER OVERLAY */}
+      {/* 1. INITIAL SYSTEM BOOT OVERLAY SPIN LOADER */}
       {isAppLoading && (
         <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-slate-950 transition-all duration-500">
           <div className="flex flex-col items-center gap-6">
             <div className="relative h-40 w-40 animate-pulse">
               <Image src="/logo.png" alt="App Logo" fill priority className="object-contain" />
             </div>
-            <div className="h-6 w-6 animate-spin rounded-full border-2 border-emerald-500 border-t-transparent" />
+            <div className="h-8 w-8 animate-spin rounded-full border-4 border-emerald-500 border-t-transparent" />
             <p className="text-xs font-semibold tracking-widest text-zinc-400 uppercase">
               Initializing Dashboard Matrix...
             </p>
@@ -203,15 +218,21 @@ export default function Home() {
         </div>
       )}
 
-      {/* 2. LIVE RUNTIME CALCULATION WORKSPACE SYNC BLOCK LOADER LAYER OVERLAY */}
+      {/* 2. DYNAMIC SHEET MATRIX CALCULATION OVERLAY SPIN LOADER */}
       {status === "loading" && (
-        <div className="fixed inset-0 z-40 flex flex-col items-center justify-center bg-slate-950/80 backdrop-blur-md transition-all duration-300 animate-fadeIn">
-          <div className="flex flex-col items-center gap-4 bg-slate-900 border border-white/5 p-8 rounded-2xl shadow-2xl max-w-sm w-full mx-4 text-center">
-            <div className="h-10 w-10 animate-spin rounded-full border-4 border-emerald-500 border-t-transparent mb-2" />
-            <h3 className="text-sm font-bold text-white tracking-wide uppercase">Syncing Live Sheet Matrix</h3>
-            <p className="text-xs text-zinc-400 leading-relaxed">
-              Fetching records from Google Stacks... This may take a few seconds during global computations.
-            </p>
+        <div className="fixed inset-0 z-40 flex flex-col items-center justify-center bg-slate-950/80 backdrop-blur-md transition-all duration-300">
+          <div className="flex flex-col items-center gap-5 bg-slate-900 border border-white/5 p-8 rounded-2xl shadow-2xl max-w-sm w-full mx-4 text-center">
+            {/* Smooth glowing circular ring loader */}
+            <div className="relative h-12 w-12">
+              <div className="absolute inset-0 rounded-full border-4 border-zinc-800" />
+              <div className="absolute inset-0 rounded-full border-4 border-t-emerald-500 border-r-emerald-500 animate-spin" />
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <h3 className="text-sm font-bold text-white tracking-wide uppercase">Synchronizing Live Metrics</h3>
+              <p className="text-xs text-zinc-400 leading-relaxed">
+                Fetching latest ledger counts directly from Google Sheets...
+              </p>
+            </div>
           </div>
         </div>
       )}
@@ -278,7 +299,7 @@ export default function Home() {
 
             <div className="flex flex-col gap-1">
               <label className={`text-xs font-semibold ${isDarkMode ? "text-zinc-400" : "text-slate-500"}`}>ET</label>
-              <select value={selectedEt} onChange={(e) => setSelectedEt(e.target.value)} className={`h-10 rounded-lg px-3 text-sm outline-none transition duration-500 w-full ${
+              <select value={selectedEt} onChange={(e) => handleEtChange(e.target.value)} className={`h-10 rounded-lg px-3 text-sm outline-none transition duration-500 w-full ${
                 isDarkMode ? "bg-slate-950 border-zinc-800 text-white focus:border-emerald-500" : "bg-slate-50 border-slate-200 text-slate-900 focus:border-emerald-500 border"
               }`}>
                 <option value="">Select ET</option>
