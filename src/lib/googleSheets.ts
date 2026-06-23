@@ -56,7 +56,7 @@ export async function listCampaigns(etNameOrAll: string, isoDate?: string): Prom
     try {
       const res = await sheets.spreadsheets.values.get({
         spreadsheetId: SPREADSHEET_ID,
-        range: `'${tab}'!A:ZZ`,
+        range: `'${tab}'!A:E`, // Reduced range from ZZ to E to make campaign fetching ultra fast
         valueRenderOption: "FORMATTED_VALUE",
       });
       const values = res.data.values ?? [];
@@ -105,7 +105,7 @@ export async function getTemplatesForCampaign({ isoDate, etNameOrAll }: { isoDat
     try {
       const res = await sheets.spreadsheets.values.get({
         spreadsheetId: SPREADSHEET_ID,
-        range: `'${tab}'!A:B`, 
+        range: `'${tab}'!A:B`, // Focus directly on columns A and B
       });
       const rows = res.data.values ?? [];
       for (let i = 1; i < rows.length; i++) {
