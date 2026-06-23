@@ -8,6 +8,11 @@ type BreakdownItem = { template: string; etSource: string; count: number; multip
 type MailCountsResponse = { totalMails: number; totalCount: number; calculatedVolume: number; hadData: boolean; breakdown?: BreakdownItem[] };
 type FetchStatus = "idle" | "loading" | "success" | "error";
 
+interface FilterRule {
+  includes: string[];
+  excludes: string[];
+}
+
 export default function Home() {
   const [isAppLoading, setIsAppLoading] = useState(true);
   const [isDarkMode, setIsDarkMode] = useState(true);
@@ -89,24 +94,55 @@ export default function Home() {
       });
   }, [selectedCampaign, selectedEt, date]);
 
-  // Handles dynamic substring overrides for specific campaign codes safely using .includes()
+  // Comprehensive centralized mapping rules engine configuration
+  const getFilterRule = (campaignName: string): FilterRule => {
+    const cleanCamp = campaignName.toUpperCase().trim();
+    
+    // Explicit Rule Definitions matching requirements perfectly
+    if (cleanCamp === "RGR") return { includes: ["RGR"], excludes: [] };
+    if (cleanCamp === "ICO") return { includes: ["ICO"], excludes: [] };
+    if (cleanCamp === "AHS_AD") return { includes: ["AHS"], excludes: ["DB", "XCE", "GZ", "XC", "ES"] };
+    if (cleanCamp === "SHW_ES") return { includes: ["SHW", "ES"], excludes: ["DB", "XCE", "GZ", "XC"] };
+    if (cleanCamp === "XCE_AIR" || cleanCamp === "AIR") return { includes: ["AIR"], excludes: [] };
+    if (cleanCamp === "FIR_XC") return { includes: ["FIR"], excludes: [] };
+    if (cleanCamp === "HEC_AD") return { includes: ["HEC"], excludes: [] };
+    if (cleanCamp === "INSURIFY_GZ") return { includes: ["IA"], excludes: ["IAI"] };
+    if (cleanCamp === "LR_GZ") return { includes: ["LR"], excludes: [] };
+    if (cleanCamp.includes("E-VETERANS_DB") || cleanCamp.includes("VETERANS_DB")) return { includes: ["EVL"], excludes: [] };
+    if (cleanCamp === "FGLO_DB") return { includes: ["FGLO"], excludes: [] };
+    if (cleanCamp === "ADT_AD") return { includes: ["ADT"], excludes: ["DB", "XCE", "GZ", "XC"] };
+    if (cleanCamp.includes("RYH FLOORING") || cleanCamp.includes("RYH_FLOORING")) return { includes: ["RHF"], excludes: ["DB", "XCE", "GZ", "XC"] };
+    if (cleanCamp === "JG_AD") return { includes: ["JG"], excludes: ["DB", "XCE", "GZ", "XC"] };
+    if (cleanCamp === "ZBH_DB") return { includes: ["ZBH", "DB"], excludes: ["XCE", "GZ", "XC", "ES"] };
+    if (cleanCamp === "CH_XC") return { includes: ["CH"], excludes: [] };
+    if (cleanCamp === "LBH_DB") return { includes: ["LBH", "DB"], excludes: ["XCE", "GZ", "XC", "ES"] };
+    if (cleanCamp === "NDR_GZ") return { includes: ["NDR", "GZ"], excludes: ["XCE", "XC", "ES"] };
+    if (cleanCamp === "VIVINT_AD" || cleanCamp === "VIVINT") return { includes: ["VI"], excludes: ["XCE", "XC", "ES", "GZ", "DB"] };
+    if (cleanCamp === "TRUGREEN_AD") return { includes: ["TRU"], excludes: ["XCE", "XC", "ES", "GZ", "DB"] };
+    if (cleanCamp.includes("IAI_GZ")) return { includes: ["IAI"], excludes: [] };
+    if (cleanCamp === "RBA_XCE") return { includes: ["RBA", "XCE"], excludes: ["XC", "ES", "GZ", "DB"] };
+    if (cleanCamp === "JG_XCE") return { includes: ["JG", "XCE"], excludes: ["XC", "ES", "GZ", "DB"] };
+    if (cleanCamp === "TRUGREEN_DB") return { includes: ["TRU", "DB"], excludes: ["XC", "ES", "GZ", "XCE"] };
+    if (cleanCamp === "ASSURITI_DB") return { includes: ["AAW"], excludes: [] };
+    if (cleanCamp === "QUOTIFII_DB") return { includes: ["QTI"], excludes: [] };
+
+    // Default dynamic split fallback if campaign is unmapped
+    return { includes: [cleanCamp.split("_")[0]], excludes: [] };
+  };
+
+  // Filter evaluation predicate checker
+  const matchTemplate = (templateName: string, rule: FilterRule): boolean => {
+    const tmplUpper = templateName.toUpperCase();
+    const matchesIncludes = rule.includes.every(inc => tmplUpper.includes(inc));
+    const triggersExcludes = rule.excludes.some(exc => tmplUpper.includes(exc));
+    return matchesIncludes && !triggersExcludes;
+  };
+
+  // Handles dynamic dropdown list visualization
   const filteredTemplates = useMemo(() => {
     if (!selectedCampaign) return [];
-    
-    const campaignUpper = selectedCampaign.toUpperCase();
-    let searchSubstring = campaignUpper.split("_")[0]; 
-
-    if (campaignUpper.includes("ASSURITI")) searchSubstring = "AAW";
-    if (campaignUpper.includes("QUOTIFII")) searchSubstring = "QTI";
-    if (campaignUpper.includes("XCE_AIR") || campaignUpper.includes("AIR")) searchSubstring = "AIR";
-    if (campaignUpper.includes("VIVINT")) searchSubstring = "VI";
-    if (campaignUpper.includes("TRUGREEN")) searchSubstring = "TRU";
-
-    const filtered = rawTemplates.filter((templateName) => 
-      templateName.toUpperCase().includes(searchSubstring)
-    );
-
-    // Fallback: If nothing matches the rule, show everything fetched for that date
+    const rule = getFilterRule(selectedCampaign);
+    const filtered = rawTemplates.filter((t) => matchTemplate(t, rule));
     return filtered.length > 0 ? filtered : rawTemplates;
   }, [rawTemplates, selectedCampaign]);
 
@@ -123,18 +159,8 @@ export default function Home() {
       const data = (await res.json()) as MailCountsResponse;
 
       if (data.breakdown) {
-        const campaignUpper = selectedCampaign.toUpperCase();
-        let searchSubstring = campaignUpper.split("_")[0];
-
-        if (campaignUpper.includes("ASSURITI")) searchSubstring = "AAW";
-        if (campaignUpper.includes("QUOTIFII")) searchSubstring = "QTI";
-        if (campaignUpper.includes("XCE_AIR") || campaignUpper.includes("AIR")) searchSubstring = "AIR";
-        if (campaignUpper.includes("VIVINT")) searchSubstring = "VI";
-        if (campaignUpper.includes("TRUGREEN")) searchSubstring = "TRU";
-        
-        const matchedItems = data.breakdown.filter((item) => 
-          item.template.toUpperCase().includes(searchSubstring)
-        );
+        const rule = getFilterRule(selectedCampaign);
+        const matchedItems = data.breakdown.filter((item) => matchTemplate(item.template, rule));
         
         if (matchedItems.length > 0) {
           data.breakdown = matchedItems;
@@ -257,7 +283,7 @@ export default function Home() {
 
             <div className="flex flex-col gap-1">
               <label className={`text-xs font-semibold ${isDarkMode ? "text-zinc-400" : "text-slate-500"}`}>Campaign</label>
-              <select value={selectedEt} onChange={(e) => setSelectedCampaign(e.target.value)} className={`h-10 rounded-lg px-3 text-sm outline-none transition duration-500 w-full ${
+              <select value={selectedCampaign} onChange={(e) => setSelectedCampaign(e.target.value)} className={`h-10 rounded-lg px-3 text-sm outline-none transition duration-500 w-full ${
                 isDarkMode ? "bg-slate-950 border-zinc-800 text-white focus:border-emerald-500" : "bg-slate-50 border-slate-200 text-slate-900 focus:border-emerald-500 border"
               }`}>
                 <option value="">Select Campaign</option>
