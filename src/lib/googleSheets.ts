@@ -101,12 +101,11 @@ export async function getTemplatesForCampaign({ isoDate, etNameOrAll }: { isoDat
   const templatesSet = new Set<string>();
   const formattedDate = isoToSheetDate(isoDate);
 
-  // Use a faster, lighter range lookup to prevent timeout/truncation issues during "ALL ET'S"
   for (const tab of targetTabs) {
     try {
       const res = await sheets.spreadsheets.values.get({
         spreadsheetId: SPREADSHEET_ID,
-        range: `'${tab}'!A:B`, // Focuses directly on Date and Template columns
+        range: `'${tab}'!A:B`, 
       });
       const rows = res.data.values ?? [];
       for (let i = 1; i < rows.length; i++) {
@@ -136,7 +135,6 @@ export async function getMailCounts({ isoDate, campaign, etNameOrAll, template }
   const targetCampaign = campaign.trim().toLowerCase();
   const isAllTemplates = template.toUpperCase().startsWith("ALL");
 
-  // Multi-key structural maps separating identities by template and origin sheet account tracking
   const breakdownMap = new Map<string, { template: string; etSource: string; count: number; multiplier: number }>();
   let grandTotalMails = 0;
   let grandTotalCalculatedVolume = 0;
