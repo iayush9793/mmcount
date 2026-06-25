@@ -156,6 +156,7 @@ export default function Home() {
       if (tmpl.includes("JG") && tmpl.includes("XCE")) uniqueCamps.add("JG_XCE");
       if (tmpl.includes("TRU") && tmpl.includes("DB")) uniqueCamps.add("TRUGREEN_DB");
       if (tmpl.includes("AAW")) uniqueCamps.add("ASSURITI_DB");
+       if (tmpl.includes("OTF")) uniqueCamps.add("OTF_AD");
       if (tmpl.includes("QTI")) uniqueCamps.add("QUOTIFII_DB");
     });
 
