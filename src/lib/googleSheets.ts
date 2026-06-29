@@ -40,7 +40,18 @@ function normalizeCell(value: unknown): string {
   return String(value).trim();
 }
 
-// Lighter helper to satisfy build dependencies for old cascading route
+// Generates an array of formatted sheet date strings between start and end boundaries
+function getDatesInRange(startDateIso: string, endDateIso: string): string[] {
+  const dates: string[] = [];
+  const start = new Date(startDateIso);
+  const end = new Date(endDateIso);
+  
+  for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+    dates.push(isoToSheetDate(d.toISOString().slice(0, 10)));
+  }
+  return dates;
+}
+
 export async function listCampaigns(etNameOrAll: string, isoDate?: string): Promise<string[]> {
   if (!SPREADSHEET_ID) return [];
   try {
@@ -92,7 +103,6 @@ export async function listCampaigns(etNameOrAll: string, isoDate?: string): Prom
   }
 }
 
-// Light helper to satisfy build dependencies for old template lookup routes
 export async function getTemplatesForCampaign({ isoDate, etNameOrAll }: { isoDate: string; etNameOrAll: string; campaign: string }): Promise<string[]> {
   if (!SPREADSHEET_ID) return [];
   try {
@@ -126,9 +136,15 @@ export async function getTemplatesForCampaign({ isoDate, etNameOrAll }: { isoDat
   }
 }
 
-// Main Dynamic Batch Sync Matrix Loader 
-export async function getMailCounts({ isoDate, etNameOrAll }: { isoDate: string; campaign: string; etNameOrAll: string; template: string }) {
-  if (!SPREADSHEET_ID || !isoDate) return { totalMails: 0, totalCount: 0, calculatedVolume: 0, hadData: false, breakdown: [] };
+// Updated main calculation matrix mapping loops across all target range dates concurrently
+export async function getMailCounts(options: Record<string, string>) {
+  const startDateIso = options.startDate;
+  const endDateIso = options.endDate;
+  const etNameOrAll = options.etNameOrAll;
+
+  if (!SPREADSHEET_ID || !startDateIso || !endDateIso) {
+    return { totalMails: 0, totalCount: 0, calculatedVolume: 0, hadData: false, breakdown: [] };
+  }
 
   const tabs = await listETTabs();
   const targetTabs = etNameOrAll.toUpperCase().startsWith("ALL") 
@@ -136,7 +152,7 @@ export async function getMailCounts({ isoDate, etNameOrAll }: { isoDate: string;
     : tabs.filter((t) => t.toLowerCase() === etNameOrAll.trim().toLowerCase());
 
   const sheets = await getSheetsClient();
-  const formattedDate = isoToSheetDate(isoDate);
+  const targetedSheetDates = getDatesInRange(startDateIso, endDateIso);
 
   const breakdownMap = new Map<string, { template: string; etSource: string; count: number; multiplier: number }>();
   let grandTotalMails = 0;
@@ -162,7 +178,8 @@ export async function getMailCounts({ isoDate, etNameOrAll }: { isoDate: string;
         const rawDate = normalizeCell(row[0]);
         const currentTemplate = normalizeCell(row[1]);
 
-        if (rawDate !== formattedDate || !currentTemplate) continue;
+        // Evaluate row data if it falls anywhere inside the collected range dates checklist
+        if (!targetedSheetDates.includes(rawDate) || !currentTemplate) continue;
 
         for (let colIdx = 2; colIdx < headerRow.length; colIdx++) {
           const cellValue = normalizeCell(row[colIdx]);
@@ -189,7 +206,7 @@ export async function getMailCounts({ isoDate, etNameOrAll }: { isoDate: string;
         }
       }
     } catch (err) {
-      console.error(`Error processing matrix on tab ${tab}:`, err);
+      console.error(`Error processing range metrics on tab ${tab}:`, err);
     }
   }
 
