@@ -18,7 +18,8 @@ export default function Home() {
   const [isDarkMode, setIsDarkMode] = useState(true);
 
   // Core Stage 1 States (Inputs required to click Process)
-  const [date, setDate] = useState("");
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
   const [ets, setEts] = useState<string[]>([]);
   const [selectedEt, setSelectedEt] = useState("");
 
@@ -27,6 +28,7 @@ export default function Home() {
   const [selectedCampaign, setSelectedCampaign] = useState("");
   const [selectedTemplate, setSelectedTemplate] = useState("");
   const [status, setStatus] = useState<FetchStatus>("idle");
+  const [errorMessage, setErrorMessage] = useState("");
 
   // PWA Application Installation States
   const [deferredPrompt, setDeferredPrompt] = useState<any | null>(null);
@@ -35,7 +37,8 @@ export default function Home() {
   // Initial Boot Loader
   useEffect(() => {
     const iso = new Date().toISOString().slice(0, 10);
-    setDate(iso);
+    setStartDate(iso);
+    setEndDate(iso);
     
     fetch("/api/ets")
       .then((res) => res.json())
@@ -61,7 +64,7 @@ export default function Home() {
     };
   }, []);
 
-  // Comprehensive centralized mapping rules engine configuration
+  // Centralized mapping rules engine configuration
   const getFilterRule = (campaignName: string): FilterRule => {
     const cleanCamp = campaignName.toUpperCase().trim();
     
@@ -86,8 +89,8 @@ export default function Home() {
     if (cleanCamp === "VIVINT_AD" || cleanCamp === "VIVINT") return { includes: ["VI"], excludes: ["XCE", "XC", "ES", "GZ", "DB"] };
     if (cleanCamp === "TRUGREEN_AD") return { includes: ["TRU"], excludes: ["XCE", "XC", "ES", "GZ", "DB"] };
     if (cleanCamp.includes("IAI_GZ")) return { includes: ["IAI"], excludes: [] };
-    if (cleanCamp === "RBA_XCE") return { includes: ["RBA", "XCE"], excludes: ["ES", "GZ", "DB"] };
-    if (cleanCamp === "JG_XCE") return { includes: ["JG", "XCE"], excludes: ["ES", "GZ", "DB"] };
+    if (cleanCamp === "RBA_XCE") return { includes: ["RBA", "XCE"], excludes: ["XC", "ES", "GZ", "DB"] };
+    if (cleanCamp === "JG_XCE") return { includes: ["JG", "XCE"], excludes: ["XC", "ES", "GZ", "DB"] };
     if (cleanCamp === "TRUGREEN_DB") return { includes: ["TRU", "DB"], excludes: ["XC", "ES", "GZ", "XCE"] };
     if (cleanCamp === "ASSURITI_DB") return { includes: ["AAW"], excludes: [] };
     if (cleanCamp === "QUOTIFII_DB") return { includes: ["QTI"], excludes: [] };
@@ -102,9 +105,26 @@ export default function Home() {
     return matchesIncludes && !triggersExcludes;
   };
 
-  // STEP 1 HEAVY OPERATION: Fetches ALL data and templates for the selected Date + ET
+  // STEP 1 OPERATION: Validate range limits and parse multi-date queries from sheets
   async function handleProcessDataMatrix() {
-    if (!date || !selectedEt) return;
+    if (!startDate || !endDate || !selectedEt) return;
+    setErrorMessage("");
+
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    const diffTime = Math.abs(end.getTime() - start.getTime());
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+
+    if (end < start) {
+      setErrorMessage("End Date cannot be earlier than Start Date.");
+      return;
+    }
+
+    if (diffDays > 7) {
+      setErrorMessage(`Selected range is ${diffDays} days. Maximum allowed range is 7 days.`);
+      return;
+    }
+
     setStatus("loading");
     setAllFetchedData(null);
     setSelectedCampaign("");
@@ -112,8 +132,8 @@ export default function Home() {
     
     try {
       const lookupEt = selectedEt.toUpperCase().startsWith("ALL") ? "ALL" : selectedEt;
-      // We pass template=ALL and campaign=ALL to download the comprehensive tab dataset in one step
-      const res = await fetch(`/api/mailCounts?date=${date}&campaign=ALL&et=${encodeURIComponent(lookupEt)}&template=ALL`);
+      // Pass both start and end date parameters to api route layer
+      const res = await fetch(`/api/mailCounts?startDate=${startDate}&endDate=${endDate}&campaign=ALL&et=${encodeURIComponent(lookupEt)}&template=ALL`);
       const data = (await res.json()) as MailCountsResponse;
       
       setAllFetchedData(data.breakdown ?? []);
@@ -123,12 +143,11 @@ export default function Home() {
     }
   }
 
-  // Extract available unique campaign codes from the downloaded data structure
+  // Extract unique campaign options completely client-side
   const dynamicCampaignOptions = useMemo(() => {
     if (!allFetchedData) return [];
     const uniqueCamps = new Set<string>();
     
-    // Reverse trace matching codes to establish what campaign dropdown keys should exist
     allFetchedData.forEach((item) => {
       const tmpl = item.template.toUpperCase();
       if (tmpl.includes("RGR")) uniqueCamps.add("RGR");
@@ -156,14 +175,13 @@ export default function Home() {
       if (tmpl.includes("JG") && tmpl.includes("XCE")) uniqueCamps.add("JG_XCE");
       if (tmpl.includes("TRU") && tmpl.includes("DB")) uniqueCamps.add("TRUGREEN_DB");
       if (tmpl.includes("AAW")) uniqueCamps.add("ASSURITI_DB");
-       if (tmpl.includes("OTF")) uniqueCamps.add("OTF_AD");
       if (tmpl.includes("QTI")) uniqueCamps.add("QUOTIFII_DB");
     });
 
     return Array.from(uniqueCamps).sort((a, b) => a.localeCompare(b));
   }, [allFetchedData]);
 
-  // Extract template options based on the chosen Campaign filter rule completely client-side
+  // Extract template dropdown configurations client-side
   const dynamicTemplateOptions = useMemo(() => {
     if (!allFetchedData || !selectedCampaign) return [];
     const rule = getFilterRule(selectedCampaign);
@@ -174,7 +192,7 @@ export default function Home() {
     return Array.from(new Set(options)).sort((a, b) => a.localeCompare(b));
   }, [allFetchedData, selectedCampaign]);
 
-  // Compute final table breakdown records based on active dropdown selections
+  // Compute metric sums from filtered active state criteria 
   const finalCalculatedOutput = useMemo(() => {
     if (!allFetchedData || !selectedCampaign || !selectedTemplate) return null;
     
@@ -207,7 +225,7 @@ export default function Home() {
 
   return (
     <>
-      {/* INITIAL PRELOADER */}
+      {/* INITIAL APPLICATION LAUNCH LOADER OVERLAY */}
       {isAppLoading && (
         <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-slate-950">
           <div className="flex flex-col items-center gap-6">
@@ -222,7 +240,7 @@ export default function Home() {
         </div>
       )}
 
-      {/* MATRIX CALCULATING PROGRESS SPIN LAYER */}
+      {/* COMPUTING BATCH PROCESSING WORKSPACE SYNC BLOCK OVERLAY */}
       {status === "loading" && (
         <div className="fixed inset-0 z-40 flex flex-col items-center justify-center bg-slate-950/80 backdrop-blur-md">
           <div className="flex flex-col items-center gap-5 bg-slate-900 border border-white/5 p-8 rounded-2xl shadow-2xl max-w-sm w-full mx-4 text-center">
@@ -231,9 +249,9 @@ export default function Home() {
               <div className="absolute inset-0 rounded-full border-4 border-t-emerald-500 border-r-emerald-500 animate-spin" />
             </div>
             <div className="flex flex-col gap-1.5">
-              <h3 className="text-sm font-bold text-white tracking-wide uppercase">Processing Sheet Matrix</h3>
+              <h3 className="text-sm font-bold text-white tracking-wide uppercase">Processing Date Range</h3>
               <p className="text-xs text-zinc-400 leading-relaxed">
-                Downloading all layout template ledgers for {selectedEt === "ALL" ? "All Accounts" : selectedEt}...
+                Compiling multi-date ledgers for {selectedEt === "ALL" ? "All Accounts" : selectedEt}...
               </p>
             </div>
           </div>
@@ -254,7 +272,7 @@ export default function Home() {
               </div>
               <div className={`sm:border-l sm:py-1 sm:pl-4 ${isDarkMode ? "border-white/10 text-zinc-300" : "border-slate-200 text-slate-600"}`}>
                 <p className="text-sm max-w-md font-medium leading-relaxed">
-                  Select a targeted parameter matrix block to process and analyze dynamic stack counts.
+                  Select a targeted date range matrix block (max 7 days) to calculate dynamic counts.
                 </p>
               </div>
             </div>
@@ -266,7 +284,7 @@ export default function Home() {
                   isDarkMode ? "bg-zinc-800 border border-zinc-700 text-amber-400 shadow-amber-500/10" : "bg-white border border-slate-200 text-slate-400 shadow-slate-900/5"
                 }`}>
                   {isDarkMode ? (
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4 text-amber-400 shadow-amber-500/10">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4 text-amber-400">
                       <path d="M10 2a.75.75 0 01.75.75v1.5a.75.75 0 01-1.5 0v-1.5A.75.75 0 0110 2zM10 15a.75.75 0 01.75.75v1.5a.75.75 0 01-1.5 0v-1.5A.75.75 0 0110 15zM4 10a.75.75 0 01.75-.75h1.5a.75.75 0 010 1.5h-1.5A.75.75 0 014 10zM14 10a.75.75 0 01.75-.75h1.5a.75.75 0 010 1.5h-1.5a.75.75 0 01-.75-.75zM5.636 5.636a.75.75 0 011.06 0l1.06 1.06a.75.75 0 11-1.06 1.06l-1.06-1.06a.75.75 0 010-1.06zM12.243 12.243a.75.75 0 011.06 0l1.06 1.06a.75.75 0 11-1.06 1.06l-1.06-1.06a.75.75 0 010-1.06zM5.636 14.364a.75.75 0 010-1.06l1.06-1.06a.75.75 0 111.06 1.06l-1.06 1.06a.75.75 0 01-1.06 0zM12.243 6.697a.75.75 0 010-1.06l1.06-1.06a.75.75 0 111.06 1.06l-1.06 1.06a.75.75 0 01-1.06 0zM10 6a4 4 0 100 8 4 4 0 000-8z" />
                     </svg>
                   ) : (
@@ -279,38 +297,53 @@ export default function Home() {
             </div>
           </header>
 
-          {/* Primary Trigger Controls Form Panel */}
-          <section className={`rounded-xl p-4 sm:p-6 flex flex-col md:flex-row items-end gap-4 border shadow-xl transition-colors duration-500 ${
+          {/* Core Controls Block: Start/End Pickers alongside Account list */}
+          <section className={`rounded-xl p-4 sm:p-6 flex flex-col gap-4 border shadow-xl transition-colors duration-500 ${
             isDarkMode ? "bg-slate-900 border-white/5" : "bg-white border-slate-200"
           }`}>
-            <div className="flex flex-col gap-1 w-full md:w-1/3">
-              <label className={`text-xs font-semibold ${isDarkMode ? "text-zinc-400" : "text-slate-500"}`}>Select Date</label>
-              <input type="date" value={date} onChange={(e) => setDate(e.target.value)} className={`h-11 rounded-lg px-3 text-sm outline-none transition duration-500 w-full ${
-                isDarkMode ? "bg-slate-950 border-zinc-800 text-white focus:border-emerald-500" : "bg-slate-50 border-slate-200 text-slate-900 focus:border-emerald-500 border"
-              }`} />
+            <div className="grid gap-4 grid-cols-1 sm:grid-cols-3 items-end">
+              <div className="flex flex-col gap-1 w-full">
+                <label className={`text-xs font-semibold ${isDarkMode ? "text-zinc-400" : "text-slate-500"}`}>Start Date</label>
+                <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className={`h-11 rounded-lg px-3 text-sm outline-none transition duration-500 w-full ${
+                  isDarkMode ? "bg-slate-950 border-zinc-800 text-white focus:border-emerald-500" : "bg-slate-50 border-slate-200 text-slate-900 focus:border-emerald-500 border"
+                }`} />
+              </div>
+
+              <div className="flex flex-col gap-1 w-full">
+                <label className={`text-xs font-semibold ${isDarkMode ? "text-zinc-400" : "text-slate-500"}`}>End Date</label>
+                <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className={`h-11 rounded-lg px-3 text-sm outline-none transition duration-500 w-full ${
+                  isDarkMode ? "bg-slate-950 border-zinc-800 text-white focus:border-emerald-500" : "bg-slate-50 border-slate-200 text-slate-900 focus:border-emerald-500 border"
+                }`} />
+              </div>
+
+              <div className="flex flex-col gap-1 w-full">
+                <label className={`text-xs font-semibold ${isDarkMode ? "text-zinc-400" : "text-slate-500"}`}>Select Origin Account (ET)</label>
+                <select value={selectedEt} onChange={(e) => setSelectedEt(e.target.value)} className={`h-11 rounded-lg px-3 text-sm outline-none transition duration-500 w-full ${
+                  isDarkMode ? "bg-slate-950 border-zinc-800 text-white focus:border-emerald-500" : "bg-slate-50 border-slate-200 text-slate-900 focus:border-emerald-500 border"
+                }`}>
+                  <option value="">Select ET Account</option>
+                  <option value="ALL">ALL ET'S (Combine All Sheets)</option>
+                  {ets.map((e) => <option key={e} value={e}>{e}</option>)}
+                </select>
+              </div>
             </div>
 
-            <div className="flex flex-col gap-1 w-full md:w-1/3">
-              <label className={`text-xs font-semibold ${isDarkMode ? "text-zinc-400" : "text-slate-500"}`}>Select Origin Account (ET)</label>
-              <select value={selectedEt} onChange={(e) => setSelectedEt(e.target.value)} className={`h-11 rounded-lg px-3 text-sm outline-none transition duration-500 w-full ${
-                isDarkMode ? "bg-slate-950 border-zinc-800 text-white focus:border-emerald-500" : "bg-slate-50 border-slate-200 text-slate-900 focus:border-emerald-500 border"
-              }`}>
-                <option value="">Select ET Account</option>
-                <option value="ALL">ALL ET'S (Combine All Sheets)</option>
-                {ets.map((e) => <option key={e} value={e}>{e}</option>)}
-              </select>
-            </div>
+            {errorMessage && (
+              <p className="text-xs font-semibold text-rose-500 tracking-wide bg-rose-500/5 border border-rose-500/10 p-2.5 rounded-lg">
+                ⚠️ {errorMessage}
+              </p>
+            )}
 
             <button 
               onClick={handleProcessDataMatrix}
-              disabled={!date || !selectedEt || status === "loading"}
-              className="w-full md:w-1/3 h-11 rounded-lg bg-emerald-500 hover:bg-emerald-400 font-bold text-xs uppercase tracking-wider text-white disabled:opacity-40 shadow-lg shadow-emerald-500/10 cursor-pointer transition active:scale-95 duration-150"
+              disabled={!startDate || !endDate || !selectedEt || status === "loading"}
+              className="w-full h-11 rounded-lg bg-emerald-500 hover:bg-emerald-400 font-bold text-xs uppercase tracking-wider text-white disabled:opacity-40 shadow-lg shadow-emerald-500/10 cursor-pointer transition active:scale-95 duration-150"
             >
               Process Data Matrix
             </button>
           </section>
 
-          {/* SECONDARY SUB-FILTERS LAYER: Fades in only AFTER data map successfully registers */}
+          {/* SECONDARY CASCADING LAYER: Appears only AFTER range payload settles */}
           {allFetchedData && (
             <section className={`rounded-xl p-4 sm:p-6 grid gap-4 sm:grid-cols-2 border shadow-xl transition-all duration-500 animate-fadeIn ${
               isDarkMode ? "bg-slate-900 border-white/5" : "bg-white border-slate-200"
@@ -338,7 +371,7 @@ export default function Home() {
             </section>
           )}
 
-          {/* METRICS DISPLAY MODULE */}
+          {/* DATA PRESENTATION MATRIX LAYER */}
           {finalCalculatedOutput && (
             <section className={`rounded-xl p-4 sm:p-6 border flex flex-col gap-6 shadow-xl transition-all duration-500 animate-fadeIn ${
               isDarkMode ? "bg-slate-900 border-white/5" : "bg-white border-slate-200"
@@ -399,7 +432,7 @@ export default function Home() {
             </section>
           )}
 
-          {/* PWA CTA App Banner */}
+          {/* PWA App Banner */}
           {isPwaSupported && deferredPrompt && (
             <div className={`mt-6 rounded-2xl p-4 border flex flex-col sm:flex-row items-center justify-between gap-4 shadow-xl transition-all duration-500 ${
               isDarkMode 
