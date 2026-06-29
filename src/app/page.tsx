@@ -4,7 +4,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 
-type BreakdownItem = { template: string; etSource: string; count: number; multiplier: number };
+type BreakdownItem = { template: string; campaignSrc: string; etSource: string; count: number; multiplier: number };
 type MailCountsResponse = { totalMails: number; totalCount: number; calculatedVolume: number; hadData: boolean; breakdown?: BreakdownItem[] };
 type FetchStatus = "idle" | "loading" | "success" | "error";
 
@@ -17,13 +17,13 @@ export default function Home() {
   const [isAppLoading, setIsAppLoading] = useState(true);
   const [isDarkMode, setIsDarkMode] = useState(true);
 
-  // Core Stage 1 States (Inputs required to click Process)
+  // Core Stage 1 States
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [ets, setEts] = useState<string[]>([]);
   const [selectedEt, setSelectedEt] = useState("");
 
-  // Core Stage 2 States (Available only AFTER running calculation matrix)
+  // Core Stage 2 States
   const [allFetchedData, setAllFetchedData] = useState<BreakdownItem[] | null>(null);
   const [selectedCampaign, setSelectedCampaign] = useState("");
   const [selectedTemplate, setSelectedTemplate] = useState("");
@@ -34,7 +34,6 @@ export default function Home() {
   const [deferredPrompt, setDeferredPrompt] = useState<any | null>(null);
   const [isPwaSupported, setIsPwaSupported] = useState(false);
 
-  // Initial Boot Loader
   useEffect(() => {
     const iso = new Date().toISOString().slice(0, 10);
     setStartDate(iso);
@@ -64,7 +63,6 @@ export default function Home() {
     };
   }, []);
 
-  // Centralized mapping rules engine configuration
   const getFilterRule = (campaignName: string): FilterRule => {
     const cleanCamp = campaignName.toUpperCase().trim();
     
@@ -105,7 +103,6 @@ export default function Home() {
     return matchesIncludes && !triggersExcludes;
   };
 
-  // STEP 1 OPERATION: Validate range limits and parse multi-date queries from sheets
   async function handleProcessDataMatrix() {
     if (!startDate || !endDate || !selectedEt) return;
     setErrorMessage("");
@@ -132,8 +129,7 @@ export default function Home() {
     
     try {
       const lookupEt = selectedEt.toUpperCase().startsWith("ALL") ? "ALL" : selectedEt;
-      // Pass both start and end date parameters to api route layer
-      const res = await fetch(`/api/mailCounts?startDate=${startDate}&endDate=${endDate}&campaign=ALL&et=${encodeURIComponent(lookupEt)}&template=ALL`);
+      const res = await fetch(`/api/mailCounts?startDate=${startDate}&endDate=${endDate}&et=${encodeURIComponent(lookupEt)}`);
       const data = (await res.json()) as MailCountsResponse;
       
       setAllFetchedData(data.breakdown ?? []);
@@ -143,61 +139,31 @@ export default function Home() {
     }
   }
 
-  // Extract unique campaign options completely client-side
+  // Uses the preserved 'campaignSrc' field directly from the sheet columns
   const dynamicCampaignOptions = useMemo(() => {
     if (!allFetchedData) return [];
     const uniqueCamps = new Set<string>();
-    
     allFetchedData.forEach((item) => {
-      const tmpl = item.template.toUpperCase();
-      if (tmpl.includes("RGR")) uniqueCamps.add("RGR");
-      if (tmpl.includes("ICO")) uniqueCamps.add("ICO");
-      if (tmpl.includes("AHS") && !tmpl.includes("DB")) uniqueCamps.add("AHS_AD");
-      if (tmpl.includes("SHW") && tmpl.includes("ES")) uniqueCamps.add("SHW_ES");
-      if (tmpl.includes("AIR")) uniqueCamps.add("XCE_AIR");
-      if (tmpl.includes("FIR")) uniqueCamps.add("FIR_XC");
-      if (tmpl.includes("HEC")) uniqueCamps.add("HEC_AD");
-      if (tmpl.includes("IA") && !tmpl.includes("IAI")) uniqueCamps.add("INSURIFY_GZ");
-      if (tmpl.includes("LR")) uniqueCamps.add("LR_GZ");
-      if (tmpl.includes("EVL")) uniqueCamps.add("E-VETERANS_DB (COM)");
-      if (tmpl.includes("FGLO")) uniqueCamps.add("FGLO_DB");
-      if (tmpl.includes("ADT") && !tmpl.includes("DB")) uniqueCamps.add("ADT_AD");
-      if (tmpl.includes("RHF")) uniqueCamps.add("RYH FLOORING_AD");
-      if (tmpl.includes("JG") && !tmpl.includes("XCE")) uniqueCamps.add("JG_AD");
-      if (tmpl.includes("ZBH") && tmpl.includes("DB")) uniqueCamps.add("ZBH_DB");
-      if (tmpl.includes("CH")) uniqueCamps.add("CH_XC");
-      if (tmpl.includes("LBH") && tmpl.includes("DB")) uniqueCamps.add("LBH_DB");
-      if (tmpl.includes("NDR") && tmpl.includes("GZ")) uniqueCamps.add("NDR_GZ");
-      if (tmpl.includes("VI")) uniqueCamps.add("VIVINT_AD");
-      if (tmpl.includes("TRU") && !tmpl.includes("DB")) uniqueCamps.add("TRUGREEN_AD");
-      if (tmpl.includes("IAI")) uniqueCamps.add("IAI_GZ (COM)");
-      if (tmpl.includes("RBA") && tmpl.includes("XCE")) uniqueCamps.add("RBA_XCE");
-      if (tmpl.includes("JG") && tmpl.includes("XCE")) uniqueCamps.add("JG_XCE");
-      if (tmpl.includes("TRU") && tmpl.includes("DB")) uniqueCamps.add("TRUGREEN_DB");
-      if (tmpl.includes("AAW")) uniqueCamps.add("ASSURITI_DB");
-      if (tmpl.includes("QTI")) uniqueCamps.add("QUOTIFII_DB");
+      if (item.campaignSrc) uniqueCamps.add(item.campaignSrc);
     });
-
     return Array.from(uniqueCamps).sort((a, b) => a.localeCompare(b));
   }, [allFetchedData]);
 
-  // Extract template dropdown configurations client-side
   const dynamicTemplateOptions = useMemo(() => {
     if (!allFetchedData || !selectedCampaign) return [];
     const rule = getFilterRule(selectedCampaign);
     const options = allFetchedData
-      .filter((item) => matchTemplate(item.template, rule))
+      .filter((item) => item.campaignSrc === selectedCampaign && matchTemplate(item.template, rule))
       .map((item) => item.template);
       
     return Array.from(new Set(options)).sort((a, b) => a.localeCompare(b));
   }, [allFetchedData, selectedCampaign]);
 
-  // Compute metric sums from filtered active state criteria 
   const finalCalculatedOutput = useMemo(() => {
     if (!allFetchedData || !selectedCampaign || !selectedTemplate) return null;
     
     const rule = getFilterRule(selectedCampaign);
-    let rows = allFetchedData.filter((item) => matchTemplate(item.template, rule));
+    let rows = allFetchedData.filter((item) => item.campaignSrc === selectedCampaign && matchTemplate(item.template, rule));
     
     if (selectedTemplate !== "ALL") {
       rows = rows.filter((item) => item.template.toLowerCase() === selectedTemplate.toLowerCase());
@@ -215,17 +181,9 @@ export default function Home() {
     };
   }, [allFetchedData, selectedCampaign, selectedTemplate]);
 
-  async function handleAppDownloadClick() {
-    if (!deferredPrompt) return;
-    deferredPrompt.prompt();
-    await deferredPrompt.userChoice;
-    setDeferredPrompt(null);
-    setIsPwaSupported(false);
-  }
-
   return (
     <>
-      {/* INITIAL APPLICATION LAUNCH LOADER OVERLAY */}
+      {/* INITIAL BOOT LOADER */}
       {isAppLoading && (
         <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-slate-950">
           <div className="flex flex-col items-center gap-6">
@@ -240,7 +198,7 @@ export default function Home() {
         </div>
       )}
 
-      {/* COMPUTING BATCH PROCESSING WORKSPACE SYNC BLOCK OVERLAY */}
+      {/* MATRIX CALCULATING PROGRESS SPIN LAYER */}
       {status === "loading" && (
         <div className="fixed inset-0 z-40 flex flex-col items-center justify-center bg-slate-950/80 backdrop-blur-md">
           <div className="flex flex-col items-center gap-5 bg-slate-900 border border-white/5 p-8 rounded-2xl shadow-2xl max-w-sm w-full mx-4 text-center">
@@ -249,9 +207,9 @@ export default function Home() {
               <div className="absolute inset-0 rounded-full border-4 border-t-emerald-500 border-r-emerald-500 animate-spin" />
             </div>
             <div className="flex flex-col gap-1.5">
-              <h3 className="text-sm font-bold text-white tracking-wide uppercase">Processing Date Range</h3>
+              <h3 className="text-sm font-bold text-white tracking-wide uppercase">Processing Sheet Matrix</h3>
               <p className="text-xs text-zinc-400 leading-relaxed">
-                Compiling multi-date ledgers for {selectedEt === "ALL" ? "All Accounts" : selectedEt}...
+                Downloading all layout template ledgers for {selectedEt === "ALL" ? "All Accounts" : selectedEt}...
               </p>
             </div>
           </div>
@@ -277,7 +235,7 @@ export default function Home() {
               </div>
             </div>
 
-            <div className="flex items-center gap-4 self-end sm:self-auto">
+            <div className="flex items-center gap-4 self-end sm:set-auto">
               <button onClick={() => setIsDarkMode(!isDarkMode)} title="Toggle Theme" className="group relative flex flex-col items-center focus:outline-none">
                 <div className={`w-0.5 h-6 transition-colors duration-500 ${isDarkMode ? "bg-zinc-700 group-hover:bg-emerald-400" : "bg-slate-300 group-hover:bg-emerald-500"}`} />
                 <div className={`w-7 h-7 rounded-full flex items-center justify-center shadow-md transition-all duration-500 transform group-active:scale-95 ${
@@ -297,28 +255,27 @@ export default function Home() {
             </div>
           </header>
 
-          {/* Core Controls Block: Start/End Pickers alongside Account list */}
           <section className={`rounded-xl p-4 sm:p-6 flex flex-col gap-4 border shadow-xl transition-colors duration-500 ${
             isDarkMode ? "bg-slate-900 border-white/5" : "bg-white border-slate-200"
           }`}>
             <div className="grid gap-4 grid-cols-1 sm:grid-cols-3 items-end">
               <div className="flex flex-col gap-1 w-full">
                 <label className={`text-xs font-semibold ${isDarkMode ? "text-zinc-400" : "text-slate-500"}`}>Start Date</label>
-                <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className={`h-11 rounded-lg px-3 text-sm outline-none transition duration-500 w-full ${
+                <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className={`h-11 rounded-lg px-3 text-sm outline-none w-full ${
                   isDarkMode ? "bg-slate-950 border-zinc-800 text-white focus:border-emerald-500" : "bg-slate-50 border-slate-200 text-slate-900 focus:border-emerald-500 border"
                 }`} />
               </div>
 
               <div className="flex flex-col gap-1 w-full">
                 <label className={`text-xs font-semibold ${isDarkMode ? "text-zinc-400" : "text-slate-500"}`}>End Date</label>
-                <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className={`h-11 rounded-lg px-3 text-sm outline-none transition duration-500 w-full ${
+                <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className={`h-11 rounded-lg px-3 text-sm outline-none w-full ${
                   isDarkMode ? "bg-slate-950 border-zinc-800 text-white focus:border-emerald-500" : "bg-slate-50 border-slate-200 text-slate-900 focus:border-emerald-500 border"
                 }`} />
               </div>
 
               <div className="flex flex-col gap-1 w-full">
                 <label className={`text-xs font-semibold ${isDarkMode ? "text-zinc-400" : "text-slate-500"}`}>Select Origin Account (ET)</label>
-                <select value={selectedEt} onChange={(e) => setSelectedEt(e.target.value)} className={`h-11 rounded-lg px-3 text-sm outline-none transition duration-500 w-full ${
+                <select value={selectedEt} onChange={(e) => setSelectedEt(e.target.value)} className={`h-11 rounded-lg px-3 text-sm outline-none w-full ${
                   isDarkMode ? "bg-slate-950 border-zinc-800 text-white focus:border-emerald-500" : "bg-slate-50 border-slate-200 text-slate-900 focus:border-emerald-500 border"
                 }`}>
                   <option value="">Select ET Account</option>
@@ -343,14 +300,13 @@ export default function Home() {
             </button>
           </section>
 
-          {/* SECONDARY CASCADING LAYER: Appears only AFTER range payload settles */}
           {allFetchedData && (
             <section className={`rounded-xl p-4 sm:p-6 grid gap-4 sm:grid-cols-2 border shadow-xl transition-all duration-500 animate-fadeIn ${
               isDarkMode ? "bg-slate-900 border-white/5" : "bg-white border-slate-200"
             }`}>
               <div className="flex flex-col gap-1">
                 <label className={`text-xs font-semibold ${isDarkMode ? "text-zinc-400" : "text-slate-500"}`}>Select Campaign Group</label>
-                <select value={selectedCampaign} onChange={(e) => { setSelectedCampaign(e.target.value); setSelectedTemplate(""); }} className={`h-11 rounded-lg px-3 text-sm outline-none transition duration-500 w-full ${
+                <select value={selectedCampaign} onChange={(e) => { setSelectedCampaign(e.target.value); setSelectedTemplate(""); }} className={`h-11 rounded-lg px-3 text-sm outline-none w-full ${
                   isDarkMode ? "bg-slate-950 border-zinc-800 text-white focus:border-emerald-500" : "bg-slate-50 border-slate-200 text-slate-900 focus:border-emerald-500 border"
                 }`}>
                   <option value="">Select Campaign</option>
@@ -371,7 +327,6 @@ export default function Home() {
             </section>
           )}
 
-          {/* DATA PRESENTATION MATRIX LAYER */}
           {finalCalculatedOutput && (
             <section className={`rounded-xl p-4 sm:p-6 border flex flex-col gap-6 shadow-xl transition-all duration-500 animate-fadeIn ${
               isDarkMode ? "bg-slate-900 border-white/5" : "bg-white border-slate-200"
@@ -431,56 +386,7 @@ export default function Home() {
               )}
             </section>
           )}
-
-          {/* PWA App Banner */}
-          {isPwaSupported && deferredPrompt && (
-            <div className={`mt-6 rounded-2xl p-4 border flex flex-col sm:flex-row items-center justify-between gap-4 shadow-xl transition-all duration-500 ${
-              isDarkMode 
-                ? "bg-slate-900 border-emerald-500/30 shadow-emerald-500/5" 
-                : "bg-white border-emerald-500/20 shadow-slate-900/5"
-            }`}>
-              <div className="flex items-center gap-3 flex-col sm:flex-row text-center sm:text-left">
-                <div className="p-2 rounded-xl bg-emerald-500/10 text-emerald-400 shrink-0">
-                  <svg xmlns="http://www.w3.org/2000/xl" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-6 h-6">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 1.5H8.25A2.25 2.25 0 006 3.75v16.5a2.25 2.25 0 002.25 2.25h7.5A2.25 2.25 0 0018 20.25V3.75a2.25 2.25 0 00-2.25-2.25H13.5m-3 0V3h3V1.5m-3 0h3m-6 15h9.75M9 19.5h6" />
-                  </svg>
-                </div>
-                <div>
-                  <h4 className={`text-sm font-bold tracking-wide ${isDarkMode ? "text-white" : "text-slate-900"}`}>
-                    Mobile App Available
-                  </h4>
-                  <p className={`text-xs mt-0.5 ${isDarkMode ? "text-zinc-400" : "text-slate-500"}`}>
-                    Install this report workspace directly onto your device home screen for quick lookups.
-                  </p>
-                </div>
-              </div>
-              <button
-                onClick={handleAppDownloadClick}
-                className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-white font-bold text-xs tracking-wider uppercase transition-all duration-300 transform active:scale-95 shadow-md shadow-emerald-500/20 shrink-0"
-              >
-                Download App
-              </button>
-            </div>
-          )}
         </div>
-
-        <footer className={`mt-12 border-t pt-4 text-center text-xs transition-colors duration-500 w-full max-w-5xl mx-auto tracking-wide ${
-          isDarkMode ? "border-white/10 text-zinc-500" : "border-slate-200 text-slate-400"
-        }`}>
-          © All Rights Reserved. Designed and Developed by{" "}
-          <a 
-            href="https://www.linkedin.com/in/ayush-srivastava-3240961b5?utm_source=share_via&utm_content=profile&utm_medium=member_android" 
-            target="_blank" 
-            rel="noopener noreferrer" 
-            className={`font-medium transition underline underline-offset-4 ${
-              isDarkMode 
-                ? "text-zinc-400 hover:text-emerald-400 decoration-zinc-600 hover:decoration-emerald-400" 
-                : "text-slate-600 hover:text-emerald-500 decoration-slate-300 hover:decoration-emerald-500"
-            }`}
-          >
-            Ayush Srivastava, Full Stack Developer.
-          </a>
-        </footer>
       </div>
     </>
   );
