@@ -1,21 +1,16 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { getMailCounts } from "@/lib/googleSheets";
 
-export async function GET(request: Request) {
+export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
-  const date = searchParams.get("date") ?? "";
-  const campaign = searchParams.get("campaign") ?? "";
+  const startDate = searchParams.get("startDate") ?? "";
+  const endDate = searchParams.get("endDate") ?? "";
   const et = searchParams.get("et") ?? "";
-  const template = searchParams.get("template") ?? "ALL TEMPLATES";
-
-  if (!date || !campaign || !et) {
-    return NextResponse.json({ error: "Missing parameters" }, { status: 400 });
-  }
 
   try {
-    const result = await getMailCounts({ isoDate: date, campaign, etNameOrAll: et, template });
-    return NextResponse.json(result, { status: 200 });
+    const data = await getMailCounts({ startDate, endDate, etNameOrAll: et });
+    return NextResponse.json(data);
   } catch (error) {
-    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+    return NextResponse.json({ error: "Failed to process data matrix" }, { status: 500 });
   }
 }
