@@ -34,6 +34,9 @@ export default function Home() {
   const [status, setStatus] = useState<FetchStatus>("idle");
   const [errorMessage, setErrorMessage] = useState("");
 
+  // Interactive Popup Modal State
+  const [selectedCardAccount, setSelectedCardAccount] = useState<string | null>(null);
+
   // PWA States
   const [deferredPrompt, setDeferredPrompt] = useState<any | null>(null);
   const [isPwaSupported, setIsPwaSupported] = useState(false);
@@ -46,14 +49,11 @@ export default function Home() {
     
     setIsDashboardLoading(true);
     
-    // Step A: Load account list tabs first
     fetch("/api/ets")
       .then((res) => res.json())
       .then((data) => {
         const structuralTabs = data.ets ?? [];
         setEts(structuralTabs);
-        
-        // Step B: Fetch current day's live matrix immediately for main dashboard summaries
         return fetch(`/api/mailCounts?startDate=${iso}&endDate=${iso}&et=ALL`);
       })
       .then((res) => res ? res.json() : null)
@@ -121,7 +121,6 @@ export default function Home() {
     return matchesIncludes && !triggersExcludes;
   };
 
-  // Top 5 Campaigns Calculation Engine
   const topFiveCampaignsSummary = useMemo(() => {
     if (!dashboardData) return [];
     const aggregated = new Map<string, number>();
@@ -135,7 +134,6 @@ export default function Home() {
       .slice(0, 5);
   }, [dashboardData]);
 
-  // Main Dashboard Account Wise Section Split
   const dashboardAccountWiseMetrics = useMemo(() => {
     if (!dashboardData) return [];
     const accountsMap = new Map<string, { totalMails: number; calculatedVolume: number }>();
@@ -149,7 +147,6 @@ export default function Home() {
     return Array.from(accountsMap.entries()).map(([account, meta]) => ({ account, ...meta }));
   }, [dashboardData]);
 
-  // Main Dashboard Campaign Wise Section Split
   const dashboardCampaignWiseMetrics = useMemo(() => {
     if (!dashboardData) return [];
     const campaignsMap = new Map<string, { totalMails: number; calculatedVolume: number }>();
@@ -163,7 +160,6 @@ export default function Home() {
     return Array.from(campaignsMap.entries()).map(([campaign, meta]) => ({ campaign, ...meta }));
   }, [dashboardData]);
 
-  // Handle Explicit Custom Range Submissions
   async function handleProcessDataMatrix() {
     if (!startDate || !endDate || !selectedEt) return;
     setErrorMessage("");
@@ -187,6 +183,7 @@ export default function Home() {
     setAllFetchedData(null);
     setSelectedCampaign("");
     setSelectedTemplate("");
+    setSelectedCardAccount(null);
     
     try {
       const lookupEt = selectedEt.toUpperCase().startsWith("ALL") ? "ALL" : selectedEt;
@@ -200,7 +197,6 @@ export default function Home() {
     }
   }
 
-  // Client Side Secondary Dropdown Select Builders
   const dynamicCampaignOptions = useMemo(() => {
     if (!allFetchedData) return [];
     const uniqueCamps = new Set<string>();
@@ -220,28 +216,36 @@ export default function Home() {
     return Array.from(new Set(options)).sort((a, b) => a.localeCompare(b));
   }, [allFetchedData, selectedCampaign]);
 
-  // Aggregated structural grouping for the active Custom selection results inside separate cards
-  const processedAccountWiseCards = useMemo(() => {
+  // Filters the complete matching rows base for the selection card layout matrix
+  const currentFilteredBaseRows = useMemo(() => {
     if (!allFetchedData || !selectedCampaign || !selectedTemplate) return [];
-    
     const rule = getFilterRule(selectedCampaign);
     let rows = allFetchedData.filter((item) => item.campaignSrc === selectedCampaign && matchTemplate(item.template, rule));
     
     if (selectedTemplate !== "ALL") {
       rows = rows.filter((item) => item.template.toLowerCase() === selectedTemplate.toLowerCase());
     }
+    return rows;
+  }, [allFetchedData, selectedCampaign, selectedTemplate]);
 
+  // Aggregated splits for rendering individual card values overview
+  const processedAccountWiseCards = useMemo(() => {
     const cardsMap = new Map<string, { totalMails: number; totalVolume: number }>();
-    rows.forEach((item) => {
+    currentFilteredBaseRows.forEach((item) => {
       const existing = cardsMap.get(item.etSource) || { totalMails: 0, totalVolume: 0 };
       cardsMap.set(item.etSource, {
         totalMails: existing.totalMails + item.count,
         totalVolume: existing.totalVolume + (item.count * item.multiplier),
       });
     });
-
     return Array.from(cardsMap.entries()).map(([account, meta]) => ({ account, ...meta }));
-  }, [allFetchedData, selectedCampaign, selectedTemplate]);
+  }, [currentFilteredBaseRows]);
+
+  // Computes the structural breakdown lists of individual templates matching the active clicked card pop up target
+  const modalTemplatesBreakdownList = useMemo(() => {
+    if (!selectedCardAccount) return [];
+    return currentFilteredBaseRows.filter(row => row.etSource === selectedCardAccount);
+  }, [selectedCardAccount, currentFilteredBaseRows]);
 
   return (
     <>
@@ -273,6 +277,50 @@ export default function Home() {
         </div>
       )}
 
+      {/* ========================================================= */}
+      {/* POPUP MODAL COMPONENT LAYER: Template breakdown of clicked card */}
+      {/* ========================================================= */}
+      {selectedCardAccount && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/75 backdrop-blur-sm p-4 animate-fadeIn">
+          <div className={`w-full max-w-2xl rounded-2xl border shadow-2xl p-6 flex flex-col max-h-[85vh] transition-colors ${
+            isDarkMode ? "bg-slate-900 border-white/10 text-white" : "bg-white border-slate-200 text-slate-900"
+          }`}>
+            <div className="flex justify-between items-center pb-3 border-b border-zinc-800/60 mb-4">
+              <div>
+                <h3 className="text-sm font-bold uppercase tracking-wider text-emerald-400">
+                  📋 Account Reference: {selectedCardAccount}
+                </h3>
+                <p className="text-xs text-zinc-400 mt-0.5">Live items tracking breakdown ledger</p>
+              </div>
+              <button onClick={() => setSelectedCardAccount(null)} className="h-8 px-3 rounded-lg bg-zinc-800 text-xs font-bold text-zinc-300 hover:bg-zinc-700 transition">
+                Close
+              </button>
+            </div>
+
+            <div className="overflow-y-auto flex-1 divide-y divide-zinc-800/50 pr-1 font-mono text-xs">
+              {modalTemplatesBreakdownList.map((item, index) => (
+                <div key={index} className="py-3 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2">
+                  <div className="flex flex-col max-w-[70%]">
+                    <span className="font-sans font-semibold text-zinc-200 break-all">{item.template}</span>
+                    <span className="text-[10px] text-zinc-500 mt-0.5 uppercase tracking-wide">Campaign: {item.campaignSrc}</span>
+                  </div>
+                  <div className="flex items-center gap-4 justify-between sm:justify-end shrink-0">
+                    <div className="text-right">
+                      <span className="text-zinc-400 block text-[10px] uppercase font-bold">Mails</span>
+                      <span className="font-bold text-zinc-300 text-sm">{item.count.toLocaleString()}</span>
+                    </div>
+                    <div className="text-right min-w-[90px]">
+                      <span className="text-emerald-500 block text-[10px] uppercase font-bold">Volume</span>
+                      <span className="font-black text-emerald-400 text-sm">{(item.count * item.multiplier).toLocaleString()}</span>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className={`min-h-screen transition-colors duration-500 p-4 sm:p-6 flex flex-col justify-between ${
         isDarkMode ? "bg-slate-950 text-zinc-50" : "bg-slate-50 text-slate-900"
       }`}>
@@ -287,18 +335,17 @@ export default function Home() {
                 Live Campaign Matrix Workspace
               </div>
             </div>
-            <button onClick={() => setIsDarkMode(!isDarkMode)} className="p-2.5 rounded-full border border-zinc-800 hover:bg-zinc-900 transition">
+            <button onClick={() => setIsDarkMode(!isDarkMode)} className="p-2.5 rounded-full border border-zinc-800 hover:bg-zinc-900 transition text-xs font-bold">
               {isDarkMode ? "🌙 Dark" : "☀️ Light"}
             </button>
           </header>
 
           {/* ========================================================= */}
-          {/* SECTION A: AUTOMATED CURRENT DAY LANDING DASHBOARD MODULE */}
+          {/* SECTION A: AUTOMATED DASHBOARD SYSTEM SUMMARY LAYER       */}
           {/* ========================================================= */}
           {!allFetchedData && (
             <div className="flex flex-col gap-6 animate-fadeIn">
               
-              {/* Top 5 Campaigns Highlight banner */}
               <section className={`rounded-xl p-4 sm:p-6 border shadow-xl ${isDarkMode ? "bg-slate-900 border-white/5" : "bg-white border-slate-200"}`}>
                 <h3 className="text-xs font-bold uppercase tracking-wider text-emerald-500 mb-4">
                   🔥 Top 5 Active Campaigns Going with Highest Volume (Today)
@@ -320,9 +367,7 @@ export default function Home() {
                 )}
               </section>
 
-              {/* Main Dashboard Layout Splits */}
               <div className="grid gap-6 grid-cols-1 md:grid-cols-2">
-                {/* 1st Section: Account Wise Summary */}
                 <section className={`rounded-xl p-4 sm:p-6 border shadow-xl ${isDarkMode ? "bg-slate-900 border-white/5" : "bg-white border-slate-200"}`}>
                   <h3 className="text-xs font-bold uppercase tracking-wider text-sky-400 mb-3">📋 Section 1: Account Wise Track Volume</h3>
                   <div className="max-h-[300px] overflow-y-auto divide-y divide-zinc-800/40 font-mono text-xs pr-2">
@@ -336,7 +381,6 @@ export default function Home() {
                   </div>
                 </section>
 
-                {/* 2nd Section: Campaign Wise Summary */}
                 <section className={`rounded-xl p-4 sm:p-6 border shadow-xl ${isDarkMode ? "bg-slate-900 border-white/5" : "bg-white border-slate-200"}`}>
                   <h3 className="text-xs font-bold uppercase tracking-wider text-purple-400 mb-3">📊 Section 2: Campaign Wise Track Volume</h3>
                   <div className="max-h-[300px] overflow-y-auto divide-y divide-zinc-800/40 font-mono text-xs pr-2">
@@ -354,7 +398,7 @@ export default function Home() {
           )}
 
           {/* ========================================================= */}
-          {/* CORE WORKSPACE FILTER CONTROLS BAR */}
+          {/* CORE WORKSPACE FILTER CONTROLS BAR                        */}
           {/* ========================================================= */}
           <section className={`rounded-xl p-4 sm:p-6 flex flex-col gap-4 border shadow-xl ${isDarkMode ? "bg-slate-900 border-white/5" : "bg-white border-slate-200"}`}>
             <div className="grid gap-4 grid-cols-1 sm:grid-cols-3 items-end">
@@ -384,12 +428,11 @@ export default function Home() {
           </section>
 
           {/* ========================================================= */}
-          {/* SECTION B: SPECIFIC ACTION RESULTS SCREEN OVERVIEW */}
+          {/* SECTION B: SPECIFIC ACTION RESULTS SCREEN OVERVIEW         */}
           {/* ========================================================= */}
           {allFetchedData && (
             <div className="flex flex-col gap-6 animate-fadeIn">
               
-              {/* Secondary Sub-Filters Row */}
               <section className={`rounded-xl p-4 sm:p-6 grid gap-4 sm:grid-cols-2 border shadow-xl ${isDarkMode ? "bg-slate-900 border-white/5" : "bg-white border-slate-200"}`}>
                 <div className="flex flex-col gap-1">
                   <label className="text-xs font-semibold text-zinc-400">Select Campaign Group</label>
@@ -408,20 +451,25 @@ export default function Home() {
                 </div>
               </section>
 
-              {/* CARD-MANNER VIEW MODULE FOR PROCESSED INPUTS */}
               {selectedCampaign && selectedTemplate && (
                 <div className="flex flex-col gap-4">
                   <div className="flex items-center justify-between">
-                    <h4 className="text-xs font-bold uppercase tracking-widest text-zinc-400">📌 Account Summary Split Cards</h4>
+                    <h4 className="text-xs font-bold uppercase tracking-widest text-zinc-400">📌 Account Summary Split Cards (Click to see Templates)</h4>
                     <button onClick={() => setAllFetchedData(null)} className="text-xs font-semibold text-emerald-500 hover:underline">← Clear View Back to Dashboard</button>
                   </div>
                   
                   {/* Grid displaying cards */}
                   <div className="grid gap-4 grid-cols-1 sm:grid-cols-3">
                     {processedAccountWiseCards.map((card) => (
-                      <div key={card.account} className={`p-4 rounded-xl border shadow-md flex flex-col justify-between transition hover:scale-[1.02] duration-200 ${isDarkMode ? "bg-slate-900 border-white/5" : "bg-white border-slate-200"}`}>
+                      <div 
+                        key={card.account} 
+                        onClick={() => setSelectedCardAccount(card.account)}
+                        className={`p-4 rounded-xl border shadow-md flex flex-col justify-between cursor-pointer transform transition hover:scale-[1.03] hover:shadow-lg duration-200 group ${
+                          isDarkMode ? "bg-slate-900 border-white/5 hover:border-emerald-500/30" : "bg-white border-slate-200 hover:border-emerald-500/40"
+                        }`}
+                      >
                         <div>
-                          <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 mb-2">
+                          <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 mb-2 group-hover:bg-emerald-500 group-hover:text-white transition-colors duration-200">
                             {card.account}
                           </span>
                           <p className="text-xs text-zinc-400 font-medium">Total Mails Match Row</p>
@@ -429,7 +477,7 @@ export default function Home() {
                         </div>
                         <div className="mt-4 border-t border-zinc-800/60 pt-2 flex justify-between items-baseline">
                           <span className="text-[10px] uppercase font-bold text-zinc-500">Calculated Volume</span>
-                          <span className="text-base font-black text-sky-400">{card.totalVolume.toLocaleString()}</span>
+                          <span className="text-base font-black text-sky-400 group-hover:text-emerald-400 transition-colors duration-200">{card.totalVolume.toLocaleString()}</span>
                         </div>
                       </div>
                     ))}
