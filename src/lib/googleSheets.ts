@@ -51,6 +51,93 @@ function getDatesInRange(startDateIso: string, endDateIso: string): string[] {
   return dates;
 }
 
+// Left intact to fulfill legacy system API routes definitions safely
+export async function listCampaigns(etNameOrAll: string, isoDate?: string): Promise<string[]> {
+  if (!SPREADSHEET_ID) return [];
+  try {
+    const tabs = await listETTabs();
+    const targetTabs = etNameOrAll.toUpperCase().startsWith("ALL") 
+      ? tabs 
+      : tabs.filter((t) => t.toLowerCase() === etNameOrAll.trim().toLowerCase());
+
+    if (targetTabs.length === 0) return [];
+    const sheets = await getSheetsClient();
+    const activeCampaigns = new Set<string>();
+    const formattedDate = isoDate ? isoToSheetDate(isoDate) : "";
+
+    for (const tab of targetTabs) {
+      const res = await sheets.spreadsheets.values.get({
+        spreadsheetId: SPREADSHEET_ID,
+        range: `'${tab}'!A:E`, 
+        valueRenderOption: "FORMATTED_VALUE",
+      });
+      const values = res.data.values ?? [];
+      if (values.length <= 1) continue;
+
+      const headerRow = values[0];
+      const rowsForDate = values.slice(1).filter((row) => {
+        if (!formattedDate) return true;
+        return normalizeCell(row[0]) === formattedDate;
+      });
+
+      for (let colIdx = 2; colIdx < headerRow.length; colIdx++) {
+        const campaignName = normalizeCell(headerRow[colIdx]);
+        if (!campaignName) continue;
+
+        const hasData = rowsForDate.some((row) => {
+          const cellValue = normalizeCell(row[colIdx]);
+          if (!cellValue) return false;
+          const numericValue = Number(cellValue.replace(/,/g, ""));
+          return !Number.isNaN(numericValue) && numericValue > 0;
+        });
+
+        if (hasData || !isoDate) {
+          activeCampaigns.add(campaignName);
+        }
+      }
+    }
+    return Array.from(activeCampaigns).sort((a, b) => a.localeCompare(b));
+  } catch (err) {
+    console.error(err);
+    return [];
+  }
+}
+
+// Left intact to fulfill legacy system API routes definitions safely
+export async function getTemplatesForCampaign({ isoDate, etNameOrAll }: { isoDate: string; etNameOrAll: string; campaign: string }): Promise<string[]> {
+  if (!SPREADSHEET_ID) return [];
+  try {
+    const tabs = await listETTabs();
+    const targetTabs = etNameOrAll.toUpperCase().startsWith("ALL") 
+      ? tabs 
+      : tabs.filter((t) => t.toLowerCase() === etNameOrAll.trim().toLowerCase());
+
+    const sheets = await getSheetsClient();
+    const templatesSet = new Set<string>();
+    const formattedDate = isoToSheetDate(isoDate);
+
+    for (const tab of targetTabs) {
+      const res = await sheets.spreadsheets.values.get({
+        spreadsheetId: SPREADSHEET_ID,
+        range: `'${tab}'!A:B`, 
+      });
+      const rows = res.data.values ?? [];
+      for (let i = 1; i < rows.length; i++) {
+        const rawDateCell = normalizeCell(rows[i]?.[0]);
+        const templateCell = normalizeCell(rows[i]?.[1]);
+        if (rawDateCell === formattedDate && templateCell) {
+          templatesSet.add(templateCell);
+        }
+      }
+    }
+    return Array.from(templatesSet).sort((a, b) => a.localeCompare(b));
+  } catch (err) {
+    console.error(err);
+    return [];
+  }
+}
+
+// Unified multi-date tracking ledger parser
 export async function getMailCounts(options: { startDate: string; endDate: string; etNameOrAll: string }) {
   const { startDate, endDate, etNameOrAll } = options;
 
@@ -66,7 +153,6 @@ export async function getMailCounts(options: { startDate: string; endDate: strin
   const sheets = await getSheetsClient();
   const targetedSheetDates = getDatesInRange(startDate, endDate);
 
-  // Key tracking format uses Template + Campaign + Tab to isolate columns accurately
   const breakdownMap = new Map<string, { template: string; campaignSrc: string; etSource: string; count: number; multiplier: number }>();
   let grandTotalMails = 0;
   let grandTotalCalculatedVolume = 0;
