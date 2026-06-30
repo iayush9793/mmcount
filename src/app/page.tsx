@@ -322,7 +322,7 @@ export default function Home() {
 
               {/* Main Dashboard Layout Splits */}
               <div className="grid gap-6 grid-cols-1 md:grid-cols-2">
-                {/* 1st Section: Account Wise Summary Grid Column */}
+                {/* 1st Section: Account Wise Summary */}
                 <section className={`rounded-xl p-4 sm:p-6 border shadow-xl ${isDarkMode ? "bg-slate-900 border-white/5" : "bg-white border-slate-200"}`}>
                   <h3 className="text-xs font-bold uppercase tracking-wider text-sky-400 mb-3">📋 Section 1: Account Wise Track Volume</h3>
                   <div className="max-h-[300px] overflow-y-auto divide-y divide-zinc-800/40 font-mono text-xs pr-2">
@@ -336,7 +336,7 @@ export default function Home() {
                   </div>
                 </section>
 
-                {/* 2nd Section: Campaign Wise Summary Grid Column */}
+                {/* 2nd Section: Campaign Wise Summary */}
                 <section className={`rounded-xl p-4 sm:p-6 border shadow-xl ${isDarkMode ? "bg-slate-900 border-white/5" : "bg-white border-slate-200"}`}>
                   <h3 className="text-xs font-bold uppercase tracking-wider text-purple-400 mb-3">📊 Section 2: Campaign Wise Track Volume</h3>
                   <div className="max-h-[300px] overflow-y-auto divide-y divide-zinc-800/40 font-mono text-xs pr-2">
@@ -354,7 +354,7 @@ export default function Home() {
           )}
 
           {/* ========================================================= */}
-          {/* CORE WORKSPACE FILTER CONTROLS BAR (Trigger Action Steps) */}
+          {/* CORE WORKSPACE FILTER CONTROLS BAR */}
           {/* ========================================================= */}
           <section className={`rounded-xl p-4 sm:p-6 flex flex-col gap-4 border shadow-xl ${isDarkMode ? "bg-slate-900 border-white/5" : "bg-white border-slate-200"}`}>
             <div className="grid gap-4 grid-cols-1 sm:grid-cols-3 items-end">
@@ -384,7 +384,7 @@ export default function Home() {
           </section>
 
           {/* ========================================================= */}
-          {/* SECTION B: SPECIFIC ACTION RESULTS SCREEN MANNER OVERVIEW */}
+          {/* SECTION B: SPECIFIC ACTION RESULTS SCREEN OVERVIEW */}
           {/* ========================================================= */}
           {allFetchedData && (
             <div className="flex flex-col gap-6 animate-fadeIn">
@@ -409,14 +409,14 @@ export default function Home() {
               </section>
 
               {/* CARD-MANNER VIEW MODULE FOR PROCESSED INPUTS */}
-              {finalCalculatedOutput && (
+              {selectedCampaign && selectedTemplate && (
                 <div className="flex flex-col gap-4">
                   <div className="flex items-center justify-between">
                     <h4 className="text-xs font-bold uppercase tracking-widest text-zinc-400">📌 Account Summary Split Cards</h4>
                     <button onClick={() => setAllFetchedData(null)} className="text-xs font-semibold text-emerald-500 hover:underline">← Clear View Back to Dashboard</button>
                   </div>
                   
-                  {/* Grid displaying total number of mails of each ET in one card frame manner */}
+                  {/* Grid displaying cards */}
                   <div className="grid gap-4 grid-cols-1 sm:grid-cols-3">
                     {processedAccountWiseCards.map((card) => (
                       <div key={card.account} className={`p-4 rounded-xl border shadow-md flex flex-col justify-between transition hover:scale-[1.02] duration-200 ${isDarkMode ? "bg-slate-900 border-white/5" : "bg-white border-slate-200"}`}>
