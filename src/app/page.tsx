@@ -110,7 +110,7 @@ export default function Home() {
     if (cleanCamp === "TRUGREEN_DB") return { includes: ["TRU", "DB"], excludes: ["XC", "ES", "GZ", "XCE"] };
     if (cleanCamp === "ASSURITI_DB") return { includes: ["AAW"], excludes: [] };
     if (cleanCamp === "QUOTIFII_DB") return { includes: ["QTI"], excludes: [] };
-
+ if (cleanCamp === "NDR_CMAD") return { includes: ["NDR"], excludes: [] };
     return { includes: [cleanCamp.split("_")[0]], excludes: [] };
   };
 
