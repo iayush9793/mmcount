@@ -101,7 +101,7 @@ export default function Home() {
     if (cleanCamp === "ZBH_DB" || cleanCamp.startsWith("ZBH")) return { includes: ["ZBH", "DB"], excludes: ["XCE", "GZ", "XC", "ES"] };
     if (cleanCamp === "CH_XC" || cleanCamp.startsWith("CH")) return { includes: ["CH"], excludes: [] };
     if (cleanCamp === "LBH_DB" || cleanCamp.startsWith("LBH")) return { includes: ["LBH", "DB"], excludes: ["XCE", "GZ", "XC", "ES"] };
-    
+    if (cleanCamp === "NDR_GZ" || cleanCamp.startsWith("NDR")) return { includes: ["NDR", "GZ"], excludes: ["XCE", "XC", "ES"] };
     if (cleanCamp === "VIVINT_AD" || cleanCamp === "VIVINT") return { includes: ["VI"], excludes: ["XCE", "XC", "ES", "GZ", "DB"] };
     if (cleanCamp === "TRUGREEN_AD") return { includes: ["TRU"], excludes: ["XCE", "XC", "ES", "GZ", "DB"] };
     if (cleanCamp.includes("IAI_GZ")) return { includes: ["IAI"], excludes: [] };
@@ -110,7 +110,7 @@ export default function Home() {
     if (cleanCamp === "TRUGREEN_DB") return { includes: ["TRU", "DB"], excludes: ["XC", "ES", "GZ", "XCE"] };
     if (cleanCamp === "ASSURITI_DB") return { includes: ["AAW"], excludes: [] };
     if (cleanCamp === "QUOTIFII_DB") return { includes: ["QTI"], excludes: [] };
- if (cleanCamp === "NDR_CMAD") return { includes: ["NDR"], excludes: [] };
+
     return { includes: [cleanCamp.split("_")[0]], excludes: [] };
   };
 
@@ -230,7 +230,6 @@ export default function Home() {
     return rows;
   }, [allFetchedData, selectedCampaign, selectedTemplate]);
 
-  // Global Campaign Summaries displayed prominently at the top
   const globalCampaignCalculatedTotals = useMemo(() => {
     if (currentFilteredBaseRows.length === 0) return null;
     const totalMails = currentFilteredBaseRows.reduce((sum, item) => sum + item.count, 0);
@@ -240,7 +239,6 @@ export default function Home() {
     return { totalMails, calculatedVolume, uniqueTemplates };
   }, [currentFilteredBaseRows]);
 
-  // Structural groupings map that attaches template reference sets to the card nodes
   const processedAccountWiseCards = useMemo(() => {
     const cardsMap = new Map<string, { totalMails: number; totalVolume: number; templates: Array<{ name: string; count: number; vol: number }> }>();
     
@@ -249,9 +247,8 @@ export default function Home() {
       const existing = cardsMap.get(etKey) || { totalMails: 0, totalVolume: 0, templates: [] };
       
       const rowVolume = item.count * item.multiplier;
-      
-      // Look for duplicate template logs inside the same account column block
       const existingTmpl = existing.templates.find(t => t.name === item.template);
+      
       if (existingTmpl) {
         existingTmpl.count += item.count;
         existingTmpl.vol += rowVolume;
@@ -306,7 +303,7 @@ export default function Home() {
       {/* POPUP MODAL LAYER */}
       {selectedCardAccount && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/75 backdrop-blur-sm p-4 animate-fadeIn">
-          <div className="w-full max-w-2xl rounded-2xl border shadow-2xl p-6 flex flex-col max-h-[85vh] transition-colors bg-slate-900 border-white/10 text-white">
+          <div className="w-full max-w-2xl rounded-2xl border shadow-2xl p-6 flex flex-col max-h-[85vh] bg-slate-900 border-white/10 text-white">
             <div className="flex justify-between items-center pb-3 border-b border-zinc-800/60 mb-4">
               <div>
                 <h3 className="text-sm font-bold uppercase tracking-wider text-emerald-400">
@@ -351,18 +348,16 @@ export default function Home() {
               <div className="relative h-20 w-48 shrink-0">
                 <Image src="/logo.png" alt="Logo" fill priority className="object-contain object-left" />
               </div>
-              <div className="text-zinc-400 text-sm font-medium">
+              <div className={`text-sm font-medium ${isDarkMode ? "text-zinc-400" : "text-slate-600"}`}>
                 Live Campaign Matrix Workspace
               </div>
             </div>
-            <button onClick={() => setIsDarkMode(!isDarkMode)} className="p-2.5 rounded-full border border-zinc-800 hover:bg-zinc-900 transition text-xs font-bold">
+            <button onClick={() => setIsDarkMode(!isDarkMode)} className={`p-2.5 rounded-full border transition text-xs font-bold ${isDarkMode ? "border-zinc-800 hover:bg-zinc-900 text-white" : "border-slate-300 hover:bg-slate-100 text-slate-800"}`}>
               {isDarkMode ? "🌙 Dark" : "☀️ Light"}
             </button>
           </header>
 
-          {/* ========================================================= */}
-          {/* SECTION A: AUTOMATED CURRENT DAY LANDING DASHBOARD MODULE */}
-          {/* ========================================================= */}
+          {/* SECTION A: AUTOMATED DASHBOARD */}
           {!allFetchedData && (
             <div className="flex flex-col gap-6 animate-fadeIn">
               <section className={`rounded-xl p-4 sm:p-6 border shadow-xl ${isDarkMode ? "bg-slate-900 border-white/5" : "bg-white border-slate-200"}`}>
@@ -370,16 +365,16 @@ export default function Home() {
                   🔥 Top 5 Active Campaigns Going with Highest Volume (Today)
                 </h3>
                 {isDashboardLoading ? (
-                  <div className="h-12 flex items-center justify-center text-xs text-zinc-400 font-medium">Syncing live dashboard summaries...</div>
+                  <div className={`h-12 flex items-center justify-center text-xs font-medium ${isDarkMode ? "text-zinc-400" : "text-slate-500"}`}>Syncing live dashboard summaries...</div>
                 ) : topFiveCampaignsSummary.length === 0 ? (
-                  <div className="h-12 flex items-center justify-center text-xs text-zinc-500">No active counts found for current date.</div>
+                  <div className={`h-12 flex items-center justify-center text-xs ${isDarkMode ? "text-zinc-500" : "text-slate-400"}`}>No active counts found for current date.</div>
                 ) : (
                   <div className="grid gap-3 grid-cols-1 sm:grid-cols-5">
                     {topFiveCampaignsSummary.map((item, index) => (
-                      <div key={item.name} className={`p-3 rounded-lg border flex flex-col ${isDarkMode ? "bg-slate-950 border-zinc-800" : "bg-slate-50 border-slate-200"}`}>
+                      <div key={item.name} className={`p-3 rounded-lg border flex flex-col ${isDarkMode ? "bg-slate-950 border-zinc-800 text-white" : "bg-slate-50 border-slate-200 text-slate-900"}`}>
                         <span className="text-[10px] font-bold text-zinc-500 uppercase">Rank #{index + 1}</span>
                         <span className="text-xs font-bold truncate mt-0.5" title={item.name}>{item.name}</span>
-                        <span className="text-sm font-black text-emerald-400 mt-1">{item.volume.toLocaleString()}</span>
+                        <span className="text-sm font-black text-emerald-500 mt-1">{item.volume.toLocaleString()}</span>
                       </div>
                     ))}
                   </div>
@@ -388,12 +383,12 @@ export default function Home() {
 
               <div className="grid gap-6 grid-cols-1 md:grid-cols-2">
                 <section className={`rounded-xl p-4 sm:p-6 border shadow-xl ${isDarkMode ? "bg-slate-900 border-white/5" : "bg-white border-slate-200"}`}>
-                  <h3 className="text-xs font-bold uppercase tracking-wider text-sky-400 mb-3">📋 Section 1: Account Wise Track Volume</h3>
-                  <div className="max-h-[300px] overflow-y-auto divide-y divide-zinc-800/40 font-mono text-xs pr-2">
+                  <h3 className="text-xs font-bold uppercase tracking-wider text-sky-500 mb-3">📋 Section 1: Account Wise Track Volume</h3>
+                  <div className={`max-h-[300px] overflow-y-auto divide-y font-mono text-xs pr-2 ${isDarkMode ? "divide-zinc-800/40" : "divide-slate-200"}`}>
                     {dashboardAccountWiseMetrics.map((item) => (
                       <div key={item.account} className="py-2.5 flex justify-between items-center gap-2">
-                        <span className="font-sans font-medium text-zinc-300 truncate">{item.account}</span>
-                        <span className="font-bold text-sky-400 shrink-0">{item.calculatedVolume.toLocaleString()} <span className="text-[10px] text-zinc-500 font-normal">({item.totalMails} mails)</span></span>
+                        <span className={`font-sans font-medium truncate ${isDarkMode ? "text-zinc-300" : "text-slate-700"}`}>{item.account}</span>
+                        <span className="font-bold text-sky-500 shrink-0">{item.calculatedVolume.toLocaleString()} <span className="text-[10px] text-zinc-500 font-normal">({item.totalMails} mails)</span></span>
                       </div>
                     ))}
                     {dashboardAccountWiseMetrics.length === 0 && <p className="text-zinc-500 text-center py-4">No account metrics available.</p>}
@@ -401,12 +396,12 @@ export default function Home() {
                 </section>
 
                 <section className={`rounded-xl p-4 sm:p-6 border shadow-xl ${isDarkMode ? "bg-slate-900 border-white/5" : "bg-white border-slate-200"}`}>
-                  <h3 className="text-xs font-bold uppercase tracking-wider text-purple-400 mb-3">📊 Section 2: Campaign Wise Track Volume</h3>
-                  <div className="max-h-[300px] overflow-y-auto divide-y divide-zinc-800/40 font-mono text-xs pr-2">
+                  <h3 className="text-xs font-bold uppercase tracking-wider text-purple-500 mb-3">📊 Section 2: Campaign Wise Track Volume</h3>
+                  <div className={`max-h-[300px] overflow-y-auto divide-y font-mono text-xs pr-2 ${isDarkMode ? "divide-zinc-800/40" : "divide-slate-200"}`}>
                     {dashboardCampaignWiseMetrics.map((item) => (
                       <div key={item.campaign} className="py-2.5 flex justify-between items-center gap-2">
-                        <span className="font-sans font-medium text-zinc-300 truncate">{item.campaign}</span>
-                        <span className="font-bold text-purple-400 shrink-0">{item.calculatedVolume.toLocaleString()} <span className="text-[10px] text-zinc-500 font-normal">({item.totalMails} mails)</span></span>
+                        <span className={`font-sans font-medium truncate ${isDarkMode ? "text-zinc-300" : "text-slate-700"}`}>{item.campaign}</span>
+                        <span className="font-bold text-purple-500 shrink-0">{item.calculatedVolume.toLocaleString()} <span className="text-[10px] text-zinc-500 font-normal">({item.totalMails} mails)</span></span>
                       </div>
                     ))}
                     {dashboardCampaignWiseMetrics.length === 0 && <p className="text-zinc-500 text-center py-4">No campaign metrics available.</p>}
@@ -420,16 +415,16 @@ export default function Home() {
           <section className={`rounded-xl p-4 sm:p-6 flex flex-col gap-4 border shadow-xl ${isDarkMode ? "bg-slate-900 border-white/5" : "bg-white border-slate-200"}`}>
             <div className="grid gap-4 grid-cols-1 sm:grid-cols-3 items-end">
               <div className="flex flex-col gap-1">
-                <label className="text-xs font-semibold text-zinc-400">Start Date</label>
-                <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className={`h-11 rounded-lg px-3 text-sm outline-none w-full ${isDarkMode ? "bg-slate-950 border-zinc-800 text-white" : "bg-slate-50 border-slate-200"}`} />
+                <label className={`text-xs font-semibold ${isDarkMode ? "text-zinc-400" : "text-slate-600"}`}>Start Date</label>
+                <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className={`h-11 rounded-lg px-3 text-sm outline-none w-full border ${isDarkMode ? "bg-slate-950 border-zinc-800 text-white focus:border-emerald-500" : "bg-white border-slate-300 text-slate-900 focus:border-emerald-500"}`} />
               </div>
               <div className="flex flex-col gap-1">
-                <label className="text-xs font-semibold text-zinc-400">End Date</label>
-                <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className={`h-11 rounded-lg px-3 text-sm outline-none w-full ${isDarkMode ? "bg-slate-950 border-zinc-800 text-white" : "bg-slate-50 border-slate-200"}`} />
+                <label className={`text-xs font-semibold ${isDarkMode ? "text-zinc-400" : "text-slate-600"}`}>End Date</label>
+                <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className={`h-11 rounded-lg px-3 text-sm outline-none w-full border ${isDarkMode ? "bg-slate-950 border-zinc-800 text-white focus:border-emerald-500" : "bg-white border-slate-300 text-slate-900 focus:border-emerald-500"}`} />
               </div>
               <div className="flex flex-col gap-1">
-                <label className="text-xs font-semibold text-zinc-400">Origin Account (ET)</label>
-                <select value={selectedEt} onChange={(e) => setSelectedEt(e.target.value)} className={`h-11 rounded-lg px-3 text-sm outline-none w-full ${isDarkMode ? "bg-slate-950 border-zinc-800 text-white" : "bg-slate-50 border-slate-200"}`}>
+                <label className={`text-xs font-semibold ${isDarkMode ? "text-zinc-400" : "text-slate-600"}`}>Origin Account (ET)</label>
+                <select value={selectedEt} onChange={(e) => setSelectedEt(e.target.value)} className={`h-11 rounded-lg px-3 text-sm outline-none w-full border ${isDarkMode ? "bg-slate-950 border-zinc-800 text-white focus:border-emerald-500" : "bg-white border-slate-300 text-slate-900 focus:border-emerald-500"}`}>
                   <option value="">Select ET Account</option>
                   <option value="ALL">ALL ET'S (All Sheets)</option>
                   {ets.map((e) => <option key={e} value={e}>{e}</option>)}
@@ -444,24 +439,22 @@ export default function Home() {
             </button>
           </section>
 
-          {/* ========================================================= */}
-          {/* SECTION B: SPECIFIC ACTION RESULTS SCREEN OVERVIEW         */}
-          {/* ========================================================= */}
+          {/* SECTION B: WORKSPACE RESULTS VIEW */}
           {allFetchedData && (
             <div className="flex flex-col gap-6 animate-fadeIn">
               
               {/* Secondary Sub-Filters Row */}
               <section className={`rounded-xl p-4 sm:p-6 grid gap-4 sm:grid-cols-2 border shadow-xl ${isDarkMode ? "bg-slate-900 border-white/5" : "bg-white border-slate-200"}`}>
                 <div className="flex flex-col gap-1">
-                  <label className="text-xs font-semibold text-zinc-400">Select Campaign Group</label>
-                  <select value={selectedCampaign} onChange={(e) => { setSelectedCampaign(e.target.value); setSelectedTemplate(""); }} className={`h-11 rounded-lg px-3 text-sm outline-none w-full ${isDarkMode ? "bg-slate-950 border-zinc-800 text-white" : "bg-slate-50 border-slate-200"}`}>
+                  <label className={`text-xs font-semibold ${isDarkMode ? "text-zinc-400" : "text-slate-600"}`}>Select Campaign Group</label>
+                  <select value={selectedCampaign} onChange={(e) => { setSelectedCampaign(e.target.value); setSelectedTemplate(""); }} className={`h-11 rounded-lg px-3 text-sm outline-none w-full border ${isDarkMode ? "bg-slate-950 border-zinc-800 text-white focus:border-emerald-500" : "bg-white border-slate-300 text-slate-900 focus:border-emerald-500"}`}>
                     <option value="">Select Campaign</option>
                     {dynamicCampaignOptions.map((c) => <option key={c} value={c}>{c}</option>)}
                   </select>
                 </div>
                 <div className="flex flex-col gap-1">
-                  <label className="text-xs font-semibold text-zinc-400">Select Target Template</label>
-                  <select value={selectedTemplate} onChange={(e) => setSelectedTemplate(e.target.value)} disabled={!selectedCampaign} className={`h-11 rounded-lg px-3 text-sm outline-none w-full ${isDarkMode ? "bg-slate-950 border-zinc-800 text-white" : "bg-slate-50 border-slate-200"}`}>
+                  <label className={`text-xs font-semibold ${isDarkMode ? "text-zinc-400" : "text-slate-600"}`}>Select Target Template</label>
+                  <select value={selectedTemplate} onChange={(e) => setSelectedTemplate(e.target.value)} disabled={!selectedCampaign} className={`h-11 rounded-lg px-3 text-sm outline-none w-full border ${isDarkMode ? "bg-slate-950 border-zinc-800 text-white focus:border-emerald-500" : "bg-white border-slate-300 text-slate-900 focus:border-emerald-500"}`}>
                     <option value="">{selectedCampaign ? "Select Template" : "Choose Campaign first"}</option>
                     {dynamicTemplateOptions.length > 0 && <option value="ALL">ALL MATCHED TEMPLATES</option>}
                     {dynamicTemplateOptions.map((t) => <option key={t} value={t}>{t}</option>)}
@@ -469,35 +462,34 @@ export default function Home() {
                 </div>
               </section>
 
-              {/* DYNAMIC CAMPAIGN HIGHLIGHT DISPLAY AT THE TOP */}
+              {/* HIGHLIGHT DETAILS DISPLAY */}
               {selectedCampaign && selectedTemplate && globalCampaignCalculatedTotals && (
                 <section className={`rounded-xl p-5 border shadow-xl grid gap-4 grid-cols-1 sm:grid-cols-3 animate-fadeIn ${
-                  isDarkMode ? "bg-gradient-to-br from-slate-900 to-slate-950 border-emerald-500/20" : "bg-gradient-to-br from-white to-slate-50 border-slate-200"
+                  isDarkMode ? "bg-gradient-to-br from-slate-900 to-slate-950 border-emerald-500/20 text-white" : "bg-gradient-to-br from-white to-slate-50 border-slate-200 text-slate-900"
                 }`}>
                   <div className="flex flex-col">
-                    <span className="text-[10px] uppercase font-bold text-zinc-400 tracking-wider">Target Campaign Group</span>
-                    <span className="text-lg font-black text-white mt-0.5 truncate" title={selectedCampaign}>{selectedCampaign}</span>
+                    <span className={`text-[10px] uppercase font-bold tracking-wider ${isDarkMode ? "text-zinc-400" : "text-slate-500"}`}>Target Campaign Group</span>
+                    <span className="text-lg font-black mt-0.5 truncate" title={selectedCampaign}>{selectedCampaign}</span>
                   </div>
-                  <div className="flex flex-col border-t sm:border-t-0 sm:border-x border-zinc-800/60 sm:px-4">
-                    <span className="text-[10px] uppercase font-bold text-zinc-400 tracking-wider">Total Mail Matches Count</span>
-                    <span className="text-2xl font-black text-sky-400 mt-0.5">{globalCampaignCalculatedTotals.totalMails.toLocaleString()} <span className="text-xs text-zinc-500 font-normal">Mails</span></span>
+                  <div className={`flex flex-col border-t sm:border-t-0 sm:border-x sm:px-4 ${isDarkMode ? "border-zinc-800/60" : "border-slate-200"}`}>
+                    <span className={`text-[10px] uppercase font-bold tracking-wider ${isDarkMode ? "text-zinc-400" : "text-slate-500"}`}>Total Mail Matches Count</span>
+                    <span className="text-2xl font-black text-sky-500 mt-0.5">{globalCampaignCalculatedTotals.totalMails.toLocaleString()} <span className="text-xs font-normal text-zinc-500">Mails</span></span>
                   </div>
                   <div className="flex flex-col border-t sm:border-t-0 sm:px-4">
-                    <span className="text-[10px] uppercase font-bold text-emerald-400 tracking-wider">Aggregated Total Volume</span>
-                    <span className="text-2xl font-black text-emerald-400 mt-0.5">{globalCampaignCalculatedTotals.calculatedVolume.toLocaleString()}</span>
+                    <span className="text-[10px] uppercase font-bold text-emerald-500 tracking-wider">Aggregated Total Volume</span>
+                    <span className="text-2xl font-black text-emerald-500 mt-0.5">{globalCampaignCalculatedTotals.calculatedVolume.toLocaleString()}</span>
                   </div>
                 </section>
               )}
 
-              {/* CARD-MANNER BREAKDOWN OVERVIEW */}
+              {/* ELEGANT CARD MATRIX CONTAINER */}
               {selectedCampaign && selectedTemplate && (
                 <div className="flex flex-col gap-4">
                   <div className="flex items-center justify-between">
-                    <h4 className="text-xs font-bold uppercase tracking-widest text-zinc-400">📌 Account Wise Summary Matrix Split</h4>
+                    <h4 className={`text-xs font-bold uppercase tracking-widest ${isDarkMode ? "text-zinc-400" : "text-slate-600"}`}>📌 Account Wise Summary Matrix Split</h4>
                     <button onClick={() => setAllFetchedData(null)} className="text-xs font-semibold text-emerald-500 hover:underline">← Clear View Back to Dashboard</button>
                   </div>
                   
-                  {/* Grid displaying elegant cards with integrated creative names */}
                   <div className="grid gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
                     {processedAccountWiseCards.map((card) => (
                       <div 
@@ -507,32 +499,32 @@ export default function Home() {
                           isDarkMode ? "bg-slate-900 border-white/5" : "bg-white border-slate-200"
                         }`}
                       >
-                        {/* Header metadata frame wrapper banner */}
-                        <div className="p-4 border-b border-zinc-800/50 bg-slate-950/40 flex justify-between items-center">
-                          <span className="px-2.5 py-0.5 rounded text-[11px] font-black uppercase bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                        {/* Header metadata frame */}
+                        <div className={`p-4 border-b flex justify-between items-center ${isDarkMode ? "border-zinc-800/60 bg-slate-950/40" : "border-slate-200 bg-slate-100"}`}>
+                          <span className="px-2.5 py-0.5 rounded text-[11px] font-black uppercase bg-emerald-500/10 text-emerald-600 border border-emerald-500/20">
                             {card.account}
                           </span>
-                          <span className="text-xs font-mono font-bold text-sky-400">{card.totalVolume.toLocaleString()}</span>
+                          <span className="text-xs font-mono font-bold text-sky-500">{card.totalVolume.toLocaleString()}</span>
                         </div>
 
-                        {/* Middle body inner container showing creative name elements directly inside that particular card only */}
-                        <div className="p-4 flex-1 flex flex-col gap-2 max-h-[180px] overflow-y-auto pr-2 divide-y divide-zinc-800/20 font-mono text-[11px]">
+                        {/* Inner Body list details */}
+                        <div className={`p-4 flex-1 flex flex-col gap-2 max-h-[180px] overflow-y-auto pr-2 divide-y font-mono text-[11px] ${isDarkMode ? "divide-zinc-800/20" : "divide-slate-200"}`}>
                           {card.templates.map((tmpl, tIdx) => (
                             <div key={tIdx} className="pt-2 first:pt-0 flex justify-between items-start gap-3">
-                              <span className="font-sans text-zinc-300 break-all leading-tight" title={tmpl.name}>
+                              <span className={`font-sans break-all leading-tight ${isDarkMode ? "text-zinc-300" : "text-slate-800"}`} title={tmpl.name}>
                                 {tmpl.name}
                               </span>
-                              <span className="text-zinc-500 font-bold shrink-0 text-right">
-                                {tmpl.count} <span className="text-[9px] text-zinc-600 font-normal">m</span>
+                              <span className={`font-bold shrink-0 text-right ${isDarkMode ? "text-zinc-400" : "text-slate-600"}`}>
+                                {tmpl.count} <span className="text-[9px] font-normal text-zinc-500">m</span>
                               </span>
                             </div>
                           ))}
                         </div>
 
-                        {/* Bottom total label banner layout */}
-                        <div className="p-3 bg-slate-950/20 border-t border-zinc-800/40 flex justify-between items-center text-[10px] uppercase font-bold text-zinc-500 tracking-wider">
+                        {/* Bottom total layout label */}
+                        <div className={`p-3 border-t flex justify-between items-center text-[10px] uppercase font-bold tracking-wider ${isDarkMode ? "bg-slate-950/20 border-zinc-800/40 text-zinc-500" : "bg-slate-50 border-slate-200 text-slate-500"}`}>
                           <span>Row Total Mails</span>
-                          <span className="text-zinc-300 font-mono">{card.totalMails} Mails</span>
+                          <span className={`font-mono ${isDarkMode ? "text-zinc-300" : "text-slate-800"}`}>{card.totalMails} Mails</span>
                         </div>
                       </div>
                     ))}
