@@ -17,55 +17,37 @@ export default function Home() {
   const [isAppLoading, setIsAppLoading] = useState(true);
   const [isDarkMode, setIsDarkMode] = useState(true);
 
-  // Core Stage 1 Input States
+  // Core Stage 1 States
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [ets, setEts] = useState<string[]>([]);
   const [selectedEt, setSelectedEt] = useState("");
 
-  // Automation / Dashboard Summary States
-  const [dashboardData, setDashboardData] = useState<BreakdownItem[] | null>(null);
-  const [isDashboardLoading, setIsDashboardLoading] = useState(false);
-
-  // Custom Range Query States
+  // Core Stage 2 States
   const [allFetchedData, setAllFetchedData] = useState<BreakdownItem[] | null>(null);
   const [selectedCampaign, setSelectedCampaign] = useState("");
   const [selectedTemplate, setSelectedTemplate] = useState("");
   const [status, setStatus] = useState<FetchStatus>("idle");
   const [errorMessage, setErrorMessage] = useState("");
 
-  // Interactive Popup Modal State
-  const [selectedCardAccount, setSelectedCardAccount] = useState<string | null>(null);
-
-  // PWA States
+  // PWA Application Installation States
   const [deferredPrompt, setDeferredPrompt] = useState<any | null>(null);
   const [isPwaSupported, setIsPwaSupported] = useState(false);
 
-  // Core Initial Boot Loader & Auto-Dashboard Sync
   useEffect(() => {
     const iso = new Date().toISOString().slice(0, 10);
     setStartDate(iso);
     setEndDate(iso);
     
-    setIsDashboardLoading(true);
-    
     fetch("/api/ets")
       .then((res) => res.json())
       .then((data) => {
-        const structuralTabs = data.ets ?? [];
-        setEts(structuralTabs);
-        return fetch(`/api/mailCounts?startDate=${iso}&endDate=${iso}&et=ALL`);
-      })
-      .then((res) => res ? res.json() : null)
-      .then((data) => {
-        if (data && data.breakdown) {
-          setDashboardData(data.breakdown);
-        }
-        setIsDashboardLoading(false);
-        setIsAppLoading(false);
+        setEts(data.ets ?? []);
+        setTimeout(() => {
+          setIsAppLoading(false);
+        }, 500); 
       })
       .catch(() => {
-        setIsDashboardLoading(false);
         setIsAppLoading(false);
       });
 
@@ -121,45 +103,6 @@ export default function Home() {
     return matchesIncludes && !triggersExcludes;
   };
 
-  const topFiveCampaignsSummary = useMemo(() => {
-    if (!dashboardData) return [];
-    const aggregated = new Map<string, number>();
-    dashboardData.forEach((item) => {
-      const vol = item.count * item.multiplier;
-      aggregated.set(item.campaignSrc, (aggregated.get(item.campaignSrc) || 0) + vol);
-    });
-    return Array.from(aggregated.entries())
-      .map(([name, totalVol]) => ({ name, volume: totalVol }))
-      .sort((a, b) => b.volume - a.volume)
-      .slice(0, 5);
-  }, [dashboardData]);
-
-  const dashboardAccountWiseMetrics = useMemo(() => {
-    if (!dashboardData) return [];
-    const accountsMap = new Map<string, { totalMails: number; calculatedVolume: number }>();
-    dashboardData.forEach((item) => {
-      const existing = accountsMap.get(item.etSource) || { totalMails: 0, calculatedVolume: 0 };
-      accountsMap.set(item.etSource, {
-        totalMails: existing.totalMails + item.count,
-        calculatedVolume: existing.calculatedVolume + (item.count * item.multiplier),
-      });
-    });
-    return Array.from(accountsMap.entries()).map(([account, meta]) => ({ account, ...meta }));
-  }, [dashboardData]);
-
-  const dashboardCampaignWiseMetrics = useMemo(() => {
-    if (!dashboardData) return [];
-    const campaignsMap = new Map<string, { totalMails: number; calculatedVolume: number }>();
-    dashboardData.forEach((item) => {
-      const existing = campaignsMap.get(item.campaignSrc) || { totalMails: 0, calculatedVolume: 0 };
-      campaignsMap.set(item.campaignSrc, {
-        totalMails: existing.totalMails + item.count,
-        calculatedVolume: existing.calculatedVolume + (item.count * item.multiplier),
-      });
-    });
-    return Array.from(campaignsMap.entries()).map(([campaign, meta]) => ({ campaign, ...meta }));
-  }, [dashboardData]);
-
   async function handleProcessDataMatrix() {
     if (!startDate || !endDate || !selectedEt) return;
     setErrorMessage("");
@@ -183,7 +126,6 @@ export default function Home() {
     setAllFetchedData(null);
     setSelectedCampaign("");
     setSelectedTemplate("");
-    setSelectedCardAccount(null);
     
     try {
       const lookupEt = selectedEt.toUpperCase().startsWith("ALL") ? "ALL" : selectedEt;
@@ -197,6 +139,7 @@ export default function Home() {
     }
   }
 
+  // Uses the preserved 'campaignSrc' field directly from the sheet columns
   const dynamicCampaignOptions = useMemo(() => {
     if (!allFetchedData) return [];
     const uniqueCamps = new Set<string>();
@@ -216,40 +159,31 @@ export default function Home() {
     return Array.from(new Set(options)).sort((a, b) => a.localeCompare(b));
   }, [allFetchedData, selectedCampaign]);
 
-  // Filters the complete matching rows base for the selection card layout matrix
-  const currentFilteredBaseRows = useMemo(() => {
-    if (!allFetchedData || !selectedCampaign || !selectedTemplate) return [];
+  const finalCalculatedOutput = useMemo(() => {
+    if (!allFetchedData || !selectedCampaign || !selectedTemplate) return null;
+    
     const rule = getFilterRule(selectedCampaign);
     let rows = allFetchedData.filter((item) => item.campaignSrc === selectedCampaign && matchTemplate(item.template, rule));
     
     if (selectedTemplate !== "ALL") {
       rows = rows.filter((item) => item.template.toLowerCase() === selectedTemplate.toLowerCase());
     }
-    return rows;
+
+    const totalMails = rows.length;
+    const totalCount = rows.reduce((sum, item) => sum + item.count, 0);
+    const calculatedVolume = rows.reduce((sum, item) => sum + (item.count * item.multiplier), 0);
+
+    return {
+      totalMails,
+      totalCount,
+      calculatedVolume,
+      breakdown: rows
+    };
   }, [allFetchedData, selectedCampaign, selectedTemplate]);
-
-  // Aggregated splits for rendering individual card values overview
-  const processedAccountWiseCards = useMemo(() => {
-    const cardsMap = new Map<string, { totalMails: number; totalVolume: number }>();
-    currentFilteredBaseRows.forEach((item) => {
-      const existing = cardsMap.get(item.etSource) || { totalMails: 0, totalVolume: 0 };
-      cardsMap.set(item.etSource, {
-        totalMails: existing.totalMails + item.count,
-        totalVolume: existing.totalVolume + (item.count * item.multiplier),
-      });
-    });
-    return Array.from(cardsMap.entries()).map(([account, meta]) => ({ account, ...meta }));
-  }, [currentFilteredBaseRows]);
-
-  // Computes the structural breakdown lists of individual templates matching the active clicked card pop up target
-  const modalTemplatesBreakdownList = useMemo(() => {
-    if (!selectedCardAccount) return [];
-    return currentFilteredBaseRows.filter(row => row.etSource === selectedCardAccount);
-  }, [selectedCardAccount, currentFilteredBaseRows]);
 
   return (
     <>
-      {/* INITIAL BOOT LAYER */}
+      {/* INITIAL BOOT LOADER */}
       {isAppLoading && (
         <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-slate-950">
           <div className="flex flex-col items-center gap-6">
@@ -264,7 +198,7 @@ export default function Home() {
         </div>
       )}
 
-      {/* SYNC RUNTIME PROGRESS DISPLAY */}
+      {/* MATRIX CALCULATING PROGRESS SPIN LAYER */}
       {status === "loading" && (
         <div className="fixed inset-0 z-40 flex flex-col items-center justify-center bg-slate-950/80 backdrop-blur-md">
           <div className="flex flex-col items-center gap-5 bg-slate-900 border border-white/5 p-8 rounded-2xl shadow-2xl max-w-sm w-full mx-4 text-center">
@@ -272,50 +206,11 @@ export default function Home() {
               <div className="absolute inset-0 rounded-full border-4 border-zinc-800" />
               <div className="absolute inset-0 rounded-full border-4 border-t-emerald-500 border-r-emerald-500 animate-spin" />
             </div>
-            <h3 className="text-sm font-bold text-white tracking-wide uppercase">Processing Data Matrix</h3>
-          </div>
-        </div>
-      )}
-
-      {/* ========================================================= */}
-      {/* POPUP MODAL COMPONENT LAYER: Template breakdown of clicked card */}
-      {/* ========================================================= */}
-      {selectedCardAccount && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/75 backdrop-blur-sm p-4 animate-fadeIn">
-          <div className={`w-full max-w-2xl rounded-2xl border shadow-2xl p-6 flex flex-col max-h-[85vh] transition-colors ${
-            isDarkMode ? "bg-slate-900 border-white/10 text-white" : "bg-white border-slate-200 text-slate-900"
-          }`}>
-            <div className="flex justify-between items-center pb-3 border-b border-zinc-800/60 mb-4">
-              <div>
-                <h3 className="text-sm font-bold uppercase tracking-wider text-emerald-400">
-                  📋 Account Reference: {selectedCardAccount}
-                </h3>
-                <p className="text-xs text-zinc-400 mt-0.5">Live items tracking breakdown ledger</p>
-              </div>
-              <button onClick={() => setSelectedCardAccount(null)} className="h-8 px-3 rounded-lg bg-zinc-800 text-xs font-bold text-zinc-300 hover:bg-zinc-700 transition">
-                Close
-              </button>
-            </div>
-
-            <div className="overflow-y-auto flex-1 divide-y divide-zinc-800/50 pr-1 font-mono text-xs">
-              {modalTemplatesBreakdownList.map((item, index) => (
-                <div key={index} className="py-3 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2">
-                  <div className="flex flex-col max-w-[70%]">
-                    <span className="font-sans font-semibold text-zinc-200 break-all">{item.template}</span>
-                    <span className="text-[10px] text-zinc-500 mt-0.5 uppercase tracking-wide">Campaign: {item.campaignSrc}</span>
-                  </div>
-                  <div className="flex items-center gap-4 justify-between sm:justify-end shrink-0">
-                    <div className="text-right">
-                      <span className="text-zinc-400 block text-[10px] uppercase font-bold">Mails</span>
-                      <span className="font-bold text-zinc-300 text-sm">{item.count.toLocaleString()}</span>
-                    </div>
-                    <div className="text-right min-w-[90px]">
-                      <span className="text-emerald-500 block text-[10px] uppercase font-bold">Volume</span>
-                      <span className="font-black text-emerald-400 text-sm">{(item.count * item.multiplier).toLocaleString()}</span>
-                    </div>
-                  </div>
-                </div>
-              ))}
+            <div className="flex flex-col gap-1.5">
+              <h3 className="text-sm font-bold text-white tracking-wide uppercase">Processing Sheet Matrix</h3>
+              <p className="text-xs text-zinc-400 leading-relaxed">
+                Downloading all layout template ledgers for {selectedEt === "ALL" ? "All Accounts" : selectedEt}...
+              </p>
             </div>
           </div>
         </div>
@@ -326,170 +221,170 @@ export default function Home() {
       }`}>
         <div className="mx-auto max-w-5xl w-full flex flex-col gap-6 flex-1">
           
-          <header className={`border-b pb-5 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 ${isDarkMode ? "border-white/10" : "border-slate-200"}`}>
+          <header className={`border-b pb-5 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 ${
+            isDarkMode ? "border-white/10" : "border-slate-200"
+          }`}>
             <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 w-full sm:w-auto">
               <div className="relative h-20 w-48 shrink-0">
                 <Image src="/logo.png" alt="Logo" fill priority className="object-contain object-left" />
               </div>
-              <div className="text-zinc-400 text-sm font-medium">
-                Live Campaign Matrix Workspace
+              <div className={`sm:border-l sm:py-1 sm:pl-4 ${isDarkMode ? "border-white/10 text-zinc-300" : "border-slate-200 text-slate-600"}`}>
+                <p className="text-sm max-w-md font-medium leading-relaxed">
+                  Select a targeted date range matrix block (max 7 days) to calculate dynamic counts.
+                </p>
               </div>
             </div>
-            <button onClick={() => setIsDarkMode(!isDarkMode)} className="p-2.5 rounded-full border border-zinc-800 hover:bg-zinc-900 transition text-xs font-bold">
-              {isDarkMode ? "🌙 Dark" : "☀️ Light"}
-            </button>
+
+            <div className="flex items-center gap-4 self-end sm:set-auto">
+              <button onClick={() => setIsDarkMode(!isDarkMode)} title="Toggle Theme" className="group relative flex flex-col items-center focus:outline-none">
+                <div className={`w-0.5 h-6 transition-colors duration-500 ${isDarkMode ? "bg-zinc-700 group-hover:bg-emerald-400" : "bg-slate-300 group-hover:bg-emerald-500"}`} />
+                <div className={`w-7 h-7 rounded-full flex items-center justify-center shadow-md transition-all duration-500 transform group-active:scale-95 ${
+                  isDarkMode ? "bg-zinc-800 border border-zinc-700 text-amber-400 shadow-amber-500/10" : "bg-white border border-slate-200 text-slate-400 shadow-slate-900/5"
+                }`}>
+                  {isDarkMode ? (
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4 text-amber-400">
+                      <path d="M10 2a.75.75 0 01.75.75v1.5a.75.75 0 01-1.5 0v-1.5A.75.75 0 0110 2zM10 15a.75.75 0 01.75.75v1.5a.75.75 0 01-1.5 0v-1.5A.75.75 0 0110 15zM4 10a.75.75 0 01.75-.75h1.5a.75.75 0 010 1.5h-1.5A.75.75 0 014 10zM14 10a.75.75 0 01.75-.75h1.5a.75.75 0 010 1.5h-1.5a.75.75 0 01-.75-.75zM5.636 5.636a.75.75 0 011.06 0l1.06 1.06a.75.75 0 11-1.06 1.06l-1.06-1.06a.75.75 0 010-1.06zM12.243 12.243a.75.75 0 011.06 0l1.06 1.06a.75.75 0 11-1.06 1.06l-1.06-1.06a.75.75 0 010-1.06zM5.636 14.364a.75.75 0 010-1.06l1.06-1.06a.75.75 0 111.06 1.06l-1.06 1.06a.75.75 0 01-1.06 0zM12.243 6.697a.75.75 0 010-1.06l1.06-1.06a.75.75 0 111.06 1.06l-1.06 1.06a.75.75 0 01-1.06 0zM10 6a4 4 0 100 8 4 4 0 000-8z" />
+                    </svg>
+                  ) : (
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4 text-slate-400">
+                      <path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z" />
+                    </svg>
+                  )}
+                </div>
+              </button>
+            </div>
           </header>
 
-          {/* ========================================================= */}
-          {/* SECTION A: AUTOMATED DASHBOARD SYSTEM SUMMARY LAYER       */}
-          {/* ========================================================= */}
-          {!allFetchedData && (
-            <div className="flex flex-col gap-6 animate-fadeIn">
-              
-              <section className={`rounded-xl p-4 sm:p-6 border shadow-xl ${isDarkMode ? "bg-slate-900 border-white/5" : "bg-white border-slate-200"}`}>
-                <h3 className="text-xs font-bold uppercase tracking-wider text-emerald-500 mb-4">
-                  🔥 Top 5 Active Campaigns Going with Highest Volume (Today)
-                </h3>
-                {isDashboardLoading ? (
-                  <div className="h-12 flex items-center justify-center text-xs text-zinc-400 font-medium">Syncing live dashboard summaries...</div>
-                ) : topFiveCampaignsSummary.length === 0 ? (
-                  <div className="h-12 flex items-center justify-center text-xs text-zinc-500">No active counts found for current date.</div>
-                ) : (
-                  <div className="grid gap-3 grid-cols-1 sm:grid-cols-5">
-                    {topFiveCampaignsSummary.map((item, index) => (
-                      <div key={item.name} className={`p-3 rounded-lg border flex flex-col ${isDarkMode ? "bg-slate-950 border-zinc-800" : "bg-slate-50 border-slate-200"}`}>
-                        <span className="text-[10px] font-bold text-zinc-500 uppercase">Rank #{index + 1}</span>
-                        <span className="text-xs font-bold truncate mt-0.5" title={item.name}>{item.name}</span>
-                        <span className="text-sm font-black text-emerald-400 mt-1">{item.volume.toLocaleString()}</span>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </section>
-
-              <div className="grid gap-6 grid-cols-1 md:grid-cols-2">
-                <section className={`rounded-xl p-4 sm:p-6 border shadow-xl ${isDarkMode ? "bg-slate-900 border-white/5" : "bg-white border-slate-200"}`}>
-                  <h3 className="text-xs font-bold uppercase tracking-wider text-sky-400 mb-3">📋 Section 1: Account Wise Track Volume</h3>
-                  <div className="max-h-[300px] overflow-y-auto divide-y divide-zinc-800/40 font-mono text-xs pr-2">
-                    {dashboardAccountWiseMetrics.map((item) => (
-                      <div key={item.account} className="py-2.5 flex justify-between items-center gap-2">
-                        <span className="font-sans font-medium text-zinc-300 truncate">{item.account}</span>
-                        <span className="font-bold text-sky-400 shrink-0">{item.calculatedVolume.toLocaleString()} <span className="text-[10px] text-zinc-500 font-normal">({item.totalMails} mails)</span></span>
-                      </div>
-                    ))}
-                    {dashboardAccountWiseMetrics.length === 0 && <p className="text-zinc-500 text-center py-4">No account metrics available.</p>}
-                  </div>
-                </section>
-
-                <section className={`rounded-xl p-4 sm:p-6 border shadow-xl ${isDarkMode ? "bg-slate-900 border-white/5" : "bg-white border-slate-200"}`}>
-                  <h3 className="text-xs font-bold uppercase tracking-wider text-purple-400 mb-3">📊 Section 2: Campaign Wise Track Volume</h3>
-                  <div className="max-h-[300px] overflow-y-auto divide-y divide-zinc-800/40 font-mono text-xs pr-2">
-                    {dashboardCampaignWiseMetrics.map((item) => (
-                      <div key={item.campaign} className="py-2.5 flex justify-between items-center gap-2">
-                        <span className="font-sans font-medium text-zinc-300 truncate">{item.campaign}</span>
-                        <span className="font-bold text-purple-400 shrink-0">{item.calculatedVolume.toLocaleString()} <span className="text-[10px] text-zinc-500 font-normal">({item.totalMails} mails)</span></span>
-                      </div>
-                    ))}
-                    {dashboardCampaignWiseMetrics.length === 0 && <p className="text-zinc-500 text-center py-4">No campaign metrics available.</p>}
-                  </div>
-                </section>
-              </div>
-            </div>
-          )}
-
-          {/* ========================================================= */}
-          {/* CORE WORKSPACE FILTER CONTROLS BAR                        */}
-          {/* ========================================================= */}
-          <section className={`rounded-xl p-4 sm:p-6 flex flex-col gap-4 border shadow-xl ${isDarkMode ? "bg-slate-900 border-white/5" : "bg-white border-slate-200"}`}>
+          <section className={`rounded-xl p-4 sm:p-6 flex flex-col gap-4 border shadow-xl transition-colors duration-500 ${
+            isDarkMode ? "bg-slate-900 border-white/5" : "bg-white border-slate-200"
+          }`}>
             <div className="grid gap-4 grid-cols-1 sm:grid-cols-3 items-end">
-              <div className="flex flex-col gap-1">
-                <label className="text-xs font-semibold text-zinc-400">Start Date</label>
-                <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className={`h-11 rounded-lg px-3 text-sm outline-none w-full ${isDarkMode ? "bg-slate-950 border-zinc-800 text-white" : "bg-slate-50 border-slate-200"}`} />
+              <div className="flex flex-col gap-1 w-full">
+                <label className={`text-xs font-semibold ${isDarkMode ? "text-zinc-400" : "text-slate-500"}`}>Start Date</label>
+                <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className={`h-11 rounded-lg px-3 text-sm outline-none w-full ${
+                  isDarkMode ? "bg-slate-950 border-zinc-800 text-white focus:border-emerald-500" : "bg-slate-50 border-slate-200 text-slate-900 focus:border-emerald-500 border"
+                }`} />
               </div>
-              <div className="flex flex-col gap-1">
-                <label className="text-xs font-semibold text-zinc-400">End Date</label>
-                <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className={`h-11 rounded-lg px-3 text-sm outline-none w-full ${isDarkMode ? "bg-slate-950 border-zinc-800 text-white" : "bg-slate-50 border-slate-200"}`} />
+
+              <div className="flex flex-col gap-1 w-full">
+                <label className={`text-xs font-semibold ${isDarkMode ? "text-zinc-400" : "text-slate-500"}`}>End Date</label>
+                <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className={`h-11 rounded-lg px-3 text-sm outline-none w-full ${
+                  isDarkMode ? "bg-slate-950 border-zinc-800 text-white focus:border-emerald-500" : "bg-slate-50 border-slate-200 text-slate-900 focus:border-emerald-500 border"
+                }`} />
               </div>
-              <div className="flex flex-col gap-1">
-                <label className="text-xs font-semibold text-zinc-400">Origin Account (ET)</label>
-                <select value={selectedEt} onChange={(e) => setSelectedEt(e.target.value)} className={`h-11 rounded-lg px-3 text-sm outline-none w-full ${isDarkMode ? "bg-slate-950 border-zinc-800 text-white" : "bg-slate-50 border-slate-200"}`}>
+
+              <div className="flex flex-col gap-1 w-full">
+                <label className={`text-xs font-semibold ${isDarkMode ? "text-zinc-400" : "text-slate-500"}`}>Select Origin Account (ET)</label>
+                <select value={selectedEt} onChange={(e) => setSelectedEt(e.target.value)} className={`h-11 rounded-lg px-3 text-sm outline-none w-full ${
+                  isDarkMode ? "bg-slate-950 border-zinc-800 text-white focus:border-emerald-500" : "bg-slate-50 border-slate-200 text-slate-900 focus:border-emerald-500 border"
+                }`}>
                   <option value="">Select ET Account</option>
-                  <option value="ALL">ALL ET'S (All Sheets)</option>
+                  <option value="ALL">ALL ET'S (Combine All Sheets)</option>
                   {ets.map((e) => <option key={e} value={e}>{e}</option>)}
                 </select>
               </div>
             </div>
 
-            {errorMessage && <p className="text-xs font-semibold text-rose-500 bg-rose-500/5 p-2.5 rounded-lg border border-rose-500/10">⚠️ {errorMessage}</p>}
+            {errorMessage && (
+              <p className="text-xs font-semibold text-rose-500 tracking-wide bg-rose-500/5 border border-rose-500/10 p-2.5 rounded-lg">
+                ⚠️ {errorMessage}
+              </p>
+            )}
 
-            <button onClick={handleProcessDataMatrix} disabled={!startDate || !endDate || !selectedEt || status === "loading"} className="w-full h-11 rounded-lg bg-emerald-500 hover:bg-emerald-400 font-bold text-xs uppercase tracking-wider text-white disabled:opacity-40 shadow-lg cursor-pointer transition active:scale-95 duration-150">
+            <button 
+              onClick={handleProcessDataMatrix}
+              disabled={!startDate || !endDate || !selectedEt || status === "loading"}
+              className="w-full h-11 rounded-lg bg-emerald-500 hover:bg-emerald-400 font-bold text-xs uppercase tracking-wider text-white disabled:opacity-40 shadow-lg shadow-emerald-500/10 cursor-pointer transition active:scale-95 duration-150"
+            >
               Process Data Matrix
             </button>
           </section>
 
-          {/* ========================================================= */}
-          {/* SECTION B: SPECIFIC ACTION RESULTS SCREEN OVERVIEW         */}
-          {/* ========================================================= */}
           {allFetchedData && (
-            <div className="flex flex-col gap-6 animate-fadeIn">
-              
-              <section className={`rounded-xl p-4 sm:p-6 grid gap-4 sm:grid-cols-2 border shadow-xl ${isDarkMode ? "bg-slate-900 border-white/5" : "bg-white border-slate-200"}`}>
-                <div className="flex flex-col gap-1">
-                  <label className="text-xs font-semibold text-zinc-400">Select Campaign Group</label>
-                  <select value={selectedCampaign} onChange={(e) => { setSelectedCampaign(e.target.value); setSelectedTemplate(""); }} className={`h-11 rounded-lg px-3 text-sm outline-none w-full ${isDarkMode ? "bg-slate-950 border-zinc-800 text-white" : "bg-slate-50 border-slate-200"}`}>
-                    <option value="">Select Campaign</option>
-                    {dynamicCampaignOptions.map((c) => <option key={c} value={c}>{c}</option>)}
-                  </select>
-                </div>
-                <div className="flex flex-col gap-1">
-                  <label className="text-xs font-semibold text-zinc-400">Select Target Template</label>
-                  <select value={selectedTemplate} onChange={(e) => setSelectedTemplate(e.target.value)} disabled={!selectedCampaign} className={`h-11 rounded-lg px-3 text-sm outline-none w-full ${isDarkMode ? "bg-slate-950 border-zinc-800 text-white" : "bg-slate-50 border-slate-200"}`}>
-                    <option value="">{selectedCampaign ? "Select Template" : "Choose Campaign first"}</option>
-                    {dynamicTemplateOptions.length > 0 && <option value="ALL">ALL MATCHED TEMPLATES</option>}
-                    {dynamicTemplateOptions.map((t) => <option key={t} value={t}>{t}</option>)}
-                  </select>
-                </div>
-              </section>
+            <section className={`rounded-xl p-4 sm:p-6 grid gap-4 sm:grid-cols-2 border shadow-xl transition-all duration-500 animate-fadeIn ${
+              isDarkMode ? "bg-slate-900 border-white/5" : "bg-white border-slate-200"
+            }`}>
+              <div className="flex flex-col gap-1">
+                <label className={`text-xs font-semibold ${isDarkMode ? "text-zinc-400" : "text-slate-500"}`}>Select Campaign Group</label>
+                <select value={selectedCampaign} onChange={(e) => { setSelectedCampaign(e.target.value); setSelectedTemplate(""); }} className={`h-11 rounded-lg px-3 text-sm outline-none w-full ${
+                  isDarkMode ? "bg-slate-950 border-zinc-800 text-white focus:border-emerald-500" : "bg-slate-50 border-slate-200 text-slate-900 focus:border-emerald-500 border"
+                }`}>
+                  <option value="">Select Campaign</option>
+                  {dynamicCampaignOptions.map((c) => <option key={c} value={c}>{c}</option>)}
+                </select>
+              </div>
 
-              {selectedCampaign && selectedTemplate && (
-                <div className="flex flex-col gap-4">
-                  <div className="flex items-center justify-between">
-                    <h4 className="text-xs font-bold uppercase tracking-widest text-zinc-400">📌 Account Summary Split Cards (Click to see Templates)</h4>
-                    <button onClick={() => setAllFetchedData(null)} className="text-xs font-semibold text-emerald-500 hover:underline">← Clear View Back to Dashboard</button>
-                  </div>
-                  
-                  {/* Grid displaying cards */}
-                  <div className="grid gap-4 grid-cols-1 sm:grid-cols-3">
-                    {processedAccountWiseCards.map((card) => (
-                      <div 
-                        key={card.account} 
-                        onClick={() => setSelectedCardAccount(card.account)}
-                        className={`p-4 rounded-xl border shadow-md flex flex-col justify-between cursor-pointer transform transition hover:scale-[1.03] hover:shadow-lg duration-200 group ${
-                          isDarkMode ? "bg-slate-900 border-white/5 hover:border-emerald-500/30" : "bg-white border-slate-200 hover:border-emerald-500/40"
-                        }`}
-                      >
-                        <div>
-                          <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 mb-2 group-hover:bg-emerald-500 group-hover:text-white transition-colors duration-200">
-                            {card.account}
-                          </span>
-                          <p className="text-xs text-zinc-400 font-medium">Total Mails Match Row</p>
-                          <p className="text-xl font-bold tracking-tight mt-0.5 text-zinc-200">{card.totalMails.toLocaleString()} <span className="text-xs text-zinc-500 font-normal">Mails</span></p>
-                        </div>
-                        <div className="mt-4 border-t border-zinc-800/60 pt-2 flex justify-between items-baseline">
-                          <span className="text-[10px] uppercase font-bold text-zinc-500">Calculated Volume</span>
-                          <span className="text-base font-black text-sky-400 group-hover:text-emerald-400 transition-colors duration-200">{card.totalVolume.toLocaleString()}</span>
-                        </div>
-                      </div>
-                    ))}
-                    {processedAccountWiseCards.length === 0 && (
-                      <div className="p-6 border rounded-xl border-dashed border-zinc-800 text-center text-xs text-zinc-500 col-span-full">
-                        No parameters match this criteria combination grid. Try broadening selections.
-                      </div>
-                    )}
-                  </div>
+              <div className="flex flex-col gap-1">
+                <label className={`text-xs font-semibold ${isDarkMode ? "text-zinc-400" : "text-slate-500"}`}>Select Target Template</label>
+                <select value={selectedTemplate} onChange={(e) => setSelectedTemplate(e.target.value)} disabled={!selectedCampaign} className={`h-11 rounded-lg px-3 text-sm outline-none transition duration-500 disabled:opacity-40 w-full ${
+                  isDarkMode ? "bg-slate-950 border-zinc-800 text-white focus:border-emerald-500" : "bg-slate-50 border-slate-200 text-slate-900 focus:border-emerald-500 border"
+                }`}>
+                  <option value="">{selectedCampaign ? "Select Template" : "Choose Campaign first"}</option>
+                  {dynamicTemplateOptions.length > 0 && <option value="ALL">ALL MATCHED TEMPLATES</option>}
+                  {dynamicTemplateOptions.map((t) => <option key={t} value={t}>{t}</option>)}
+                </select>
+              </div>
+            </section>
+          )}
+
+          {finalCalculatedOutput && (
+            <section className={`rounded-xl p-4 sm:p-6 border flex flex-col gap-6 shadow-xl transition-all duration-500 animate-fadeIn ${
+              isDarkMode ? "bg-slate-900 border-white/5" : "bg-white border-slate-200"
+            }`}>
+              
+              <div className="grid gap-4 grid-cols-1 sm:grid-cols-2">
+                <div className={`p-4 rounded-lg border transition-colors duration-500 ${isDarkMode ? "bg-slate-950 border-zinc-800" : "bg-slate-50 border-slate-200"}`}>
+                  <span className={`text-xs font-medium uppercase tracking-wide ${isDarkMode ? "text-zinc-400" : "text-slate-500"}`}>Total Matched Templates</span>
+                  <p className={`text-2xl font-bold mt-1 ${isDarkMode ? "text-white" : "text-slate-900"}`}>{finalCalculatedOutput.totalMails}</p>
+                </div>
+                
+                <div className={`p-4 rounded-lg border transition-colors duration-500 ${isDarkMode ? "bg-slate-950 border-zinc-800" : "bg-slate-50 border-slate-200"}`}>
+                  <span className={`text-xs font-medium uppercase tracking-wide ${isDarkMode ? "text-zinc-400" : "text-slate-500"}`}>
+                    Total Count Sum ({selectedEt.toUpperCase().startsWith("ALL") ? "Dynamic Stacks" : `Mails × ${finalCalculatedOutput.totalCount > 0 ? (finalCalculatedOutput.calculatedVolume / finalCalculatedOutput.totalCount) : 2000}`})
+                  </span>
+                  <p className="text-2xl font-bold mt-1 text-emerald-500">{finalCalculatedOutput.calculatedVolume.toLocaleString()}</p>
+                </div>
+              </div>
+
+              {finalCalculatedOutput.breakdown.length > 0 && (
+                <div className={`rounded-lg border overflow-x-auto w-full transition-colors duration-500 ${
+                  isDarkMode ? "border-zinc-800 bg-slate-950" : "border-slate-200 bg-slate-50"
+                }`}>
+                  <table className="w-full text-left text-sm min-w-[650px]">
+                    <thead className={`text-xs uppercase border-b tracking-wider transition-colors duration-500 ${
+                      isDarkMode ? "bg-zinc-900 text-zinc-400 border-zinc-800" : "bg-slate-200 text-slate-600 border-slate-200"
+                    }`}>
+                      <tr>
+                        <th className="p-3.5 pl-4 whitespace-nowrap">Template Reference</th>
+                        <th className="p-3.5 whitespace-nowrap">Origin Account (ET)</th>
+                        <th className="p-3.5 text-right whitespace-nowrap">Mails Tracked</th>
+                        <th className="p-3.5 pr-4 text-right text-emerald-500 whitespace-nowrap">Calculated Count</th>
+                      </tr>
+                    </thead>
+                    <tbody className={`divide-y font-mono text-xs transition-colors duration-500 ${
+                      isDarkMode ? "divide-zinc-800 text-zinc-300" : "divide-slate-200 text-slate-700"
+                    }`}>
+                      {finalCalculatedOutput.breakdown.map((b, idx) => (
+                        <tr key={idx} className={`transition-colors ${isDarkMode ? "hover:bg-zinc-900/40 text-zinc-200" : "hover:bg-slate-200/50 text-slate-800"}`}>
+                          <td className="p-3.5 pl-4 font-sans font-medium whitespace-nowrap">{b.template}</td>
+                          <td className="p-3.5 font-sans whitespace-nowrap">
+                            <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium uppercase tracking-wide ${
+                              b.multiplier === 2000 
+                                ? "bg-amber-500/10 text-amber-400 border border-amber-500/20" 
+                                : "bg-sky-500/10 text-sky-400 border border-sky-500/20"
+                            }`}>
+                              {b.etSource}
+                            </span>
+                          </td>
+                          <td className="p-3.5 text-right font-semibold whitespace-nowrap">{b.count.toLocaleString()}</td>
+                          <td className="p-3.5 pr-4 text-right font-bold text-emerald-500 whitespace-nowrap">{(b.count * b.multiplier).toLocaleString()}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
               )}
-            </div>
+            </section>
           )}
         </div>
       </div>
