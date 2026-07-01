@@ -230,14 +230,39 @@ export default function Home() {
     return rows;
   }, [allFetchedData, selectedCampaign, selectedTemplate]);
 
+  // Global Campaign Summaries displayed prominently at the top
+  const globalCampaignCalculatedTotals = useMemo(() => {
+    if (currentFilteredBaseRows.length === 0) return null;
+    const totalMails = currentFilteredBaseRows.reduce((sum, item) => sum + item.count, 0);
+    const calculatedVolume = currentFilteredBaseRows.reduce((sum, item) => sum + (item.count * item.multiplier), 0);
+    const uniqueTemplates = new Set(currentFilteredBaseRows.map(r => r.template)).size;
+
+    return { totalMails, calculatedVolume, uniqueTemplates };
+  }, [currentFilteredBaseRows]);
+
+  // Structural groupings map that attaches template reference sets to the card nodes
   const processedAccountWiseCards = useMemo(() => {
-    const cardsMap = new Map<string, { totalMails: number; totalVolume: number }>();
+    const cardsMap = new Map<string, { totalMails: number; totalVolume: number; templates: Array<{ name: string; count: number; vol: number }> }>();
+    
     currentFilteredBaseRows.forEach((item) => {
       const etKey = item.etSource.toUpperCase().trim();
-      const existing = cardsMap.get(etKey) || { totalMails: 0, totalVolume: 0 };
+      const existing = cardsMap.get(etKey) || { totalMails: 0, totalVolume: 0, templates: [] };
+      
+      const rowVolume = item.count * item.multiplier;
+      
+      // Look for duplicate template logs inside the same account column block
+      const existingTmpl = existing.templates.find(t => t.name === item.template);
+      if (existingTmpl) {
+        existingTmpl.count += item.count;
+        existingTmpl.vol += rowVolume;
+      } else {
+        existing.templates.push({ name: item.template, count: item.count, vol: rowVolume });
+      }
+
       cardsMap.set(etKey, {
         totalMails: existing.totalMails + item.count,
-        totalVolume: existing.totalVolume + (item.count * item.multiplier),
+        totalVolume: existing.totalVolume + rowVolume,
+        templates: existing.templates
       });
     });
     return Array.from(cardsMap.entries()).map(([account, meta]) => ({ account, ...meta }));
@@ -247,14 +272,6 @@ export default function Home() {
     if (!selectedCardAccount) return [];
     return currentFilteredBaseRows.filter(row => row.etSource.toUpperCase().trim() === selectedCardAccount.toUpperCase().trim());
   }, [selectedCardAccount, currentFilteredBaseRows]);
-
-  async function handleAppDownloadClick() {
-    if (!deferredPrompt) return;
-    deferredPrompt.prompt();
-    await deferredPrompt.userChoice;
-    setDeferredPrompt(null);
-    setIsPwaSupported(false);
-  }
 
   return (
     <>
@@ -286,10 +303,10 @@ export default function Home() {
         </div>
       )}
 
-      {/* POPUP MODAL COMPONENT LAYER */}
+      {/* POPUP MODAL LAYER */}
       {selectedCardAccount && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/75 backdrop-blur-sm p-4 animate-fadeIn">
-          <div className={`w-full max-w-2xl rounded-2xl border shadow-2xl p-6 flex flex-col max-h-[85vh] transition-colors bg-slate-900 border-white/10 text-white`}>
+          <div className="w-full max-w-2xl rounded-2xl border shadow-2xl p-6 flex flex-col max-h-[85vh] transition-colors bg-slate-900 border-white/10 text-white">
             <div className="flex justify-between items-center pb-3 border-b border-zinc-800/60 mb-4">
               <div>
                 <h3 className="text-sm font-bold uppercase tracking-wider text-emerald-400">
@@ -343,7 +360,9 @@ export default function Home() {
             </button>
           </header>
 
+          {/* ========================================================= */}
           {/* SECTION A: AUTOMATED CURRENT DAY LANDING DASHBOARD MODULE */}
+          {/* ========================================================= */}
           {!allFetchedData && (
             <div className="flex flex-col gap-6 animate-fadeIn">
               <section className={`rounded-xl p-4 sm:p-6 border shadow-xl ${isDarkMode ? "bg-slate-900 border-white/5" : "bg-white border-slate-200"}`}>
@@ -425,9 +444,13 @@ export default function Home() {
             </button>
           </section>
 
-          {/* SECTION B: SPECIFIC ACTION RESULTS SCREEN OVERVIEW */}
+          {/* ========================================================= */}
+          {/* SECTION B: SPECIFIC ACTION RESULTS SCREEN OVERVIEW         */}
+          {/* ========================================================= */}
           {allFetchedData && (
             <div className="flex flex-col gap-6 animate-fadeIn">
+              
+              {/* Secondary Sub-Filters Row */}
               <section className={`rounded-xl p-4 sm:p-6 grid gap-4 sm:grid-cols-2 border shadow-xl ${isDarkMode ? "bg-slate-900 border-white/5" : "bg-white border-slate-200"}`}>
                 <div className="flex flex-col gap-1">
                   <label className="text-xs font-semibold text-zinc-400">Select Campaign Group</label>
@@ -446,33 +469,70 @@ export default function Home() {
                 </div>
               </section>
 
-              {/* CARD-MANNER VIEW MODULE FOR PROCESSED INPUTS */}
+              {/* DYNAMIC CAMPAIGN HIGHLIGHT DISPLAY AT THE TOP */}
+              {selectedCampaign && selectedTemplate && globalCampaignCalculatedTotals && (
+                <section className={`rounded-xl p-5 border shadow-xl grid gap-4 grid-cols-1 sm:grid-cols-3 animate-fadeIn ${
+                  isDarkMode ? "bg-gradient-to-br from-slate-900 to-slate-950 border-emerald-500/20" : "bg-gradient-to-br from-white to-slate-50 border-slate-200"
+                }`}>
+                  <div className="flex flex-col">
+                    <span className="text-[10px] uppercase font-bold text-zinc-400 tracking-wider">Target Campaign Group</span>
+                    <span className="text-lg font-black text-white mt-0.5 truncate" title={selectedCampaign}>{selectedCampaign}</span>
+                  </div>
+                  <div className="flex flex-col border-t sm:border-t-0 sm:border-x border-zinc-800/60 sm:px-4">
+                    <span className="text-[10px] uppercase font-bold text-zinc-400 tracking-wider">Total Mail Matches Count</span>
+                    <span className="text-2xl font-black text-sky-400 mt-0.5">{globalCampaignCalculatedTotals.totalMails.toLocaleString()} <span className="text-xs text-zinc-500 font-normal">Mails</span></span>
+                  </div>
+                  <div className="flex flex-col border-t sm:border-t-0 sm:px-4">
+                    <span className="text-[10px] uppercase font-bold text-emerald-400 tracking-wider">Aggregated Total Volume</span>
+                    <span className="text-2xl font-black text-emerald-400 mt-0.5">{globalCampaignCalculatedTotals.calculatedVolume.toLocaleString()}</span>
+                  </div>
+                </section>
+              )}
+
+              {/* CARD-MANNER BREAKDOWN OVERVIEW */}
               {selectedCampaign && selectedTemplate && (
                 <div className="flex flex-col gap-4">
                   <div className="flex items-center justify-between">
-                    <h4 className="text-xs font-bold uppercase tracking-widest text-zinc-400">📌 Account Summary Split Cards (Click to see Templates)</h4>
+                    <h4 className="text-xs font-bold uppercase tracking-widest text-zinc-400">📌 Account Wise Summary Matrix Split</h4>
                     <button onClick={() => setAllFetchedData(null)} className="text-xs font-semibold text-emerald-500 hover:underline">← Clear View Back to Dashboard</button>
                   </div>
                   
-                  <div className="grid gap-4 grid-cols-1 sm:grid-cols-3">
+                  {/* Grid displaying elegant cards with integrated creative names */}
+                  <div className="grid gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
                     {processedAccountWiseCards.map((card) => (
                       <div 
                         key={card.account} 
                         onClick={() => setSelectedCardAccount(card.account)}
-                        className={`p-4 rounded-xl border shadow-md flex flex-col justify-between cursor-pointer transform transition hover:scale-[1.03] hover:shadow-lg duration-200 group ${
-                          isDarkMode ? "bg-slate-900 border-white/5 hover:border-emerald-500/30" : "bg-white border-slate-200 hover:border-emerald-500/40"
+                        className={`rounded-xl border shadow-lg flex flex-col justify-between overflow-hidden transform transition duration-300 hover:scale-[1.02] hover:shadow-xl ${
+                          isDarkMode ? "bg-slate-900 border-white/5" : "bg-white border-slate-200"
                         }`}
                       >
-                        <div>
-                          <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 mb-2 group-hover:bg-emerald-500 group-hover:text-white transition-colors duration-200">
+                        {/* Header metadata frame wrapper banner */}
+                        <div className="p-4 border-b border-zinc-800/50 bg-slate-950/40 flex justify-between items-center">
+                          <span className="px-2.5 py-0.5 rounded text-[11px] font-black uppercase bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
                             {card.account}
                           </span>
-                          <p className="text-xs text-zinc-400 font-medium">Total Mails Match Row</p>
-                          <p className="text-xl font-bold tracking-tight mt-0.5 text-zinc-200">{card.totalMails.toLocaleString()} <span className="text-xs text-zinc-500 font-normal">Mails</span></p>
+                          <span className="text-xs font-mono font-bold text-sky-400">{card.totalVolume.toLocaleString()}</span>
                         </div>
-                        <div className="mt-4 border-t border-zinc-800/60 pt-2 flex justify-between items-baseline">
-                          <span className="text-[10px] uppercase font-bold text-zinc-500">Calculated Volume</span>
-                          <span className="text-base font-black text-sky-400 group-hover:text-emerald-400 transition-colors duration-200">{card.totalVolume.toLocaleString()}</span>
+
+                        {/* Middle body inner container showing creative name elements directly inside that particular card only */}
+                        <div className="p-4 flex-1 flex flex-col gap-2 max-h-[180px] overflow-y-auto pr-2 divide-y divide-zinc-800/20 font-mono text-[11px]">
+                          {card.templates.map((tmpl, tIdx) => (
+                            <div key={tIdx} className="pt-2 first:pt-0 flex justify-between items-start gap-3">
+                              <span className="font-sans text-zinc-300 break-all leading-tight" title={tmpl.name}>
+                                {tmpl.name}
+                              </span>
+                              <span className="text-zinc-500 font-bold shrink-0 text-right">
+                                {tmpl.count} <span className="text-[9px] text-zinc-600 font-normal">m</span>
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+
+                        {/* Bottom total label banner layout */}
+                        <div className="p-3 bg-slate-950/20 border-t border-zinc-800/40 flex justify-between items-center text-[10px] uppercase font-bold text-zinc-500 tracking-wider">
+                          <span>Row Total Mails</span>
+                          <span className="text-zinc-300 font-mono">{card.totalMails} Mails</span>
                         </div>
                       </div>
                     ))}
