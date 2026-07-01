@@ -51,14 +51,15 @@ function getDatesInRange(startDateIso: string, endDateIso: string): string[] {
   return dates;
 }
 
-// Kept for legacy system route verification endpoints
+// Legacy verification helpers
 export async function listCampaigns(etNameOrAll: string, isoDate?: string): Promise<string[]> {
   if (!SPREADSHEET_ID) return [];
   try {
     const tabs = await listETTabs();
+    const cleanLookup = etNameOrAll.replace(/[^0-9]/g, "");
     const targetTabs = etNameOrAll.toUpperCase().startsWith("ALL") 
       ? tabs 
-      : tabs.filter((t) => t.replace(/[^a-zA-Z0-9]/g, "").toLowerCase() === etNameOrAll.replace(/[^a-zA-Z0-9]/g, "").toLowerCase());
+      : tabs.filter((t) => t.replace(/[^0-9]/g, "") === cleanLookup);
 
     if (targetTabs.length === 0) return [];
     const sheets = await getSheetsClient();
@@ -103,14 +104,14 @@ export async function listCampaigns(etNameOrAll: string, isoDate?: string): Prom
   }
 }
 
-// Kept for legacy system route verification endpoints
 export async function getTemplatesForCampaign({ isoDate, etNameOrAll }: { isoDate: string; etNameOrAll: string; campaign: string }): Promise<string[]> {
   if (!SPREADSHEET_ID) return [];
   try {
     const tabs = await listETTabs();
+    const cleanLookup = etNameOrAll.replace(/[^0-9]/g, "");
     const targetTabs = etNameOrAll.toUpperCase().startsWith("ALL") 
       ? tabs 
-      : tabs.filter((t) => t.replace(/[^a-zA-Z0-9]/g, "").toLowerCase() === etNameOrAll.replace(/[^a-zA-Z0-9]/g, "").toLowerCase());
+      : tabs.filter((t) => t.replace(/[^0-9]/g, "") === cleanLookup);
 
     const sheets = await getSheetsClient();
     const templatesSet = new Set<string>();
@@ -137,7 +138,7 @@ export async function getTemplatesForCampaign({ isoDate, etNameOrAll }: { isoDat
   }
 }
 
-// Main processing system matrix parser
+// Core Batch processing engine
 export async function getMailCounts(options: { startDate: string; endDate: string; etNameOrAll: string }) {
   const { startDate, endDate, etNameOrAll } = options;
 
@@ -147,10 +148,12 @@ export async function getMailCounts(options: { startDate: string; endDate: strin
 
   const tabs = await listETTabs();
   
-  // Safe string matching that cleans spaces and special characters from tab names
+  // Extract only the numbers (e.g. "JSG53" -> "53") to find the tab regardless of brackets or spaces
+  const cleanLookupNumber = etNameOrAll.replace(/[^0-9]/g, "");
+
   const targetTabs = etNameOrAll.toUpperCase().startsWith("ALL") 
     ? tabs 
-    : tabs.filter((t) => t.replace(/[^a-zA-Z0-9]/g, "").toLowerCase() === etNameOrAll.replace(/[^a-zA-Z0-9]/g, "").toLowerCase());
+    : tabs.filter((t) => t.replace(/[^0-9]/g, "") === cleanLookupNumber);
 
   const sheets = await getSheetsClient();
   const targetedSheetDates = getDatesInRange(startDate, endDate);
@@ -163,12 +166,7 @@ export async function getMailCounts(options: { startDate: string; endDate: strin
   for (const tab of targetTabs) {
     try {
       const cleanedTabName = tab.replace(/[^a-zA-Z0-9]/g, "").toUpperCase();
-      
-      // Multiplier check matching stripped string characters
-      const rowMultiplier = (
-        cleanedTabName.includes("JSG40") || 
-        cleanedTabName.includes("JSG38")
-      ) ? 2000 : 5000;
+      const rowMultiplier = (cleanedTabName.includes("JSG40") || cleanedTabName.includes("JSG38")) ? 2000 : 5000;
 
       const res = await sheets.spreadsheets.values.get({
         spreadsheetId: SPREADSHEET_ID,
