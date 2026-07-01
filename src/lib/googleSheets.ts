@@ -58,7 +58,7 @@ export async function listCampaigns(etNameOrAll: string, isoDate?: string): Prom
     const tabs = await listETTabs();
     const targetTabs = etNameOrAll.toUpperCase().startsWith("ALL") 
       ? tabs 
-      : tabs.filter((t) => t.toLowerCase() === etNameOrAll.trim().toLowerCase());
+      : tabs.filter((t) => t.replace(/[^a-zA-Z0-9]/g, "").toLowerCase() === etNameOrAll.replace(/[^a-zA-Z0-9]/g, "").toLowerCase());
 
     if (targetTabs.length === 0) return [];
     const sheets = await getSheetsClient();
@@ -110,7 +110,7 @@ export async function getTemplatesForCampaign({ isoDate, etNameOrAll }: { isoDat
     const tabs = await listETTabs();
     const targetTabs = etNameOrAll.toUpperCase().startsWith("ALL") 
       ? tabs 
-      : tabs.filter((t) => t.toLowerCase() === etNameOrAll.trim().toLowerCase());
+      : tabs.filter((t) => t.replace(/[^a-zA-Z0-9]/g, "").toLowerCase() === etNameOrAll.replace(/[^a-zA-Z0-9]/g, "").toLowerCase());
 
     const sheets = await getSheetsClient();
     const templatesSet = new Set<string>();
@@ -146,9 +146,11 @@ export async function getMailCounts(options: { startDate: string; endDate: strin
   }
 
   const tabs = await listETTabs();
+  
+  // Safe string matching that cleans spaces and special characters from tab names
   const targetTabs = etNameOrAll.toUpperCase().startsWith("ALL") 
     ? tabs 
-    : tabs.filter((t) => t.toLowerCase() === etNameOrAll.trim().toLowerCase());
+    : tabs.filter((t) => t.replace(/[^a-zA-Z0-9]/g, "").toLowerCase() === etNameOrAll.replace(/[^a-zA-Z0-9]/g, "").toLowerCase());
 
   const sheets = await getSheetsClient();
   const targetedSheetDates = getDatesInRange(startDate, endDate);
@@ -160,12 +162,12 @@ export async function getMailCounts(options: { startDate: string; endDate: strin
 
   for (const tab of targetTabs) {
     try {
-      const tabUpper = tab.toUpperCase().replace(/\s+/g, "");
+      const cleanedTabName = tab.replace(/[^a-zA-Z0-9]/g, "").toUpperCase();
       
-      // Removed JSG53 from this group so it defaults down to 5000 properly
+      // Multiplier check matching stripped string characters
       const rowMultiplier = (
-        tabUpper.includes("JSG40") || 
-        tabUpper.includes("JSG38")
+        cleanedTabName.includes("JSG40") || 
+        cleanedTabName.includes("JSG38")
       ) ? 2000 : 5000;
 
       const res = await sheets.spreadsheets.values.get({
