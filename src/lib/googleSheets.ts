@@ -51,7 +51,7 @@ function getDatesInRange(startDateIso: string, endDateIso: string): string[] {
   return dates;
 }
 
-// Left intact to fulfill legacy system API routes definitions safely
+// Kept for legacy system route verification endpoints
 export async function listCampaigns(etNameOrAll: string, isoDate?: string): Promise<string[]> {
   if (!SPREADSHEET_ID) return [];
   try {
@@ -103,7 +103,7 @@ export async function listCampaigns(etNameOrAll: string, isoDate?: string): Prom
   }
 }
 
-// Left intact to fulfill legacy system API routes definitions safely
+// Kept for legacy system route verification endpoints
 export async function getTemplatesForCampaign({ isoDate, etNameOrAll }: { isoDate: string; etNameOrAll: string; campaign: string }): Promise<string[]> {
   if (!SPREADSHEET_ID) return [];
   try {
@@ -137,7 +137,7 @@ export async function getTemplatesForCampaign({ isoDate, etNameOrAll }: { isoDat
   }
 }
 
-// Unified multi-date tracking ledger parser
+// Main processing system matrix parser
 export async function getMailCounts(options: { startDate: string; endDate: string; etNameOrAll: string }) {
   const { startDate, endDate, etNameOrAll } = options;
 
@@ -161,7 +161,12 @@ export async function getMailCounts(options: { startDate: string; endDate: strin
   for (const tab of targetTabs) {
     try {
       const tabUpper = tab.toUpperCase().replace(/\s+/g, "");
-      const rowMultiplier = (tabUpper.includes("JSG40") || tabUpper.includes("JSG38")) ? 2000 : 5000;
+      
+      // Removed JSG53 from this group so it defaults down to 5000 properly
+      const rowMultiplier = (
+        tabUpper.includes("JSG40") || 
+        tabUpper.includes("JSG38")
+      ) ? 2000 : 5000;
 
       const res = await sheets.spreadsheets.values.get({
         spreadsheetId: SPREADSHEET_ID,
@@ -214,7 +219,7 @@ export async function getMailCounts(options: { startDate: string; endDate: strin
         }
       }
     } catch (err) {
-      console.error(`Error processing range metrics on tab ${tab}:`, err);
+      console.error(`Error processing metrics on tab ${tab}:`, err);
     }
   }
 
