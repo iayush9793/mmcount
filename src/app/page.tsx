@@ -86,26 +86,26 @@ export default function Home() {
     
     if (cleanCamp === "RGR") return { includes: ["RGR"], excludes: [] };
     if (cleanCamp === "ICO") return { includes: ["ICO"], excludes: [] };
-    if (cleanCamp === "AHS_AD") return { includes: ["AHS"], excludes: ["DB", "XCE", "GZ", "XC", "ES"] };
-    if (cleanCamp === "SHW_ES") return { includes: ["SHW", "ES"], excludes: ["DB", "XCE", "GZ", "XC"] };
+    if (cleanCamp === "AHS_AD" || cleanCamp.startsWith("AHS")) return { includes: ["AHS"], excludes: ["DB", "XCE", "GZ", "XC", "ES"] };
+    if (cleanCamp === "SHW_ES" || cleanCamp.startsWith("SHW")) return { includes: ["SHW", "ES"], excludes: ["DB", "XCE", "GZ", "XC"] };
     if (cleanCamp === "XCE_AIR" || cleanCamp === "AIR") return { includes: ["AIR"], excludes: [] };
-    if (cleanCamp === "FIR_XC") return { includes: ["FIR"], excludes: [] };
-    if (cleanCamp === "HEC_AD") return { includes: ["HEC"], excludes: [] };
+    if (cleanCamp === "FIR_XC" || cleanCamp.startsWith("FIR")) return { includes: ["FIR"], excludes: [] };
+    if (cleanCamp === "HEC_AD" || cleanCamp.startsWith("HEC")) return { includes: ["HEC"], excludes: [] };
     if (cleanCamp === "INSURIFY_GZ") return { includes: ["IA"], excludes: ["IAI"] };
-    if (cleanCamp === "LR_GZ") return { includes: ["LR"], excludes: [] };
+    if (cleanCamp === "LR_GZ" || cleanCamp.startsWith("LR")) return { includes: ["LR"], excludes: [] };
     if (cleanCamp.includes("E-VETERANS_DB") || cleanCamp.includes("VETERANS_DB")) return { includes: ["EVL"], excludes: [] };
-    if (cleanCamp === "FGLO_DB") return { includes: ["FGLO"], excludes: [] };
-    if (cleanCamp === "ADT_AD") return { includes: ["ADT"], excludes: ["DB", "XCE", "GZ", "XC"] };
+    if (cleanCamp === "FGLO_DB" || cleanCamp.startsWith("FGLO")) return { includes: ["FGLO"], excludes: [] };
+    if (cleanCamp === "ADT_AD" || cleanCamp.startsWith("ADT")) return { includes: ["ADT"], excludes: ["DB", "XCE", "GZ", "XC"] };
     if (cleanCamp.includes("RYH FLOORING") || cleanCamp.includes("RYH_FLOORING")) return { includes: ["RHF"], excludes: ["DB", "XCE", "GZ", "XC"] };
     if (cleanCamp === "JG_AD") return { includes: ["JG"], excludes: ["DB", "XCE", "GZ", "XC"] };
-    if (cleanCamp === "ZBH_DB") return { includes: ["ZBH", "DB"], excludes: ["XCE", "GZ", "XC", "ES"] };
-    if (cleanCamp === "CH_XC") return { includes: ["CH"], excludes: [] };
-    if (cleanCamp === "LBH_DB") return { includes: ["LBH", "DB"], excludes: ["XCE", "GZ", "XC", "ES"] };
-    if (cleanCamp === "NDR_GZ") return { includes: ["NDR", "GZ"], excludes: ["XCE", "XC", "ES"] };
+    if (cleanCamp === "ZBH_DB" || cleanCamp.startsWith("ZBH")) return { includes: ["ZBH", "DB"], excludes: ["XCE", "GZ", "XC", "ES"] };
+    if (cleanCamp === "CH_XC" || cleanCamp.startsWith("CH")) return { includes: ["CH"], excludes: [] };
+    if (cleanCamp === "LBH_DB" || cleanCamp.startsWith("LBH")) return { includes: ["LBH", "DB"], excludes: ["XCE", "GZ", "XC", "ES"] };
+    if (cleanCamp === "NDR_GZ" || cleanCamp.startsWith("NDR")) return { includes: ["NDR", "GZ"], excludes: ["XCE", "XC", "ES"] };
     if (cleanCamp === "VIVINT_AD" || cleanCamp === "VIVINT") return { includes: ["VI"], excludes: ["XCE", "XC", "ES", "GZ", "DB"] };
     if (cleanCamp === "TRUGREEN_AD") return { includes: ["TRU"], excludes: ["XCE", "XC", "ES", "GZ", "DB"] };
     if (cleanCamp.includes("IAI_GZ")) return { includes: ["IAI"], excludes: [] };
-    if (cleanCamp === "RBA_XCE") return { includes: ["RBA", "XCE"], excludes: ["XC", "ES", "GZ", "DB"] };
+    if (cleanCamp === "RBA_XCE" || cleanCamp.startsWith("RBA")) return { includes: ["RBA", "XCE"], excludes: ["XC", "ES", "GZ", "DB"] };
     if (cleanCamp === "JG_XCE") return { includes: ["JG", "XCE"], excludes: ["XC", "ES", "GZ", "DB"] };
     if (cleanCamp === "TRUGREEN_DB") return { includes: ["TRU", "DB"], excludes: ["XC", "ES", "GZ", "XCE"] };
     if (cleanCamp === "ASSURITI_DB") return { includes: ["AAW"], excludes: [] };
@@ -126,7 +126,8 @@ export default function Home() {
     const aggregated = new Map<string, number>();
     dashboardData.forEach((item) => {
       const vol = item.count * item.multiplier;
-      aggregated.set(item.campaignSrc, (aggregated.get(item.campaignSrc) || 0) + vol);
+      const campUpper = item.campaignSrc.toUpperCase().trim();
+      aggregated.set(campUpper, (aggregated.get(campUpper) || 0) + vol);
     });
     return Array.from(aggregated.entries())
       .map(([name, totalVol]) => ({ name, volume: totalVol }))
@@ -138,8 +139,9 @@ export default function Home() {
     if (!dashboardData) return [];
     const accountsMap = new Map<string, { totalMails: number; calculatedVolume: number }>();
     dashboardData.forEach((item) => {
-      const existing = accountsMap.get(item.etSource) || { totalMails: 0, calculatedVolume: 0 };
-      accountsMap.set(item.etSource, {
+      const etUpper = item.etSource.toUpperCase().trim();
+      const existing = accountsMap.get(etUpper) || { totalMails: 0, calculatedVolume: 0 };
+      accountsMap.set(etUpper, {
         totalMails: existing.totalMails + item.count,
         calculatedVolume: existing.calculatedVolume + (item.count * item.multiplier),
       });
@@ -151,8 +153,9 @@ export default function Home() {
     if (!dashboardData) return [];
     const campaignsMap = new Map<string, { totalMails: number; calculatedVolume: number }>();
     dashboardData.forEach((item) => {
-      const existing = campaignsMap.get(item.campaignSrc) || { totalMails: 0, calculatedVolume: 0 };
-      campaignsMap.set(item.campaignSrc, {
+      const campUpper = item.campaignSrc.toUpperCase().trim();
+      const existing = campaignsMap.get(campUpper) || { totalMails: 0, calculatedVolume: 0 };
+      campaignsMap.set(campUpper, {
         totalMails: existing.totalMails + item.count,
         calculatedVolume: existing.calculatedVolume + (item.count * item.multiplier),
       });
@@ -201,7 +204,7 @@ export default function Home() {
     if (!allFetchedData) return [];
     const uniqueCamps = new Set<string>();
     allFetchedData.forEach((item) => {
-      if (item.campaignSrc) uniqueCamps.add(item.campaignSrc);
+      if (item.campaignSrc) uniqueCamps.add(item.campaignSrc.toUpperCase().trim());
     });
     return Array.from(uniqueCamps).sort((a, b) => a.localeCompare(b));
   }, [allFetchedData]);
@@ -210,17 +213,16 @@ export default function Home() {
     if (!allFetchedData || !selectedCampaign) return [];
     const rule = getFilterRule(selectedCampaign);
     const options = allFetchedData
-      .filter((item) => item.campaignSrc === selectedCampaign && matchTemplate(item.template, rule))
+      .filter((item) => item.campaignSrc.toUpperCase().trim() === selectedCampaign.toUpperCase().trim() && matchTemplate(item.template, rule))
       .map((item) => item.template);
       
     return Array.from(new Set(options)).sort((a, b) => a.localeCompare(b));
   }, [allFetchedData, selectedCampaign]);
 
-  // Filters the complete matching rows base for the selection card layout matrix
   const currentFilteredBaseRows = useMemo(() => {
     if (!allFetchedData || !selectedCampaign || !selectedTemplate) return [];
     const rule = getFilterRule(selectedCampaign);
-    let rows = allFetchedData.filter((item) => item.campaignSrc === selectedCampaign && matchTemplate(item.template, rule));
+    let rows = allFetchedData.filter((item) => item.campaignSrc.toUpperCase().trim() === selectedCampaign.toUpperCase().trim() && matchTemplate(item.template, rule));
     
     if (selectedTemplate !== "ALL") {
       rows = rows.filter((item) => item.template.toLowerCase() === selectedTemplate.toLowerCase());
@@ -228,12 +230,12 @@ export default function Home() {
     return rows;
   }, [allFetchedData, selectedCampaign, selectedTemplate]);
 
-  // Aggregated splits for rendering individual card values overview
   const processedAccountWiseCards = useMemo(() => {
     const cardsMap = new Map<string, { totalMails: number; totalVolume: number }>();
     currentFilteredBaseRows.forEach((item) => {
-      const existing = cardsMap.get(item.etSource) || { totalMails: 0, totalVolume: 0 };
-      cardsMap.set(item.etSource, {
+      const etKey = item.etSource.toUpperCase().trim();
+      const existing = cardsMap.get(etKey) || { totalMails: 0, totalVolume: 0 };
+      cardsMap.set(etKey, {
         totalMails: existing.totalMails + item.count,
         totalVolume: existing.totalVolume + (item.count * item.multiplier),
       });
@@ -241,11 +243,18 @@ export default function Home() {
     return Array.from(cardsMap.entries()).map(([account, meta]) => ({ account, ...meta }));
   }, [currentFilteredBaseRows]);
 
-  // Computes the structural breakdown lists of individual templates matching the active clicked card pop up target
   const modalTemplatesBreakdownList = useMemo(() => {
     if (!selectedCardAccount) return [];
-    return currentFilteredBaseRows.filter(row => row.etSource === selectedCardAccount);
+    return currentFilteredBaseRows.filter(row => row.etSource.toUpperCase().trim() === selectedCardAccount.toUpperCase().trim());
   }, [selectedCardAccount, currentFilteredBaseRows]);
+
+  async function handleAppDownloadClick() {
+    if (!deferredPrompt) return;
+    deferredPrompt.prompt();
+    await deferredPrompt.userChoice;
+    setDeferredPrompt(null);
+    setIsPwaSupported(false);
+  }
 
   return (
     <>
@@ -277,14 +286,10 @@ export default function Home() {
         </div>
       )}
 
-      {/* ========================================================= */}
-      {/* POPUP MODAL COMPONENT LAYER: Template breakdown of clicked card */}
-      {/* ========================================================= */}
+      {/* POPUP MODAL COMPONENT LAYER */}
       {selectedCardAccount && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/75 backdrop-blur-sm p-4 animate-fadeIn">
-          <div className={`w-full max-w-2xl rounded-2xl border shadow-2xl p-6 flex flex-col max-h-[85vh] transition-colors ${
-            isDarkMode ? "bg-slate-900 border-white/10 text-white" : "bg-white border-slate-200 text-slate-900"
-          }`}>
+          <div className={`w-full max-w-2xl rounded-2xl border shadow-2xl p-6 flex flex-col max-h-[85vh] transition-colors bg-slate-900 border-white/10 text-white`}>
             <div className="flex justify-between items-center pb-3 border-b border-zinc-800/60 mb-4">
               <div>
                 <h3 className="text-sm font-bold uppercase tracking-wider text-emerald-400">
@@ -321,9 +326,7 @@ export default function Home() {
         </div>
       )}
 
-      <div className={`min-h-screen transition-colors duration-500 p-4 sm:p-6 flex flex-col justify-between ${
-        isDarkMode ? "bg-slate-950 text-zinc-50" : "bg-slate-50 text-slate-900"
-      }`}>
+      <div className={`min-h-screen transition-colors duration-500 p-4 sm:p-6 flex flex-col justify-between ${isDarkMode ? "bg-slate-950 text-zinc-50" : "bg-slate-50 text-slate-900"}`}>
         <div className="mx-auto max-w-5xl w-full flex flex-col gap-6 flex-1">
           
           <header className={`border-b pb-5 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 ${isDarkMode ? "border-white/10" : "border-slate-200"}`}>
@@ -340,12 +343,9 @@ export default function Home() {
             </button>
           </header>
 
-          {/* ========================================================= */}
-          {/* SECTION A: AUTOMATED DASHBOARD SYSTEM SUMMARY LAYER       */}
-          {/* ========================================================= */}
+          {/* SECTION A: AUTOMATED CURRENT DAY LANDING DASHBOARD MODULE */}
           {!allFetchedData && (
             <div className="flex flex-col gap-6 animate-fadeIn">
-              
               <section className={`rounded-xl p-4 sm:p-6 border shadow-xl ${isDarkMode ? "bg-slate-900 border-white/5" : "bg-white border-slate-200"}`}>
                 <h3 className="text-xs font-bold uppercase tracking-wider text-emerald-500 mb-4">
                   🔥 Top 5 Active Campaigns Going with Highest Volume (Today)
@@ -397,9 +397,7 @@ export default function Home() {
             </div>
           )}
 
-          {/* ========================================================= */}
-          {/* CORE WORKSPACE FILTER CONTROLS BAR                        */}
-          {/* ========================================================= */}
+          {/* CORE WORKSPACE FILTER CONTROLS BAR */}
           <section className={`rounded-xl p-4 sm:p-6 flex flex-col gap-4 border shadow-xl ${isDarkMode ? "bg-slate-900 border-white/5" : "bg-white border-slate-200"}`}>
             <div className="grid gap-4 grid-cols-1 sm:grid-cols-3 items-end">
               <div className="flex flex-col gap-1">
@@ -427,12 +425,9 @@ export default function Home() {
             </button>
           </section>
 
-          {/* ========================================================= */}
-          {/* SECTION B: SPECIFIC ACTION RESULTS SCREEN OVERVIEW         */}
-          {/* ========================================================= */}
+          {/* SECTION B: SPECIFIC ACTION RESULTS SCREEN OVERVIEW */}
           {allFetchedData && (
             <div className="flex flex-col gap-6 animate-fadeIn">
-              
               <section className={`rounded-xl p-4 sm:p-6 grid gap-4 sm:grid-cols-2 border shadow-xl ${isDarkMode ? "bg-slate-900 border-white/5" : "bg-white border-slate-200"}`}>
                 <div className="flex flex-col gap-1">
                   <label className="text-xs font-semibold text-zinc-400">Select Campaign Group</label>
@@ -451,6 +446,7 @@ export default function Home() {
                 </div>
               </section>
 
+              {/* CARD-MANNER VIEW MODULE FOR PROCESSED INPUTS */}
               {selectedCampaign && selectedTemplate && (
                 <div className="flex flex-col gap-4">
                   <div className="flex items-center justify-between">
@@ -458,7 +454,6 @@ export default function Home() {
                     <button onClick={() => setAllFetchedData(null)} className="text-xs font-semibold text-emerald-500 hover:underline">← Clear View Back to Dashboard</button>
                   </div>
                   
-                  {/* Grid displaying cards */}
                   <div className="grid gap-4 grid-cols-1 sm:grid-cols-3">
                     {processedAccountWiseCards.map((card) => (
                       <div 
