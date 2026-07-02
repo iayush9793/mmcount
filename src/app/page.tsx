@@ -33,7 +33,7 @@ export default function Home() {
   const [dashboardData, setDashboardData] = useState<BreakdownItem[] | null>(null);
   const [isDashboardLoading, setIsDashboardLoading] = useState(false);
 
-  // Processed General Tracking States
+  // Custom Range Query States
   const [allFetchedData, setAllFetchedData] = useState<BreakdownItem[] | null>(null);
   const [selectedCampaign, setSelectedCampaign] = useState("");
   const [selectedTemplate, setSelectedTemplate] = useState("");
@@ -120,7 +120,10 @@ export default function Home() {
     dashboardData.forEach((item) => {
       aggregated.set(item.campaignSrc.toUpperCase().trim(), (aggregated.get(item.campaignSrc.toUpperCase().trim()) || 0) + (item.count * item.multiplier));
     });
-    return Array.from(aggregated.entries()).map(([name, volume]) => ({ name, volume })).sort((a, b) => b.volume - a.volume).slice(0, 5);
+    return Array.from(aggregated.entries())
+      .map(([name, volume]) => ({ name, volume }))
+      .sort((a, b) => b.volume - a.volume)
+      .slice(0, 5);
   }, [dashboardData]);
 
   const dashboardAccountWiseMetrics = useMemo(() => {
@@ -150,7 +153,13 @@ export default function Home() {
     setErrorMessage("");
     if (new Date(endDate) < new Date(startDate)) { setErrorMessage("End Date cannot be earlier than Start Date."); return; }
 
+    // CLEAR PREVIOUS RESULTS AND START LOADER
+    setAllFetchedData(null);
+    setSelectedCampaign("");
+    setSelectedTemplate("");
+    setSelectedCardAccount(null);
     setStatus("loading");
+
     try {
       const lookupEt = selectedEt.toUpperCase().startsWith("ALL") ? "ALL" : selectedEt;
       const res = await fetch(`/api/mailCounts?startDate=${startDate}&endDate=${endDate}&et=${encodeURIComponent(lookupEt)}`);
@@ -267,7 +276,6 @@ export default function Home() {
     return (clean.includes("JSG40") || clean.includes("JSG38")) ? 2000 : 5000;
   }
 
-  // MULTIPLE CSV FILE MULTI-UPLOADER BATCH PARSER
   const handleMultipleCsvFilesLoad = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
@@ -309,10 +317,45 @@ export default function Home() {
     setCombinedRevenueRecords(combinedRecords);
   };
 
+  const handleCompileAnalytics = async () => {
+    if (!startDate || !endDate || combinedCsvRecords.length === 0) return;
+    
+    // CLEAR PREVIOUS RESULTS AND START LOADER
+    setAllFetchedData(null);
+    setAnalyticsActive(false);
+    setAnalyticsEt("");
+    setAnalyticsCampaign("");
+    setStatus("loading");
+
+    try {
+      const res = await fetch(`/api/mailCounts?startDate=${startDate}&endDate=${endDate}&et=ALL`);
+      const data = await res.json();
+      setAllFetchedData(data.breakdown ?? []);
+      setAnalyticsActive(true);
+      setStatus("success");
+    } catch { 
+      setStatus("error"); 
+    }
+  };
+
   return (
     <div className={`min-h-screen transition-colors duration-500 p-4 sm:p-6 flex flex-col justify-between ${isDarkMode ? "bg-slate-950 text-zinc-50" : "bg-slate-50 text-slate-900"}`}>
       <div className="mx-auto max-w-5xl w-full flex flex-col gap-6 flex-1">
         
+        {/* INTERACTIVE LOADERS */}
+        {(isAppLoading || status === "loading") && (
+          <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-slate-950/75 backdrop-blur-md">
+            <div className="flex flex-col items-center gap-5 bg-slate-900 border border-white/5 p-8 rounded-2xl shadow-2xl max-w-sm w-full mx-4 text-center">
+              <div className="relative h-12 w-12">
+                <div className="absolute inset-0 rounded-full border-4 border-zinc-800" />
+                <div className="absolute inset-0 rounded-full border-4 border-t-emerald-500 border-r-emerald-500 animate-spin" />
+              </div>
+              <h3 className="text-sm font-bold text-white tracking-wide uppercase">Compiling System Metrics</h3>
+              <p className="text-xs text-zinc-400">Syncing and parsing live ledger fields...</p>
+            </div>
+          </div>
+        )}
+
         <header className={`border-b pb-5 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 ${isDarkMode ? "border-white/10" : "border-slate-200"}`}>
           <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 w-full sm:w-auto">
             <div className="relative h-20 w-48 shrink-0">
@@ -391,7 +434,7 @@ export default function Home() {
                 </div>
                 <div className="flex flex-col gap-1">
                   <label className="text-xs font-semibold text-zinc-400">End Date</label>
-                  <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className={`h-11 rounded-lg px-3 text-sm outline-none border w-full ${isDarkMode ? "bg-slate-950 border-zinc-800 text-white" : "bg-white border-slate-300"}`} />
+                  <input type="date" value={endDate} onChange={(e) => Math.abs(Number(e.target.value)) && setEndDate(e.target.value)} className={`h-11 rounded-lg px-3 text-sm outline-none border w-full ${isDarkMode ? "bg-slate-950 border-zinc-800 text-white" : "bg-white border-slate-300"}`} />
                 </div>
                 <div className="flex flex-col gap-1">
                   <label className="text-xs font-semibold text-zinc-400">Origin Account (ET)</label>
@@ -499,7 +542,6 @@ export default function Home() {
                 <input type="file" accept=".csv" multiple onChange={handleMultipleCsvFilesLoad} className="text-xs text-zinc-400 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-zinc-800 file:text-zinc-200 file:cursor-pointer hover:file:bg-zinc-700" />
               </div>
 
-              {/* Upload checklist feedback summary log panel */}
               {uploadedFilesSummary.length > 0 && (
                 <div className={`p-3 rounded-lg border text-xs font-mono flex flex-col gap-1 ${isDarkMode ? "bg-slate-950 border-zinc-800" : "bg-slate-100 border-slate-200"}`}>
                   <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider font-sans">Stacked Source Files Linked ({uploadedFilesSummary.length})</span>
@@ -511,17 +553,7 @@ export default function Home() {
               )}
 
               <button 
-                onClick={async () => {
-                  if (!startDate || !endDate || combinedCsvRecords.length === 0) return;
-                  setStatus("loading");
-                  try {
-                    const res = await fetch(`/api/mailCounts?startDate=${startDate}&endDate=${endDate}&et=ALL`);
-                    const data = await res.json();
-                    setAllFetchedData(data.breakdown ?? []);
-                    setAnalyticsActive(true);
-                    setStatus("success");
-                  } catch { setStatus("error"); }
-                }}
+                onClick={handleCompileAnalytics}
                 disabled={!startDate || !endDate || combinedCsvRecords.length === 0}
                 className="w-full h-11 rounded-lg bg-purple-600 hover:bg-purple-500 font-bold text-xs uppercase text-white tracking-widest cursor-pointer disabled:opacity-40 transition active:scale-95 mt-2"
               >
