@@ -101,7 +101,7 @@ export default function Home() {
     if (cleanCamp === "ZBH_DB" || cleanCamp.startsWith("ZBH")) return { includes: ["ZBH", "DB"], excludes: ["XCE", "GZ", "XC", "ES"] };
     if (cleanCamp === "CH_XC" || cleanCamp.startsWith("CH")) return { includes: ["CH"], excludes: [] };
     if (cleanCamp === "LBH_DB" || cleanCamp.startsWith("LBH")) return { includes: ["LBH", "DB"], excludes: ["XCE", "GZ", "XC", "ES"] };
-    if (cleanCamp === "NDR_CMAD" || cleanCamp.startsWith("NDR")) return { includes: ["NDR", "CMAD"], excludes: ["XCE", "XC", "ES"] };
+    if (cleanCamp === "NDR" || cleanCamp.startsWith("NDR")) return { includes: ["NDR", "CMAD"], excludes: ["XCE", "XC", "ES"] };
     if (cleanCamp === "VIVINT_AD" || cleanCamp === "VIVINT") return { includes: ["VI"], excludes: ["XCE", "XC", "ES", "GZ", "DB"] };
     if (cleanCamp === "TRUGREEN_AD") return { includes: ["TRU"], excludes: ["XCE", "XC", "ES", "GZ", "DB"] };
     if (cleanCamp.includes("IAI_GZ")) return { includes: ["IAI"], excludes: [] };
@@ -169,16 +169,9 @@ export default function Home() {
 
     const start = new Date(startDate);
     const end = new Date(endDate);
-    const diffTime = Math.abs(end.getTime() - start.getTime());
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
 
     if (end < start) {
       setErrorMessage("End Date cannot be earlier than Start Date.");
-      return;
-    }
-
-    if (diffDays > 7) {
-      setErrorMessage(`Selected range is ${diffDays} days. Maximum allowed range is 7 days.`);
       return;
     }
 
@@ -357,7 +350,7 @@ export default function Home() {
             </button>
           </header>
 
-          {/* SECTION A: AUTOMATED DASHBOARD */}
+          {/* SECTION A: DASHBOARD VIEW */}
           {!allFetchedData && (
             <div className="flex flex-col gap-6 animate-fadeIn">
               <section className={`rounded-xl p-4 sm:p-6 border shadow-xl ${isDarkMode ? "bg-slate-900 border-white/5" : "bg-white border-slate-200"}`}>
@@ -383,7 +376,7 @@ export default function Home() {
 
               <div className="grid gap-6 grid-cols-1 md:grid-cols-2">
                 <section className={`rounded-xl p-4 sm:p-6 border shadow-xl ${isDarkMode ? "bg-slate-900 border-white/5" : "bg-white border-slate-200"}`}>
-                  <h3 className="text-xs font-bold uppercase tracking-wider text-sky-500 mb-3">📋 Section 1: Account Wise Track Volume</h3>
+                  <h3 className="text-xs font-bold uppercase tracking-wider text-sky-400 mb-3">📋 Section 1: Account Wise Track Volume</h3>
                   <div className={`max-h-[300px] overflow-y-auto divide-y font-mono text-xs pr-2 ${isDarkMode ? "divide-zinc-800/40" : "divide-slate-200"}`}>
                     {dashboardAccountWiseMetrics.map((item) => (
                       <div key={item.account} className="py-2.5 flex justify-between items-center gap-2">
@@ -396,7 +389,7 @@ export default function Home() {
                 </section>
 
                 <section className={`rounded-xl p-4 sm:p-6 border shadow-xl ${isDarkMode ? "bg-slate-900 border-white/5" : "bg-white border-slate-200"}`}>
-                  <h3 className="text-xs font-bold uppercase tracking-wider text-purple-500 mb-3">📊 Section 2: Campaign Wise Track Volume</h3>
+                  <h3 className="text-xs font-bold uppercase tracking-wider text-purple-400 mb-3">📊 Section 2: Campaign Wise Track Volume</h3>
                   <div className={`max-h-[300px] overflow-y-auto divide-y font-mono text-xs pr-2 ${isDarkMode ? "divide-zinc-800/40" : "divide-slate-200"}`}>
                     {dashboardCampaignWiseMetrics.map((item) => (
                       <div key={item.campaign} className="py-2.5 flex justify-between items-center gap-2">
@@ -439,7 +432,7 @@ export default function Home() {
             </button>
           </section>
 
-          {/* SECTION B: WORKSPACE RESULTS VIEW */}
+          {/* SECTION B: SPECIFIC ACTION RESULTS SCREEN OVERVIEW */}
           {allFetchedData && (
             <div className="flex flex-col gap-6 animate-fadeIn">
               
@@ -482,7 +475,7 @@ export default function Home() {
                 </section>
               )}
 
-              {/* ELEGANT CARD MATRIX CONTAINER */}
+              {/* CARD CONTAINER MATRIX */}
               {selectedCampaign && selectedTemplate && (
                 <div className="flex flex-col gap-4">
                   <div className="flex items-center justify-between">
@@ -499,7 +492,6 @@ export default function Home() {
                           isDarkMode ? "bg-slate-900 border-white/5" : "bg-white border-slate-200"
                         }`}
                       >
-                        {/* Header metadata frame */}
                         <div className={`p-4 border-b flex justify-between items-center ${isDarkMode ? "border-zinc-800/60 bg-slate-950/40" : "border-slate-200 bg-slate-100"}`}>
                           <span className="px-2.5 py-0.5 rounded text-[11px] font-black uppercase bg-emerald-500/10 text-emerald-600 border border-emerald-500/20">
                             {card.account}
@@ -507,7 +499,6 @@ export default function Home() {
                           <span className="text-xs font-mono font-bold text-sky-500">{card.totalVolume.toLocaleString()}</span>
                         </div>
 
-                        {/* Inner Body list details */}
                         <div className={`p-4 flex-1 flex flex-col gap-2 max-h-[180px] overflow-y-auto pr-2 divide-y font-mono text-[11px] ${isDarkMode ? "divide-zinc-800/20" : "divide-slate-200"}`}>
                           {card.templates.map((tmpl, tIdx) => (
                             <div key={tIdx} className="pt-2 first:pt-0 flex justify-between items-start gap-3">
@@ -521,7 +512,6 @@ export default function Home() {
                           ))}
                         </div>
 
-                        {/* Bottom total layout label */}
                         <div className={`p-3 border-t flex justify-between items-center text-[10px] uppercase font-bold tracking-wider ${isDarkMode ? "bg-slate-950/20 border-zinc-800/40 text-zinc-500" : "bg-slate-50 border-slate-200 text-slate-500"}`}>
                           <span>Row Total Mails</span>
                           <span className={`font-mono ${isDarkMode ? "text-zinc-300" : "text-slate-800"}`}>{card.totalMails} Mails</span>
