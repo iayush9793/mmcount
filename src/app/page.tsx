@@ -463,7 +463,7 @@ export default function Home() {
         {currentView === "analytics" && (
           <div className="flex flex-col gap-6 animate-fadeIn">
             <section className={`rounded-xl p-4 sm:p-6 border shadow-xl flex flex-col gap-4 ${isDarkMode ? "bg-slate-900 border-white/5" : "bg-white border-slate-200"}`}>
-              <h3 className="text-xs font-bold uppercase tracking-wider text-purple-500">📈 Step 1: Upload Conversion Statement & Specify Bounds</h3>
+              <h3 className="text-xs font-bold uppercase tracking-wider text-purple-400">📈 Step 1: Upload Conversion Statement & Specify Bounds</h3>
               
               <div className="grid gap-4 grid-cols-1 sm:grid-cols-3 items-end">
                 <div className="flex flex-col gap-1">
@@ -523,8 +523,56 @@ export default function Home() {
                   </div>
                 </section>
 
-                <div className="grid gap-6 grid-cols-1 md:grid-cols-2">
+                <div className="grid gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
                   {revenueCalculatedCards.map((card) => (
                     <section key={card.accountName} className={`rounded-xl border shadow-xl flex flex-col justify-between overflow-hidden ${isDarkMode ? "bg-slate-900 border-white/5" : "bg-white border-slate-200"}`}>
                       
-                      <div className={`p-4 border-b flex justify-between items-center ${isDarkMode ? "bg-slate-950/50 border-zinc-8
+                      <div className={`p-4 border-b flex justify-between items-center ${isDarkMode ? "bg-slate-950/50 border-zinc-800 text-white" : "bg-slate-100 border-slate-200 text-slate-900"}`}>
+                        <span className="text-xs font-black text-emerald-500 uppercase">{card.accountName}</span>
+                        <div className="text-right">
+                          <span className="text-[10px] text-zinc-500 font-bold uppercase block">Card Total Revenue</span>
+                          <span className="text-sm font-black text-emerald-500">${card.cardTotalRevenue.toLocaleString()}</span>
+                        </div>
+                      </div>
+
+                      <div className={`p-4 flex-1 flex flex-col gap-4 overflow-y-auto max-h-[380px] divide-y ${isDarkMode ? "divide-zinc-800/40" : "divide-slate-100"}`}>
+                        {card.templates.map((tmpl, tIdx) => (
+                          <div key={tIdx} className="pt-4 first:pt-0 flex flex-col gap-1.5 font-mono text-xs">
+                            <div className="flex justify-between items-start gap-2">
+                              <span className={`font-sans font-bold break-all leading-tight ${isDarkMode ? "text-zinc-200" : "text-slate-800"}`}>{tmpl.templateName}</span>
+                              <span className={`px-2 py-0.5 rounded text-[9px] font-bold uppercase ${tmpl.conversions > 0 ? "bg-emerald-500/10 text-emerald-600 border border-emerald-500/20" : "bg-rose-500/10 text-rose-600 border border-rose-500/20"}`}>
+                                {tmpl.conversions > 0 ? `${tmpl.conversions} Conv` : "No Revenue"}
+                              </span>
+                            </div>
+                            <div className={`grid grid-cols-3 text-[10px] pt-1 ${isDarkMode ? "text-zinc-400" : "text-slate-500"}`}>
+                              <div>
+                                <span className="block text-[9px] font-sans font-bold uppercase tracking-wide text-zinc-400">Mails Used</span>
+                                <span className={isDarkMode ? "text-zinc-300" : "text-slate-700"}>{tmpl.mailsUsed.toLocaleString()}</span>
+                              </div>
+                              <div>
+                                <span className="block text-[9px] font-sans font-bold uppercase tracking-wide text-zinc-400">Revenue</span>
+                                <span className="font-bold text-emerald-500">${tmpl.revenue.toLocaleString()}</span>
+                              </div>
+                              <div className="text-right">
+                                <span className="block text-[9px] font-sans font-bold uppercase tracking-wide text-zinc-400">Count/Conv</span>
+                                <span className={`font-bold ${tmpl.efficiency ? "text-sky-500" : "text-rose-500"}`}>
+                                  {tmpl.efficiency ? tmpl.efficiency.toLocaleString() : "N/A"}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+
+                    </section>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+      </div>
+    </div>
+  );
+}
