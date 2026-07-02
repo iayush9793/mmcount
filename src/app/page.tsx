@@ -97,7 +97,10 @@ export default function Home() {
     if (cleanCamp === "ZBH_DB" || cleanCamp.startsWith("ZBH")) return { includes: ["ZBH", "DB"], excludes: ["XCE", "GZ", "XC", "ES"] };
     if (cleanCamp === "CH_XC" || cleanCamp.startsWith("CH")) return { includes: ["CH"], excludes: [] };
     if (cleanCamp === "LBH_DB" || cleanCamp.startsWith("LBH")) return { includes: ["LBH", "DB"], excludes: ["XCE", "GZ", "XC", "ES"] };
-    if (cleanCamp === "NDR_GZ" || cleanCamp.startsWith("NDR")) return { includes: ["NDR", "GZ"], excludes: ["XCE", "XC", "ES"] };
+    if (cleanCamp === "NDR" || cleanCamp.startsWith("NDR")) return { includes: ["NDR", "CMAD"], excludes: ["XCE", "XC", "ES"] };
+     if (cleanCamp === "ZBH" || cleanCamp.startsWith("ZBH")) return { includes: ["ZBH", "ES"], excludes: ["XCE", "XC", "DB"] };
+     if (cleanCamp === "WS" || cleanCamp.startsWith("WS")) return { includes: ["WS", "CMAD"], excludes: ["XCE", "XC", "ES"] };
+     if (cleanCamp === "QLR" || cleanCamp.startsWith("QLR")) return { includes: ["QLR", "ES"], excludes: ["XCE", "XC", "DB"] };
     if (cleanCamp === "VIVINT_AD" || cleanCamp === "VIVINT") return { includes: ["VI"], excludes: ["XCE", "XC", "ES", "GZ", "DB"] };
     if (cleanCamp === "TRUGREEN_AD") return { includes: ["TRU"], excludes: ["XCE", "XC", "ES", "GZ", "DB"] };
     if (cleanCamp.includes("IAI_GZ")) return { includes: ["IAI"], excludes: [] };
@@ -106,6 +109,7 @@ export default function Home() {
     if (cleanCamp === "TRUGREEN_DB") return { includes: ["TRU", "DB"], excludes: ["XC", "ES", "GZ", "XCE"] };
     if (cleanCamp === "ASSURITI_DB") return { includes: ["AAW"], excludes: [] };
     if (cleanCamp === "QUOTIFII_DB") return { includes: ["QTI"], excludes: [] };
+ 
     return { includes: [cleanCamp.split("_")[0]], excludes: [] };
   };
 
