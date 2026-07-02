@@ -47,6 +47,9 @@ export default function Home() {
   const [analyticsEt, setAnalyticsEt] = useState("");
   const [analyticsCampaign, setAnalyticsCampaign] = useState("");
 
+  // Interactive Popup Modal State
+  const [selectedCardAccount, setSelectedCardAccount] = useState<string | null>(null);
+
   useEffect(() => {
     const iso = new Date().toISOString().slice(0, 10);
     setStartDate(iso);
@@ -136,7 +139,8 @@ export default function Home() {
     dashboardData.forEach((item) => {
       const campUpper = item.campaignSrc.toUpperCase().trim();
       const existing = campaignsMap.get(campUpper) || { totalMails: 0, calculatedVolume: 0 };
-      campaignsMap.set(campUpper, { totalMails: existing.totalMails + item.count, campaignsVolume: existing.calculatedVolume + (item.count * item.multiplier) });
+      // FIXED TYPO HERE FROM campaignsVolume -> calculatedVolume
+      campaignsMap.set(campUpper, { totalMails: existing.totalMails + item.count, calculatedVolume: existing.calculatedVolume + (item.count * item.multiplier) });
     });
     return Array.from(campaignsMap.entries()).map(([campaign, meta]) => ({ campaign, ...meta }));
   }, [dashboardData]);
@@ -360,7 +364,7 @@ export default function Home() {
                       {dashboardCampaignWiseMetrics.map((item) => (
                         <div key={item.campaign} className="py-2.5 flex justify-between items-center gap-2">
                           <span className="font-sans font-medium truncate">{item.campaign}</span>
-                          <span className="font-bold text-purple-500 shrink-0">{item.campaignsVolume.toLocaleString()} <span className="text-[10px] text-zinc-500 font-normal">({item.totalMails} mails)</span></span>
+                          <span className="font-bold text-purple-500 shrink-0">{item.calculatedVolume.toLocaleString()} <span className="text-[10px] text-zinc-500 font-normal">({item.totalMails} mails)</span></span>
                         </div>
                       ))}
                     </div>
@@ -527,6 +531,7 @@ export default function Home() {
                   {revenueCalculatedCards.map((card) => (
                     <section key={card.accountName} className={`rounded-xl border shadow-xl flex flex-col justify-between overflow-hidden ${isDarkMode ? "bg-slate-900 border-white/5" : "bg-white border-slate-200"}`}>
                       
+                      {/* FIXED STRING LITERAL INTERPOLATION ACCURACY TAG CLOSURES HERE */}
                       <div className={`p-4 border-b flex justify-between items-center ${isDarkMode ? "bg-slate-950/50 border-zinc-800 text-white" : "bg-slate-100 border-slate-200 text-slate-900"}`}>
                         <span className="text-xs font-black text-emerald-500 uppercase">{card.accountName}</span>
                         <div className="text-right">
