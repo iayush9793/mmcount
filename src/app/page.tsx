@@ -21,7 +21,7 @@ interface RevenueRecord {
 export default function Home() {
   const [isAppLoading, setIsAppLoading] = useState(true);
   const [isDarkMode, setIsDarkMode] = useState(true);
-  const [currentView, setCurrentView] = useState<"standard" | "analytics">("summary");
+  const [currentView, setCurrentView] = useState<"standard" | "analytics">("standard");
 
   // Core Stage 1 Inputs
   const [startDate, setStartDate] = useState("");
@@ -110,7 +110,6 @@ export default function Home() {
     return rule.includes.every(inc => tmplUpper.includes(inc)) && !rule.excludes.some(exc => tmplUpper.includes(exc));
   };
 
-  // Automated summaries computed on startup
   const topFiveCampaignsSummary = useMemo(() => {
     if (!dashboardData) return [];
     const aggregated = new Map<string, number>();
@@ -142,7 +141,6 @@ export default function Home() {
     return Array.from(campaignsMap.entries()).map(([campaign, meta]) => ({ campaign, ...meta }));
   }, [dashboardData]);
 
-  // Standard Matrix Processing Pipeline
   async function handleProcessDataMatrix() {
     if (!startDate || !endDate || !selectedEt) return;
     setErrorMessage("");
@@ -160,7 +158,6 @@ export default function Home() {
     }
   }
 
-  // Client Side Secondary Dropdowns for Standard Tracking View
   const dynamicCampaignOptions = useMemo(() => {
     if (!allFetchedData) return [];
     const uniqueCamps = new Set<string>();
@@ -205,9 +202,6 @@ export default function Home() {
     return Array.from(cardsMap.entries()).map(([account, meta]) => ({ account, ...meta }));
   }, [currentFilteredBaseRows]);
 
-  // =========================================================================
-  // DETAILED ANALYTICS REVENUE ENGINE CODES DETAILED PARSER (CSV RECONCILIATION)
-  // =========================================================================
   const parsedRevenueRecords = useMemo(() => {
     if (!rawCsvText) return [];
     const records: RevenueRecord[] = [];
@@ -216,7 +210,6 @@ export default function Home() {
 
     const headers = lines[0].split(",").map(h => h.trim().toUpperCase());
     const subidIdx = headers.indexOf("SUBID");
-    // Looks for 'REVENUE', 'AMOUNT', or fallback to check index paths
     let revIdx = headers.indexOf("REVENUE");
     if (revIdx === -1) revIdx = headers.indexOf("AMOUNT");
     if (revIdx === -1) revIdx = headers.indexOf("PAYOUT");
@@ -225,7 +218,7 @@ export default function Home() {
       if (!lines[i].trim()) continue;
       const cells = lines[i].split(",");
       const subidVal = cells[subidIdx]?.trim() ?? "";
-      const revVal = Number(cells[revIdx]?.trim() ?? 1); // Defaults to counting occurrence if revenue col is missing
+      const revVal = Number(cells[revIdx]?.trim() ?? 1);
       if (subidVal) {
         records.push({ subid: subidVal, revenue: Number.isNaN(revVal) ? 1 : revVal });
       }
@@ -233,7 +226,6 @@ export default function Home() {
     return records;
   }, [rawCsvText]);
 
-  // Unified Analytics filter arrays built up completely client side
   const analyticsCampaignOptions = useMemo(() => {
     if (!allFetchedData) return [];
     const unique = new Set<string>();
@@ -241,11 +233,9 @@ export default function Home() {
     return Array.from(unique).sort();
   }, [allFetchedData]);
 
-  // Advanced Revenue Matching Matrix engine layout split logic
   const revenueCalculatedCards = useMemo(() => {
     if (!allFetchedData || !analyticsActive) return [];
 
-    // Filter sheet volume base records down by Account & Campaign inputs choice
     let filteredBase = allFetchedData;
     if (analyticsEt && !analyticsEt.toUpperCase().startsWith("ALL")) {
       filteredBase = filteredBase.filter(item => item.etSource.replace(/[^a-zA-Z0-9]/g, "").toUpperCase() === analyticsEt.replace(/[^a-zA-Z0-9]/g, "").toUpperCase());
@@ -254,7 +244,6 @@ export default function Home() {
       filteredBase = filteredBase.filter(item => item.campaignSrc.toUpperCase().trim() === analyticsCampaign.toUpperCase().trim());
     }
 
-    // Group items dynamically by account boundaries to draw separate cards context frames
     const accountGroups = new Map<string, BreakdownItem[]>();
     filteredBase.forEach(item => {
       const key = item.etSource.toUpperCase().trim();
@@ -265,9 +254,6 @@ export default function Home() {
 
     return Array.from(accountGroups.entries()).map(([accountName, rows]) => {
       const templatesList = rows.map(row => {
-        const rule = getFilterRule(row.campaignSrc);
-        
-        // Scan parsed uploaded report items containing this template name + account string token inside SUBID column
         const matchedRevenueHits = parsedRevenueRecords.filter(rec => {
           const subidUpper = rec.subid.toUpperCase();
           const cleanTmpl = row.template.toUpperCase().trim();
@@ -278,8 +264,6 @@ export default function Home() {
         const revenueSum = matchedRevenueHits.reduce((sum, r) => sum + r.revenue, 0);
         const conversionCount = matchedRevenueHits.length;
         const totalSendingVolume = row.count * rowMultiplier(accountName);
-
-        // Efficiency calculation block rule: Total Volume / Total Conversions tracked
         const countNeededPerConversion = conversionCount > 0 ? Math.round(totalSendingVolume / conversionCount) : null;
 
         return {
@@ -303,7 +287,6 @@ export default function Home() {
     return (clean.includes("JSG40") || clean.includes("JSG38")) ? 2000 : 5000;
   }
 
-  // Handle local CSV file drops safely on user layout execution
   const handleCsvFileLoad = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -321,9 +304,8 @@ export default function Home() {
             <div className="relative h-20 w-48 shrink-0">
               <Image src="/logo.png" alt="Logo" fill priority className="object-contain object-left" />
             </div>
-            {/* Nav View Toggle Buttons */}
             <div className="flex rounded-lg p-1 bg-slate-900/60 border border-white/5 shadow-inner">
-              <button onClick={() => { setCurrentView("summary"); setAllFetchedData(null); setAnalyticsActive(false); }} className={`px-4 py-1.5 text-xs font-bold rounded-md transition ${currentView === "summary" ? "bg-emerald-500 text-white shadow" : "text-zinc-400 hover:text-zinc-200"}`}>
+              <button onClick={() => { setCurrentView("standard"); setAllFetchedData(null); setAnalyticsActive(false); }} className={`px-4 py-1.5 text-xs font-bold rounded-md transition ${currentView === "standard" ? "bg-emerald-500 text-white shadow" : "text-zinc-400 hover:text-zinc-200"}`}>
                 Standard Tracking
               </button>
               <button onClick={() => { setCurrentView("analytics"); setAllFetchedData(null); }} className={`px-4 py-1.5 text-xs font-bold rounded-md transition ${currentView === "analytics" ? "bg-emerald-500 text-white shadow" : "text-zinc-400 hover:text-zinc-200"}`}>
@@ -336,10 +318,7 @@ export default function Home() {
           </button>
         </header>
 
-        {/* ==================================================================== */}
-        {/* VIEW TYPE 1: STANDARD REPORT WORKSPACE LAYOUT GRAPH SECTION         */}
-        {/* ==================================================================== */}
-        {currentView === "summary" && (
+        {currentView === "standard" && (
           <>
             {!allFetchedData && (
               <div className="flex flex-col gap-6 animate-fadeIn">
@@ -364,7 +343,7 @@ export default function Home() {
 
                 <div className="grid gap-6 grid-cols-1 md:grid-cols-2">
                   <section className={`rounded-xl p-4 sm:p-6 border shadow-xl ${isDarkMode ? "bg-slate-900 border-white/5" : "bg-white border-slate-200"}`}>
-                    <h3 className="text-xs font-bold uppercase tracking-wider text-sky-500 mb-3">📋 Section 1: Account Wise Track Volume</h3>
+                    <h3 className="text-xs font-bold uppercase tracking-wider text-sky-400 mb-3">📋 Section 1: Account Wise Track Volume</h3>
                     <div className={`max-h-[300px] overflow-y-auto divide-y font-mono text-xs pr-2 ${isDarkMode ? "divide-zinc-800/40 text-zinc-300" : "divide-slate-200"}`}>
                       {dashboardAccountWiseMetrics.map((item) => (
                         <div key={item.account} className="py-2.5 flex justify-between items-center gap-2">
@@ -376,7 +355,7 @@ export default function Home() {
                   </section>
 
                   <section className={`rounded-xl p-4 sm:p-6 border shadow-xl ${isDarkMode ? "bg-slate-900 border-white/5" : "bg-white border-slate-200"}`}>
-                    <h3 className="text-xs font-bold uppercase tracking-wider text-purple-500 mb-3">📊 Section 2: Campaign Wise Track Volume</h3>
+                    <h3 className="text-xs font-bold uppercase tracking-wider text-purple-400 mb-3">📊 Section 2: Campaign Wise Track Volume</h3>
                     <div className={`max-h-[300px] overflow-y-auto divide-y font-mono text-xs pr-2 ${isDarkMode ? "divide-zinc-800/40 text-zinc-300" : "divide-slate-200"}`}>
                       {dashboardCampaignWiseMetrics.map((item) => (
                         <div key={item.campaign} className="py-2.5 flex justify-between items-center gap-2">
@@ -390,7 +369,6 @@ export default function Home() {
               </div>
             )}
 
-            {/* General Search Inputs Panel */}
             <section className={`rounded-xl p-4 sm:p-6 flex flex-col gap-4 border shadow-xl ${isDarkMode ? "bg-slate-900 border-white/5" : "bg-white border-slate-200"}`}>
               <div className="grid gap-4 grid-cols-1 sm:grid-cols-3 items-end">
                 <div className="flex flex-col gap-1">
@@ -437,7 +415,7 @@ export default function Home() {
                 </section>
 
                 {selectedCampaign && selectedTemplate && globalCampaignCalculatedTotals && (
-                  <section className={`rounded-xl p-5 border shadow-xl grid gap-4 grid-cols-1 sm:grid-cols-3 ${isDarkMode ? "bg-slate-900 border-emerald-500/20" : "bg-white border-slate-200"}`}>
+                  <section className={`rounded-xl p-5 border shadow-xl grid gap-4 grid-cols-1 sm:grid-cols-3 ${isDarkMode ? "bg-slate-900 border-emerald-500/20 text-white" : "bg-white border-slate-200 text-slate-900"}`}>
                     <div>
                       <span className="text-[10px] uppercase font-bold text-zinc-500">Campaign Focus</span>
                       <p className="text-lg font-black truncate">{selectedCampaign}</p>
@@ -457,21 +435,21 @@ export default function Home() {
                   <div className="grid gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
                     {processedAccountWiseCards.map((card) => (
                       <div key={card.account} className={`rounded-xl border shadow-lg flex flex-col justify-between overflow-hidden ${isDarkMode ? "bg-slate-900 border-white/5" : "bg-white border-slate-200"}`}>
-                        <div className={`p-4 border-b flex justify-between items-center ${isDarkMode ? "bg-slate-950/40 border-zinc-800" : "bg-slate-100 border-slate-200"}`}>
-                          <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-500/10 text-emerald-500 uppercase">{card.account}</span>
+                        <div className={`p-4 border-b flex justify-between items-center ${isDarkMode ? "bg-slate-950/40 border-zinc-800 text-white" : "bg-slate-100 border-slate-200 text-slate-900"}`}>
+                          <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-500/10 text-emerald-600 border border-emerald-500/20 uppercase">{card.account}</span>
                           <span className="font-mono font-bold text-sky-500 text-xs">{card.totalVolume.toLocaleString()}</span>
                         </div>
-                        <div className="p-4 flex-1 overflow-y-auto max-h-[160px] font-mono text-xs gap-2 flex flex-col">
+                        <div className={`p-4 flex-1 overflow-y-auto max-h-[160px] font-mono text-xs gap-2 flex flex-col ${isDarkMode ? "text-zinc-300" : "text-slate-800"}`}>
                           {card.templates.map((t, idx) => (
                             <div key={idx} className="flex justify-between items-start gap-2">
-                              <span className="text-zinc-400 font-sans truncate break-all">{t.name}</span>
+                              <span className="font-sans truncate break-all">{t.name}</span>
                               <span className="font-bold shrink-0">{t.count} m</span>
                             </div>
                           ))}
                         </div>
                         <div className={`p-3 border-t text-[10px] uppercase font-bold text-zinc-500 flex justify-between ${isDarkMode ? "bg-slate-950/10 border-zinc-800" : "bg-slate-50 border-slate-200"}`}>
                           <span>Card Total Mails</span>
-                          <span>{card.totalMails} Mails</span>
+                          <span className={isDarkMode ? "text-zinc-300" : "text-slate-900"}>{card.totalMails} Mails</span>
                         </div>
                       </div>
                     ))}
@@ -482,13 +460,10 @@ export default function Home() {
           </>
         )}
 
-        {/* ==================================================================== */}
-        {/* VIEW TYPE 2: ADVANCED REVENUE METRICS ANALYTICS SECTION MODULE      */}
-        {/* ==================================================================== */}
         {currentView === "analytics" && (
           <div className="flex flex-col gap-6 animate-fadeIn">
             <section className={`rounded-xl p-4 sm:p-6 border shadow-xl flex flex-col gap-4 ${isDarkMode ? "bg-slate-900 border-white/5" : "bg-white border-slate-200"}`}>
-              <h3 className="text-xs font-bold uppercase tracking-wider text-purple-400">📈 Step 1: Upload Conversion Statement & Specify Bounds</h3>
+              <h3 className="text-xs font-bold uppercase tracking-wider text-purple-500">📈 Step 1: Upload Conversion Statement & Specify Bounds</h3>
               
               <div className="grid gap-4 grid-cols-1 sm:grid-cols-3 items-end">
                 <div className="flex flex-col gap-1">
@@ -529,7 +504,6 @@ export default function Home() {
               </button>
             </section>
 
-            {/* Advanced Filters revealed only AFTER compilation finishes */}
             {analyticsActive && allFetchedData && (
               <div className="flex flex-col gap-6 animate-fadeIn">
                 <section className={`rounded-xl p-4 sm:p-6 grid gap-4 sm:grid-cols-2 border shadow-xl ${isDarkMode ? "bg-slate-900 border-white/5" : "bg-white border-slate-200"}`}>
@@ -549,57 +523,8 @@ export default function Home() {
                   </div>
                 </section>
 
-                {/* ADVANCED REVENUE CARD SPLIT VIEW DISPLAY */}
                 <div className="grid gap-6 grid-cols-1 md:grid-cols-2">
                   {revenueCalculatedCards.map((card) => (
                     <section key={card.accountName} className={`rounded-xl border shadow-xl flex flex-col justify-between overflow-hidden ${isDarkMode ? "bg-slate-900 border-white/5" : "bg-white border-slate-200"}`}>
                       
-                      <div className={`p-4 border-b flex justify-between items-center ${isDarkMode ? "bg-slate-950/50 border-zinc-800" : "bg-slate-100 border-slate-200"}`}>
-                        <span className="text-xs font-black text-emerald-500 uppercase">{card.accountName}</span>
-                        <div className="text-right">
-                          <span className="text-[10px] text-zinc-500 font-bold uppercase block">Card Total Revenue</span>
-                          <span className="text-sm font-black text-emerald-400">${card.cardTotalRevenue.toLocaleString()}</span>
-                        </div>
-                      </div>
-
-                      <div className={`p-4 flex-1 flex flex-col gap-4 overflow-y-auto max-h-[380px] divide-y ${isDarkMode ? "divide-zinc-800/40" : "divide-slate-100"}`}>
-                        {card.templates.map((tmpl, tIdx) => (
-                          <div key={tIdx} className="pt-4 first:pt-0 flex flex-col gap-1.5 font-mono text-xs">
-                            <div className="flex justify-between items-start gap-2">
-                              <span className={`font-sans font-bold break-all leading-tight ${isDarkMode ? "text-zinc-200" : "text-slate-800"}`}>{tmpl.templateName}</span>
-                              <span className={`px-2 py-0.5 rounded text-[9px] font-bold uppercase ${tmpl.conversions > 0 ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20" : "bg-rose-500/10 text-rose-400 border border-rose-500/20"}`}>
-                                {tmpl.conversions > 0 ? `${tmpl.conversions} Conv` : "No Revenue"}
-                              </span>
-                            </div>
-                            <div className="grid grid-cols-3 text-[10px] text-zinc-400 pt-1">
-                              <div>
-                                <span className="block text-[9px] font-sans font-bold uppercase tracking-wide text-zinc-500">Mails Used</span>
-                                <span className={isDarkMode ? "text-zinc-300" : "text-slate-700"}>{tmpl.mailsUsed.toLocaleString()}</span>
-                              </div>
-                              <div>
-                                <span className="block text-[9px] font-sans font-bold uppercase tracking-wide text-zinc-500">Revenue</span>
-                                <span className="font-bold text-emerald-400">${tmpl.revenue.toLocaleString()}</span>
-                              </div>
-                              <div className="text-right">
-                                <span className="block text-[9px] font-sans font-bold uppercase tracking-wide text-zinc-500">Count/Conv</span>
-                                <span className={`font-bold ${tmpl.efficiency ? "text-sky-400" : "text-rose-500"}`}>
-                                  {tmpl.efficiency ? tmpl.efficiency.toLocaleString() : "N/A"}
-                                </span>
-                              </div>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-
-                    </section>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-
-      </div>
-    </div>
-  );
-}
+                      <div className={`p-4 border-b flex justify-between items-center ${isDarkMode ? "bg-slate-950/50 border-zinc-8
