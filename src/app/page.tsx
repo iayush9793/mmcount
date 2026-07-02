@@ -13,40 +13,44 @@ interface FilterRule {
   excludes: string[];
 }
 
+interface RevenueRecord {
+  subid: string;
+  revenue: number;
+}
+
 export default function Home() {
   const [isAppLoading, setIsAppLoading] = useState(true);
   const [isDarkMode, setIsDarkMode] = useState(true);
+  const [currentView, setCurrentView] = useState<"standard" | "analytics">("summary");
 
-  // Core Stage 1 Input States
+  // Core Stage 1 Inputs
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [ets, setEts] = useState<string[]>([]);
   const [selectedEt, setSelectedEt] = useState("");
 
-  // Automation / Dashboard Summary States
+  // Dashboard Core States
   const [dashboardData, setDashboardData] = useState<BreakdownItem[] | null>(null);
   const [isDashboardLoading, setIsDashboardLoading] = useState(false);
 
-  // Custom Range Query States
+  // Processed General Tracking States
   const [allFetchedData, setAllFetchedData] = useState<BreakdownItem[] | null>(null);
   const [selectedCampaign, setSelectedCampaign] = useState("");
   const [selectedTemplate, setSelectedTemplate] = useState("");
   const [status, setStatus] = useState<FetchStatus>("idle");
   const [errorMessage, setErrorMessage] = useState("");
 
-  // Interactive Popup Modal State
-  const [selectedCardAccount, setSelectedCardAccount] = useState<string | null>(null);
+  // Detailed Analytics Specific States
+  const [rawCsvText, setRawCsvText] = useState("");
+  const [reportDays, setReportDays] = useState("1");
+  const [analyticsActive, setAnalyticsActive] = useState(false);
+  const [analyticsEt, setAnalyticsEt] = useState("");
+  const [analyticsCampaign, setAnalyticsCampaign] = useState("");
 
-  // PWA States
-  const [deferredPrompt, setDeferredPrompt] = useState<any | null>(null);
-  const [isPwaSupported, setIsPwaSupported] = useState(false);
-
-  // Core Initial Boot Loader & Auto-Dashboard Sync
   useEffect(() => {
     const iso = new Date().toISOString().slice(0, 10);
     setStartDate(iso);
     setEndDate(iso);
-    
     setIsDashboardLoading(true);
     
     fetch("/api/ets")
@@ -68,22 +72,10 @@ export default function Home() {
         setIsDashboardLoading(false);
         setIsAppLoading(false);
       });
-
-    function handleBeforeInstallPrompt(e: Event) {
-      e.preventDefault();
-      setDeferredPrompt(e);
-      setIsPwaSupported(true);
-    }
-
-    window.addEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
-    return () => {
-      window.removeEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
-    };
   }, []);
 
   const getFilterRule = (campaignName: string): FilterRule => {
     const cleanCamp = campaignName.toUpperCase().trim();
-    
     if (cleanCamp === "RGR") return { includes: ["RGR"], excludes: [] };
     if (cleanCamp === "ICO") return { includes: ["ICO"], excludes: [] };
     if (cleanCamp === "AHS_AD" || cleanCamp.startsWith("AHS")) return { includes: ["AHS"], excludes: ["DB", "XCE", "GZ", "XC", "ES"] };
@@ -98,13 +90,10 @@ export default function Home() {
     if (cleanCamp === "ADT_AD" || cleanCamp.startsWith("ADT")) return { includes: ["ADT"], excludes: ["DB", "XCE", "GZ", "XC"] };
     if (cleanCamp.includes("RYH FLOORING") || cleanCamp.includes("RYH_FLOORING")) return { includes: ["RHF"], excludes: ["DB", "XCE", "GZ", "XC"] };
     if (cleanCamp === "JG_AD") return { includes: ["JG"], excludes: ["DB", "XCE", "GZ", "XC"] };
-    
+    if (cleanCamp === "ZBH_DB" || cleanCamp.startsWith("ZBH")) return { includes: ["ZBH", "DB"], excludes: ["XCE", "GZ", "XC", "ES"] };
     if (cleanCamp === "CH_XC" || cleanCamp.startsWith("CH")) return { includes: ["CH"], excludes: [] };
     if (cleanCamp === "LBH_DB" || cleanCamp.startsWith("LBH")) return { includes: ["LBH", "DB"], excludes: ["XCE", "GZ", "XC", "ES"] };
-    if (cleanCamp === "NDR" || cleanCamp.startsWith("NDR")) return { includes: ["NDR", "CMAD"], excludes: ["XCE", "XC", "ES"] };
-     if (cleanCamp === "ZBH" || cleanCamp.startsWith("ZBH")) return { includes: ["ZBH", "ES"], excludes: ["XCE", "XC", "DB"] };
-     if (cleanCamp === "WS" || cleanCamp.startsWith("WS")) return { includes: ["WS", "CMAD"], excludes: ["XCE", "XC", "ES"] };
-     if (cleanCamp === "QLR" || cleanCamp.startsWith("QLR")) return { includes: ["QLR", "ES"], excludes: ["XCE", "XC", "DB"] };
+    if (cleanCamp === "NDR_GZ" || cleanCamp.startsWith("NDR")) return { includes: ["NDR", "GZ"], excludes: ["XCE", "XC", "ES"] };
     if (cleanCamp === "VIVINT_AD" || cleanCamp === "VIVINT") return { includes: ["VI"], excludes: ["XCE", "XC", "ES", "GZ", "DB"] };
     if (cleanCamp === "TRUGREEN_AD") return { includes: ["TRU"], excludes: ["XCE", "XC", "ES", "GZ", "DB"] };
     if (cleanCamp.includes("IAI_GZ")) return { includes: ["IAI"], excludes: [] };
@@ -113,29 +102,22 @@ export default function Home() {
     if (cleanCamp === "TRUGREEN_DB") return { includes: ["TRU", "DB"], excludes: ["XC", "ES", "GZ", "XCE"] };
     if (cleanCamp === "ASSURITI_DB") return { includes: ["AAW"], excludes: [] };
     if (cleanCamp === "QUOTIFII_DB") return { includes: ["QTI"], excludes: [] };
-
     return { includes: [cleanCamp.split("_")[0]], excludes: [] };
   };
 
   const matchTemplate = (templateName: string, rule: FilterRule): boolean => {
     const tmplUpper = templateName.toUpperCase();
-    const matchesIncludes = rule.includes.every(inc => tmplUpper.includes(inc));
-    const triggersExcludes = rule.excludes.some(exc => tmplUpper.includes(exc));
-    return matchesIncludes && !triggersExcludes;
+    return rule.includes.every(inc => tmplUpper.includes(inc)) && !rule.excludes.some(exc => tmplUpper.includes(exc));
   };
 
+  // Automated summaries computed on startup
   const topFiveCampaignsSummary = useMemo(() => {
     if (!dashboardData) return [];
     const aggregated = new Map<string, number>();
     dashboardData.forEach((item) => {
-      const vol = item.count * item.multiplier;
-      const campUpper = item.campaignSrc.toUpperCase().trim();
-      aggregated.set(campUpper, (aggregated.get(campUpper) || 0) + vol);
+      aggregated.set(item.campaignSrc.toUpperCase().trim(), (aggregated.get(item.campaignSrc.toUpperCase().trim()) || 0) + (item.count * item.multiplier));
     });
-    return Array.from(aggregated.entries())
-      .map(([name, totalVol]) => ({ name, volume: totalVol }))
-      .sort((a, b) => b.volume - a.volume)
-      .slice(0, 5);
+    return Array.from(aggregated.entries()).map(([name, volume]) => ({ name, volume })).sort((a, b) => b.volume - a.volume).slice(0, 5);
   }, [dashboardData]);
 
   const dashboardAccountWiseMetrics = useMemo(() => {
@@ -144,10 +126,7 @@ export default function Home() {
     dashboardData.forEach((item) => {
       const etUpper = item.etSource.toUpperCase().trim();
       const existing = accountsMap.get(etUpper) || { totalMails: 0, calculatedVolume: 0 };
-      accountsMap.set(etUpper, {
-        totalMails: existing.totalMails + item.count,
-        calculatedVolume: existing.calculatedVolume + (item.count * item.multiplier),
-      });
+      accountsMap.set(etUpper, { totalMails: existing.totalMails + item.count, calculatedVolume: existing.calculatedVolume + (item.count * item.multiplier) });
     });
     return Array.from(accountsMap.entries()).map(([account, meta]) => ({ account, ...meta }));
   }, [dashboardData]);
@@ -158,37 +137,22 @@ export default function Home() {
     dashboardData.forEach((item) => {
       const campUpper = item.campaignSrc.toUpperCase().trim();
       const existing = campaignsMap.get(campUpper) || { totalMails: 0, calculatedVolume: 0 };
-      campaignsMap.set(campUpper, {
-        totalMails: existing.totalMails + item.count,
-        calculatedVolume: existing.calculatedVolume + (item.count * item.multiplier),
-      });
+      campaignsMap.set(campUpper, { totalMails: existing.totalMails + item.count, campaignsVolume: existing.calculatedVolume + (item.count * item.multiplier) });
     });
     return Array.from(campaignsMap.entries()).map(([campaign, meta]) => ({ campaign, ...meta }));
   }, [dashboardData]);
 
+  // Standard Matrix Processing Pipeline
   async function handleProcessDataMatrix() {
     if (!startDate || !endDate || !selectedEt) return;
     setErrorMessage("");
-
-    const start = new Date(startDate);
-    const end = new Date(endDate);
-
-    if (end < start) {
-      setErrorMessage("End Date cannot be earlier than Start Date.");
-      return;
-    }
+    if (new Date(endDate) < new Date(startDate)) { setErrorMessage("End Date cannot be earlier than Start Date."); return; }
 
     setStatus("loading");
-    setAllFetchedData(null);
-    setSelectedCampaign("");
-    setSelectedTemplate("");
-    setSelectedCardAccount(null);
-    
     try {
       const lookupEt = selectedEt.toUpperCase().startsWith("ALL") ? "ALL" : selectedEt;
       const res = await fetch(`/api/mailCounts?startDate=${startDate}&endDate=${endDate}&et=${encodeURIComponent(lookupEt)}`);
-      const data = (await res.json()) as MailCountsResponse;
-      
+      const data = await res.json();
       setAllFetchedData(data.breakdown ?? []);
       setStatus("success");
     } catch {
@@ -196,343 +160,446 @@ export default function Home() {
     }
   }
 
+  // Client Side Secondary Dropdowns for Standard Tracking View
   const dynamicCampaignOptions = useMemo(() => {
     if (!allFetchedData) return [];
     const uniqueCamps = new Set<string>();
-    allFetchedData.forEach((item) => {
-      if (item.campaignSrc) uniqueCamps.add(item.campaignSrc.toUpperCase().trim());
-    });
-    return Array.from(uniqueCamps).sort((a, b) => a.localeCompare(b));
+    allFetchedData.forEach((item) => { if (item.campaignSrc) uniqueCamps.add(item.campaignSrc.toUpperCase().trim()); });
+    return Array.from(uniqueCamps).sort();
   }, [allFetchedData]);
 
   const dynamicTemplateOptions = useMemo(() => {
     if (!allFetchedData || !selectedCampaign) return [];
     const rule = getFilterRule(selectedCampaign);
-    const options = allFetchedData
-      .filter((item) => item.campaignSrc.toUpperCase().trim() === selectedCampaign.toUpperCase().trim() && matchTemplate(item.template, rule))
-      .map((item) => item.template);
-      
-    return Array.from(new Set(options)).sort((a, b) => a.localeCompare(b));
+    const options = allFetchedData.filter((item) => item.campaignSrc.toUpperCase().trim() === selectedCampaign.toUpperCase().trim() && matchTemplate(item.template, rule)).map((item) => item.template);
+    return Array.from(new Set(options)).sort();
   }, [allFetchedData, selectedCampaign]);
 
   const currentFilteredBaseRows = useMemo(() => {
     if (!allFetchedData || !selectedCampaign || !selectedTemplate) return [];
     const rule = getFilterRule(selectedCampaign);
     let rows = allFetchedData.filter((item) => item.campaignSrc.toUpperCase().trim() === selectedCampaign.toUpperCase().trim() && matchTemplate(item.template, rule));
-    
-    if (selectedTemplate !== "ALL") {
-      rows = rows.filter((item) => item.template.toLowerCase() === selectedTemplate.toLowerCase());
-    }
+    if (selectedTemplate !== "ALL") rows = rows.filter((item) => item.template.toLowerCase() === selectedTemplate.toLowerCase());
     return rows;
   }, [allFetchedData, selectedCampaign, selectedTemplate]);
 
   const globalCampaignCalculatedTotals = useMemo(() => {
     if (currentFilteredBaseRows.length === 0) return null;
-    const totalMails = currentFilteredBaseRows.reduce((sum, item) => sum + item.count, 0);
-    const calculatedVolume = currentFilteredBaseRows.reduce((sum, item) => sum + (item.count * item.multiplier), 0);
-    const uniqueTemplates = new Set(currentFilteredBaseRows.map(r => r.template)).size;
-
-    return { totalMails, calculatedVolume, uniqueTemplates };
+    return {
+      totalMails: currentFilteredBaseRows.reduce((sum, item) => sum + item.count, 0),
+      calculatedVolume: currentFilteredBaseRows.reduce((sum, item) => sum + (item.count * item.multiplier), 0)
+    };
   }, [currentFilteredBaseRows]);
 
   const processedAccountWiseCards = useMemo(() => {
     const cardsMap = new Map<string, { totalMails: number; totalVolume: number; templates: Array<{ name: string; count: number; vol: number }> }>();
-    
     currentFilteredBaseRows.forEach((item) => {
       const etKey = item.etSource.toUpperCase().trim();
       const existing = cardsMap.get(etKey) || { totalMails: 0, totalVolume: 0, templates: [] };
-      
       const rowVolume = item.count * item.multiplier;
-      const existingTmpl = existing.templates.find(t => t.name === item.template);
-      
-      if (existingTmpl) {
-        existingTmpl.count += item.count;
-        existingTmpl.vol += rowVolume;
-      } else {
-        existing.templates.push({ name: item.template, count: item.count, vol: rowVolume });
-      }
-
-      cardsMap.set(etKey, {
-        totalMails: existing.totalMails + item.count,
-        totalVolume: existing.totalVolume + rowVolume,
-        templates: existing.templates
-      });
+      const targetTmpl = existing.templates.find(t => t.name === item.template);
+      if (targetTmpl) { targetTmpl.count += item.count; targetTmpl.vol += rowVolume; }
+      else { existing.templates.push({ name: item.template, count: item.count, vol: rowVolume }); }
+      cardsMap.set(etKey, { totalMails: existing.totalMails + item.count, totalVolume: existing.totalVolume + rowVolume, templates: existing.templates });
     });
     return Array.from(cardsMap.entries()).map(([account, meta]) => ({ account, ...meta }));
   }, [currentFilteredBaseRows]);
 
-  const modalTemplatesBreakdownList = useMemo(() => {
-    if (!selectedCardAccount) return [];
-    return currentFilteredBaseRows.filter(row => row.etSource.toUpperCase().trim() === selectedCardAccount.toUpperCase().trim());
-  }, [selectedCardAccount, currentFilteredBaseRows]);
+  // =========================================================================
+  // DETAILED ANALYTICS REVENUE ENGINE CODES DETAILED PARSER (CSV RECONCILIATION)
+  // =========================================================================
+  const parsedRevenueRecords = useMemo(() => {
+    if (!rawCsvText) return [];
+    const records: RevenueRecord[] = [];
+    const lines = rawCsvText.split(/\r?\n/);
+    if (lines.length <= 1) return [];
+
+    const headers = lines[0].split(",").map(h => h.trim().toUpperCase());
+    const subidIdx = headers.indexOf("SUBID");
+    // Looks for 'REVENUE', 'AMOUNT', or fallback to check index paths
+    let revIdx = headers.indexOf("REVENUE");
+    if (revIdx === -1) revIdx = headers.indexOf("AMOUNT");
+    if (revIdx === -1) revIdx = headers.indexOf("PAYOUT");
+
+    for (let i = 1; i < lines.length; i++) {
+      if (!lines[i].trim()) continue;
+      const cells = lines[i].split(",");
+      const subidVal = cells[subidIdx]?.trim() ?? "";
+      const revVal = Number(cells[revIdx]?.trim() ?? 1); // Defaults to counting occurrence if revenue col is missing
+      if (subidVal) {
+        records.push({ subid: subidVal, revenue: Number.isNaN(revVal) ? 1 : revVal });
+      }
+    }
+    return records;
+  }, [rawCsvText]);
+
+  // Unified Analytics filter arrays built up completely client side
+  const analyticsCampaignOptions = useMemo(() => {
+    if (!allFetchedData) return [];
+    const unique = new Set<string>();
+    allFetchedData.forEach(item => { if (item.campaignSrc) unique.add(item.campaignSrc.toUpperCase().trim()); });
+    return Array.from(unique).sort();
+  }, [allFetchedData]);
+
+  // Advanced Revenue Matching Matrix engine layout split logic
+  const revenueCalculatedCards = useMemo(() => {
+    if (!allFetchedData || !analyticsActive) return [];
+
+    // Filter sheet volume base records down by Account & Campaign inputs choice
+    let filteredBase = allFetchedData;
+    if (analyticsEt && !analyticsEt.toUpperCase().startsWith("ALL")) {
+      filteredBase = filteredBase.filter(item => item.etSource.replace(/[^a-zA-Z0-9]/g, "").toUpperCase() === analyticsEt.replace(/[^a-zA-Z0-9]/g, "").toUpperCase());
+    }
+    if (analyticsCampaign && !analyticsCampaign.toUpperCase().startsWith("ALL")) {
+      filteredBase = filteredBase.filter(item => item.campaignSrc.toUpperCase().trim() === analyticsCampaign.toUpperCase().trim());
+    }
+
+    // Group items dynamically by account boundaries to draw separate cards context frames
+    const accountGroups = new Map<string, BreakdownItem[]>();
+    filteredBase.forEach(item => {
+      const key = item.etSource.toUpperCase().trim();
+      const existing = accountGroups.get(key) || [];
+      existing.push(item);
+      accountGroups.set(key, existing);
+    });
+
+    return Array.from(accountGroups.entries()).map(([accountName, rows]) => {
+      const templatesList = rows.map(row => {
+        const rule = getFilterRule(row.campaignSrc);
+        
+        // Scan parsed uploaded report items containing this template name + account string token inside SUBID column
+        const matchedRevenueHits = parsedRevenueRecords.filter(rec => {
+          const subidUpper = rec.subid.toUpperCase();
+          const cleanTmpl = row.template.toUpperCase().trim();
+          const cleanEt = accountName.replace(/[^a-zA-Z0-9]/g, "");
+          return subidUpper.includes(cleanTmpl) && subidUpper.includes(cleanEt);
+        });
+
+        const revenueSum = matchedRevenueHits.reduce((sum, r) => sum + r.revenue, 0);
+        const conversionCount = matchedRevenueHits.length;
+        const totalSendingVolume = row.count * rowMultiplier(accountName);
+
+        // Efficiency calculation block rule: Total Volume / Total Conversions tracked
+        const countNeededPerConversion = conversionCount > 0 ? Math.round(totalSendingVolume / conversionCount) : null;
+
+        return {
+          templateName: row.template,
+          campaignName: row.campaignSrc,
+          mailsUsed: row.count,
+          sendingVolume: totalSendingVolume,
+          revenue: revenueSum,
+          conversions: conversionCount,
+          efficiency: countNeededPerConversion
+        };
+      });
+
+      const cardTotalRevenue = templatesList.reduce((sum, t) => sum + t.revenue, 0);
+      return { accountName, templates: templatesList, cardTotalRevenue };
+    });
+  }, [allFetchedData, analyticsActive, analyticsEt, analyticsCampaign, parsedRevenueRecords]);
+
+  function rowMultiplier(tabName: string): number {
+    const clean = tabName.replace(/[^a-zA-Z0-9]/g, "").toUpperCase();
+    return (clean.includes("JSG40") || clean.includes("JSG38")) ? 2000 : 5000;
+  }
+
+  // Handle local CSV file drops safely on user layout execution
+  const handleCsvFileLoad = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (event) => { setRawCsvText(event.target?.result as string ?? ""); };
+    reader.readAsText(file);
+  };
 
   return (
-    <>
-      {/* INITIAL BOOT LAYER */}
-      {isAppLoading && (
-        <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-slate-950">
-          <div className="flex flex-col items-center gap-6">
-            <div className="relative h-40 w-40 animate-pulse">
-              <Image src="/logo.png" alt="App Logo" fill priority className="object-contain" />
+    <div className={`min-h-screen transition-colors duration-500 p-4 sm:p-6 flex flex-col justify-between ${isDarkMode ? "bg-slate-950 text-zinc-50" : "bg-slate-50 text-slate-900"}`}>
+      <div className="mx-auto max-w-5xl w-full flex flex-col gap-6 flex-1">
+        
+        <header className={`border-b pb-5 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 ${isDarkMode ? "border-white/10" : "border-slate-200"}`}>
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 w-full sm:w-auto">
+            <div className="relative h-20 w-48 shrink-0">
+              <Image src="/logo.png" alt="Logo" fill priority className="object-contain object-left" />
             </div>
-            <div className="h-8 w-8 animate-spin rounded-full border-4 border-emerald-500 border-t-transparent" />
-            <p className="text-xs font-semibold tracking-widest text-zinc-400 uppercase">
-              Initializing Dashboard Matrix...
-            </p>
-          </div>
-        </div>
-      )}
-
-      {/* SYNC RUNTIME PROGRESS DISPLAY */}
-      {status === "loading" && (
-        <div className="fixed inset-0 z-40 flex flex-col items-center justify-center bg-slate-950/80 backdrop-blur-md">
-          <div className="flex flex-col items-center gap-5 bg-slate-900 border border-white/5 p-8 rounded-2xl shadow-2xl max-w-sm w-full mx-4 text-center">
-            <div className="relative h-12 w-12">
-              <div className="absolute inset-0 rounded-full border-4 border-zinc-800" />
-              <div className="absolute inset-0 rounded-full border-4 border-t-emerald-500 border-r-emerald-500 animate-spin" />
-            </div>
-            <h3 className="text-sm font-bold text-white tracking-wide uppercase">Processing Data Matrix</h3>
-          </div>
-        </div>
-      )}
-
-      {/* POPUP MODAL LAYER */}
-      {selectedCardAccount && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/75 backdrop-blur-sm p-4 animate-fadeIn">
-          <div className="w-full max-w-2xl rounded-2xl border shadow-2xl p-6 flex flex-col max-h-[85vh] bg-slate-900 border-white/10 text-white">
-            <div className="flex justify-between items-center pb-3 border-b border-zinc-800/60 mb-4">
-              <div>
-                <h3 className="text-sm font-bold uppercase tracking-wider text-emerald-400">
-                  📋 Account Reference: {selectedCardAccount}
-                </h3>
-                <p className="text-xs text-zinc-400 mt-0.5">Live items tracking breakdown ledger</p>
-              </div>
-              <button onClick={() => setSelectedCardAccount(null)} className="h-8 px-3 rounded-lg bg-zinc-800 text-xs font-bold text-zinc-300 hover:bg-zinc-700 transition">
-                Close
+            {/* Nav View Toggle Buttons */}
+            <div className="flex rounded-lg p-1 bg-slate-900/60 border border-white/5 shadow-inner">
+              <button onClick={() => { setCurrentView("summary"); setAllFetchedData(null); setAnalyticsActive(false); }} className={`px-4 py-1.5 text-xs font-bold rounded-md transition ${currentView === "summary" ? "bg-emerald-500 text-white shadow" : "text-zinc-400 hover:text-zinc-200"}`}>
+                Standard Tracking
+              </button>
+              <button onClick={() => { setCurrentView("analytics"); setAllFetchedData(null); }} className={`px-4 py-1.5 text-xs font-bold rounded-md transition ${currentView === "analytics" ? "bg-emerald-500 text-white shadow" : "text-zinc-400 hover:text-zinc-200"}`}>
+                Detailed Analytics
               </button>
             </div>
-
-            <div className="overflow-y-auto flex-1 divide-y divide-zinc-800/50 pr-1 font-mono text-xs">
-              {modalTemplatesBreakdownList.map((item, index) => (
-                <div key={index} className="py-3 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2">
-                  <div className="flex flex-col max-w-[70%]">
-                    <span className="font-sans font-semibold text-zinc-200 break-all">{item.template}</span>
-                    <span className="text-[10px] text-zinc-500 mt-0.5 uppercase tracking-wide">Campaign: {item.campaignSrc}</span>
-                  </div>
-                  <div className="flex items-center gap-4 justify-between sm:justify-end shrink-0">
-                    <div className="text-right">
-                      <span className="text-zinc-400 block text-[10px] uppercase font-bold">Mails</span>
-                      <span className="font-bold text-zinc-300 text-sm">{item.count.toLocaleString()}</span>
-                    </div>
-                    <div className="text-right min-w-[90px]">
-                      <span className="text-emerald-500 block text-[10px] uppercase font-bold">Volume</span>
-                      <span className="font-black text-emerald-400 text-sm">{(item.count * item.multiplier).toLocaleString()}</span>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
           </div>
-        </div>
-      )}
+          <button onClick={() => setIsDarkMode(!isDarkMode)} className={`p-2 rounded-full border text-xs font-bold ${isDarkMode ? "border-zinc-800 text-white hover:bg-zinc-900" : "border-slate-300 text-slate-800 hover:bg-slate-100"}`}>
+            {isDarkMode ? "🌙 Dark" : "☀️ Light"}
+          </button>
+        </header>
 
-      <div className={`min-h-screen transition-colors duration-500 p-4 sm:p-6 flex flex-col justify-between ${isDarkMode ? "bg-slate-950 text-zinc-50" : "bg-slate-50 text-slate-900"}`}>
-        <div className="mx-auto max-w-5xl w-full flex flex-col gap-6 flex-1">
-          
-          <header className={`border-b pb-5 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 ${isDarkMode ? "border-white/10" : "border-slate-200"}`}>
-            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 w-full sm:w-auto">
-              <div className="relative h-20 w-48 shrink-0">
-                <Image src="/logo.png" alt="Logo" fill priority className="object-contain object-left" />
-              </div>
-              <div className={`text-sm font-medium ${isDarkMode ? "text-zinc-400" : "text-slate-600"}`}>
-                Live Campaign Matrix Workspace
-              </div>
-            </div>
-            <button onClick={() => setIsDarkMode(!isDarkMode)} className={`p-2.5 rounded-full border transition text-xs font-bold ${isDarkMode ? "border-zinc-800 hover:bg-zinc-900 text-white" : "border-slate-300 hover:bg-slate-100 text-slate-800"}`}>
-              {isDarkMode ? "🌙 Dark" : "☀️ Light"}
-            </button>
-          </header>
+        {/* ==================================================================== */}
+        {/* VIEW TYPE 1: STANDARD REPORT WORKSPACE LAYOUT GRAPH SECTION         */}
+        {/* ==================================================================== */}
+        {currentView === "summary" && (
+          <>
+            {!allFetchedData && (
+              <div className="flex flex-col gap-6 animate-fadeIn">
+                <section className={`rounded-xl p-4 sm:p-6 border shadow-xl ${isDarkMode ? "bg-slate-900 border-white/5" : "bg-white border-slate-200"}`}>
+                  <h3 className="text-xs font-bold uppercase tracking-wider text-emerald-500 mb-4">🔥 Top 5 Active Campaigns Going with Highest Volume (Today)</h3>
+                  {isDashboardLoading ? (
+                    <div className="h-12 flex items-center justify-center text-xs text-zinc-400 font-medium">Syncing live dashboard summaries...</div>
+                  ) : topFiveCampaignsSummary.length === 0 ? (
+                    <div className="h-12 flex items-center justify-center text-xs text-zinc-400">No active records logged today.</div>
+                  ) : (
+                    <div className="grid gap-3 grid-cols-1 sm:grid-cols-5">
+                      {topFiveCampaignsSummary.map((item, idx) => (
+                        <div key={item.name} className={`p-3 rounded-lg border flex flex-col ${isDarkMode ? "bg-slate-950 border-zinc-800 text-white" : "bg-slate-50 border-slate-200"}`}>
+                          <span className="text-[10px] font-bold text-zinc-500 uppercase">Rank #{idx + 1}</span>
+                          <span className="text-xs font-bold truncate mt-0.5" title={item.name}>{item.name}</span>
+                          <span className="text-sm font-black text-emerald-500 mt-1">{item.volume.toLocaleString()}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </section>
 
-          {/* SECTION A: DASHBOARD VIEW */}
-          {!allFetchedData && (
-            <div className="flex flex-col gap-6 animate-fadeIn">
-              <section className={`rounded-xl p-4 sm:p-6 border shadow-xl ${isDarkMode ? "bg-slate-900 border-white/5" : "bg-white border-slate-200"}`}>
-                <h3 className="text-xs font-bold uppercase tracking-wider text-emerald-500 mb-4">
-                  🔥 Top 5 Active Campaigns Going with Highest Volume (Today)
-                </h3>
-                {isDashboardLoading ? (
-                  <div className={`h-12 flex items-center justify-center text-xs font-medium ${isDarkMode ? "text-zinc-400" : "text-slate-500"}`}>Syncing live dashboard summaries...</div>
-                ) : topFiveCampaignsSummary.length === 0 ? (
-                  <div className={`h-12 flex items-center justify-center text-xs ${isDarkMode ? "text-zinc-500" : "text-slate-400"}`}>No active counts found for current date.</div>
-                ) : (
-                  <div className="grid gap-3 grid-cols-1 sm:grid-cols-5">
-                    {topFiveCampaignsSummary.map((item, index) => (
-                      <div key={item.name} className={`p-3 rounded-lg border flex flex-col ${isDarkMode ? "bg-slate-950 border-zinc-800 text-white" : "bg-slate-50 border-slate-200 text-slate-900"}`}>
-                        <span className="text-[10px] font-bold text-zinc-500 uppercase">Rank #{index + 1}</span>
-                        <span className="text-xs font-bold truncate mt-0.5" title={item.name}>{item.name}</span>
-                        <span className="text-sm font-black text-emerald-500 mt-1">{item.volume.toLocaleString()}</span>
+                <div className="grid gap-6 grid-cols-1 md:grid-cols-2">
+                  <section className={`rounded-xl p-4 sm:p-6 border shadow-xl ${isDarkMode ? "bg-slate-900 border-white/5" : "bg-white border-slate-200"}`}>
+                    <h3 className="text-xs font-bold uppercase tracking-wider text-sky-500 mb-3">📋 Section 1: Account Wise Track Volume</h3>
+                    <div className={`max-h-[300px] overflow-y-auto divide-y font-mono text-xs pr-2 ${isDarkMode ? "divide-zinc-800/40 text-zinc-300" : "divide-slate-200"}`}>
+                      {dashboardAccountWiseMetrics.map((item) => (
+                        <div key={item.account} className="py-2.5 flex justify-between items-center gap-2">
+                          <span className="font-sans font-medium truncate">{item.account}</span>
+                          <span className="font-bold text-sky-500 shrink-0">{item.calculatedVolume.toLocaleString()} <span className="text-[10px] text-zinc-500 font-normal">({item.totalMails} mails)</span></span>
+                        </div>
+                      ))}
+                    </div>
+                  </section>
+
+                  <section className={`rounded-xl p-4 sm:p-6 border shadow-xl ${isDarkMode ? "bg-slate-900 border-white/5" : "bg-white border-slate-200"}`}>
+                    <h3 className="text-xs font-bold uppercase tracking-wider text-purple-500 mb-3">📊 Section 2: Campaign Wise Track Volume</h3>
+                    <div className={`max-h-[300px] overflow-y-auto divide-y font-mono text-xs pr-2 ${isDarkMode ? "divide-zinc-800/40 text-zinc-300" : "divide-slate-200"}`}>
+                      {dashboardCampaignWiseMetrics.map((item) => (
+                        <div key={item.campaign} className="py-2.5 flex justify-between items-center gap-2">
+                          <span className="font-sans font-medium truncate">{item.campaign}</span>
+                          <span className="font-bold text-purple-500 shrink-0">{item.campaignsVolume.toLocaleString()} <span className="text-[10px] text-zinc-500 font-normal">({item.totalMails} mails)</span></span>
+                        </div>
+                      ))}
+                    </div>
+                  </section>
+                </div>
+              </div>
+            )}
+
+            {/* General Search Inputs Panel */}
+            <section className={`rounded-xl p-4 sm:p-6 flex flex-col gap-4 border shadow-xl ${isDarkMode ? "bg-slate-900 border-white/5" : "bg-white border-slate-200"}`}>
+              <div className="grid gap-4 grid-cols-1 sm:grid-cols-3 items-end">
+                <div className="flex flex-col gap-1">
+                  <label className="text-xs font-semibold text-zinc-400">Start Date</label>
+                  <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className={`h-11 rounded-lg px-3 text-sm outline-none border w-full ${isDarkMode ? "bg-slate-950 border-zinc-800 text-white" : "bg-white border-slate-300"}`} />
+                </div>
+                <div className="flex flex-col gap-1">
+                  <label className="text-xs font-semibold text-zinc-400">End Date</label>
+                  <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className={`h-11 rounded-lg px-3 text-sm outline-none border w-full ${isDarkMode ? "bg-slate-950 border-zinc-800 text-white" : "bg-white border-slate-300"}`} />
+                </div>
+                <div className="flex flex-col gap-1">
+                  <label className="text-xs font-semibold text-zinc-400">Origin Account (ET)</label>
+                  <select value={selectedEt} onChange={(e) => setSelectedEt(e.target.value)} className={`h-11 rounded-lg px-3 text-sm outline-none border w-full ${isDarkMode ? "bg-slate-950 border-zinc-800 text-white" : "bg-white border-slate-300"}`}>
+                    <option value="">Select ET Account</option>
+                    <option value="ALL">ALL ET'S (Combine All Sheets)</option>
+                    {ets.map((e) => <option key={e} value={e}>{e}</option>)}
+                  </select>
+                </div>
+              </div>
+              {errorMessage && <p className="text-xs font-semibold text-rose-500 bg-rose-500/5 p-2 rounded border border-rose-500/10">⚠️ {errorMessage}</p>}
+              <button onClick={handleProcessDataMatrix} className="w-full h-11 rounded-lg bg-emerald-500 hover:bg-emerald-400 font-bold text-xs uppercase text-white tracking-widest cursor-pointer transition active:scale-95 duration-150">
+                Process Data Matrix
+              </button>
+            </section>
+
+            {allFetchedData && (
+              <div className="flex flex-col gap-6 animate-fadeIn">
+                <section className={`rounded-xl p-4 sm:p-6 grid gap-4 sm:grid-cols-2 border shadow-xl ${isDarkMode ? "bg-slate-900 border-white/5" : "bg-white border-slate-200"}`}>
+                  <div className="flex flex-col gap-1">
+                    <label className="text-xs font-semibold text-zinc-400">Select Campaign Group</label>
+                    <select value={selectedCampaign} onChange={(e) => { setSelectedCampaign(e.target.value); setSelectedTemplate(""); }} className={`h-11 rounded-lg px-3 text-sm outline-none border w-full ${isDarkMode ? "bg-slate-950 border-zinc-800 text-white" : "bg-white border-slate-300"}`}>
+                      <option value="">Select Campaign</option>
+                      {dynamicCampaignOptions.map(c => <option key={c} value={c}>{c}</option>)}
+                    </select>
+                  </div>
+                  <div className="flex flex-col gap-1">
+                    <label className="text-xs font-semibold text-zinc-400">Select Target Template</label>
+                    <select value={selectedTemplate} onChange={(e) => setSelectedTemplate(e.target.value)} disabled={!selectedCampaign} className={`h-11 rounded-lg px-3 text-sm outline-none border w-full ${isDarkMode ? "bg-slate-950 border-zinc-800 text-white" : "bg-white border-slate-300"}`}>
+                      <option value="">{selectedCampaign ? "Select Template" : "Choose Campaign first"}</option>
+                      {dynamicTemplateOptions.length > 0 && <option value="ALL">ALL MATCHED TEMPLATES</option>}
+                      {dynamicTemplateOptions.map(t => <option key={t} value={t}>{t}</option>)}
+                    </select>
+                  </div>
+                </section>
+
+                {selectedCampaign && selectedTemplate && globalCampaignCalculatedTotals && (
+                  <section className={`rounded-xl p-5 border shadow-xl grid gap-4 grid-cols-1 sm:grid-cols-3 ${isDarkMode ? "bg-slate-900 border-emerald-500/20" : "bg-white border-slate-200"}`}>
+                    <div>
+                      <span className="text-[10px] uppercase font-bold text-zinc-500">Campaign Focus</span>
+                      <p className="text-lg font-black truncate">{selectedCampaign}</p>
+                    </div>
+                    <div>
+                      <span className="text-[10px] uppercase font-bold text-zinc-500">Mails Count</span>
+                      <p className="text-2xl font-black text-sky-500">{globalCampaignCalculatedTotals.totalMails.toLocaleString()}</p>
+                    </div>
+                    <div>
+                      <span className="text-[10px] uppercase font-bold text-emerald-500">Aggregated Volume</span>
+                      <p className="text-2xl font-black text-emerald-500">{globalCampaignCalculatedTotals.calculatedVolume.toLocaleString()}</p>
+                    </div>
+                  </section>
+                )}
+
+                {selectedCampaign && selectedTemplate && (
+                  <div className="grid gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
+                    {processedAccountWiseCards.map((card) => (
+                      <div key={card.account} className={`rounded-xl border shadow-lg flex flex-col justify-between overflow-hidden ${isDarkMode ? "bg-slate-900 border-white/5" : "bg-white border-slate-200"}`}>
+                        <div className={`p-4 border-b flex justify-between items-center ${isDarkMode ? "bg-slate-950/40 border-zinc-800" : "bg-slate-100 border-slate-200"}`}>
+                          <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-500/10 text-emerald-500 uppercase">{card.account}</span>
+                          <span className="font-mono font-bold text-sky-500 text-xs">{card.totalVolume.toLocaleString()}</span>
+                        </div>
+                        <div className="p-4 flex-1 overflow-y-auto max-h-[160px] font-mono text-xs gap-2 flex flex-col">
+                          {card.templates.map((t, idx) => (
+                            <div key={idx} className="flex justify-between items-start gap-2">
+                              <span className="text-zinc-400 font-sans truncate break-all">{t.name}</span>
+                              <span className="font-bold shrink-0">{t.count} m</span>
+                            </div>
+                          ))}
+                        </div>
+                        <div className={`p-3 border-t text-[10px] uppercase font-bold text-zinc-500 flex justify-between ${isDarkMode ? "bg-slate-950/10 border-zinc-800" : "bg-slate-50 border-slate-200"}`}>
+                          <span>Card Total Mails</span>
+                          <span>{card.totalMails} Mails</span>
+                        </div>
                       </div>
                     ))}
                   </div>
                 )}
-              </section>
-
-              <div className="grid gap-6 grid-cols-1 md:grid-cols-2">
-                <section className={`rounded-xl p-4 sm:p-6 border shadow-xl ${isDarkMode ? "bg-slate-900 border-white/5" : "bg-white border-slate-200"}`}>
-                  <h3 className="text-xs font-bold uppercase tracking-wider text-sky-400 mb-3">📋 Section 1: Account Wise Track Volume</h3>
-                  <div className={`max-h-[300px] overflow-y-auto divide-y font-mono text-xs pr-2 ${isDarkMode ? "divide-zinc-800/40" : "divide-slate-200"}`}>
-                    {dashboardAccountWiseMetrics.map((item) => (
-                      <div key={item.account} className="py-2.5 flex justify-between items-center gap-2">
-                        <span className={`font-sans font-medium truncate ${isDarkMode ? "text-zinc-300" : "text-slate-700"}`}>{item.account}</span>
-                        <span className="font-bold text-sky-500 shrink-0">{item.calculatedVolume.toLocaleString()} <span className="text-[10px] text-zinc-500 font-normal">({item.totalMails} mails)</span></span>
-                      </div>
-                    ))}
-                    {dashboardAccountWiseMetrics.length === 0 && <p className="text-zinc-500 text-center py-4">No account metrics available.</p>}
-                  </div>
-                </section>
-
-                <section className={`rounded-xl p-4 sm:p-6 border shadow-xl ${isDarkMode ? "bg-slate-900 border-white/5" : "bg-white border-slate-200"}`}>
-                  <h3 className="text-xs font-bold uppercase tracking-wider text-purple-400 mb-3">📊 Section 2: Campaign Wise Track Volume</h3>
-                  <div className={`max-h-[300px] overflow-y-auto divide-y font-mono text-xs pr-2 ${isDarkMode ? "divide-zinc-800/40" : "divide-slate-200"}`}>
-                    {dashboardCampaignWiseMetrics.map((item) => (
-                      <div key={item.campaign} className="py-2.5 flex justify-between items-center gap-2">
-                        <span className={`font-sans font-medium truncate ${isDarkMode ? "text-zinc-300" : "text-slate-700"}`}>{item.campaign}</span>
-                        <span className="font-bold text-purple-500 shrink-0">{item.calculatedVolume.toLocaleString()} <span className="text-[10px] text-zinc-500 font-normal">({item.totalMails} mails)</span></span>
-                      </div>
-                    ))}
-                    {dashboardCampaignWiseMetrics.length === 0 && <p className="text-zinc-500 text-center py-4">No campaign metrics available.</p>}
-                  </div>
-                </section>
               </div>
-            </div>
-          )}
+            )}
+          </>
+        )}
 
-          {/* CORE WORKSPACE FILTER CONTROLS BAR */}
-          <section className={`rounded-xl p-4 sm:p-6 flex flex-col gap-4 border shadow-xl ${isDarkMode ? "bg-slate-900 border-white/5" : "bg-white border-slate-200"}`}>
-            <div className="grid gap-4 grid-cols-1 sm:grid-cols-3 items-end">
-              <div className="flex flex-col gap-1">
-                <label className={`text-xs font-semibold ${isDarkMode ? "text-zinc-400" : "text-slate-600"}`}>Start Date</label>
-                <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className={`h-11 rounded-lg px-3 text-sm outline-none w-full border ${isDarkMode ? "bg-slate-950 border-zinc-800 text-white focus:border-emerald-500" : "bg-white border-slate-300 text-slate-900 focus:border-emerald-500"}`} />
-              </div>
-              <div className="flex flex-col gap-1">
-                <label className={`text-xs font-semibold ${isDarkMode ? "text-zinc-400" : "text-slate-600"}`}>End Date</label>
-                <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className={`h-11 rounded-lg px-3 text-sm outline-none w-full border ${isDarkMode ? "bg-slate-950 border-zinc-800 text-white focus:border-emerald-500" : "bg-white border-slate-300 text-slate-900 focus:border-emerald-500"}`} />
-              </div>
-              <div className="flex flex-col gap-1">
-                <label className={`text-xs font-semibold ${isDarkMode ? "text-zinc-400" : "text-slate-600"}`}>Origin Account (ET)</label>
-                <select value={selectedEt} onChange={(e) => setSelectedEt(e.target.value)} className={`h-11 rounded-lg px-3 text-sm outline-none w-full border ${isDarkMode ? "bg-slate-950 border-zinc-800 text-white focus:border-emerald-500" : "bg-white border-slate-300 text-slate-900 focus:border-emerald-500"}`}>
-                  <option value="">Select ET Account</option>
-                  <option value="ALL">ALL ET'S (All Sheets)</option>
-                  {ets.map((e) => <option key={e} value={e}>{e}</option>)}
-                </select>
-              </div>
-            </div>
-
-            {errorMessage && <p className="text-xs font-semibold text-rose-500 bg-rose-500/5 p-2.5 rounded-lg border border-rose-500/10">⚠️ {errorMessage}</p>}
-
-            <button onClick={handleProcessDataMatrix} disabled={!startDate || !endDate || !selectedEt || status === "loading"} className="w-full h-11 rounded-lg bg-emerald-500 hover:bg-emerald-400 font-bold text-xs uppercase tracking-wider text-white disabled:opacity-40 shadow-lg cursor-pointer transition active:scale-95 duration-150">
-              Process Data Matrix
-            </button>
-          </section>
-
-          {/* SECTION B: SPECIFIC ACTION RESULTS SCREEN OVERVIEW */}
-          {allFetchedData && (
-            <div className="flex flex-col gap-6 animate-fadeIn">
+        {/* ==================================================================== */}
+        {/* VIEW TYPE 2: ADVANCED REVENUE METRICS ANALYTICS SECTION MODULE      */}
+        {/* ==================================================================== */}
+        {currentView === "analytics" && (
+          <div className="flex flex-col gap-6 animate-fadeIn">
+            <section className={`rounded-xl p-4 sm:p-6 border shadow-xl flex flex-col gap-4 ${isDarkMode ? "bg-slate-900 border-white/5" : "bg-white border-slate-200"}`}>
+              <h3 className="text-xs font-bold uppercase tracking-wider text-purple-400">📈 Step 1: Upload Conversion Statement & Specify Bounds</h3>
               
-              {/* Secondary Sub-Filters Row */}
-              <section className={`rounded-xl p-4 sm:p-6 grid gap-4 sm:grid-cols-2 border shadow-xl ${isDarkMode ? "bg-slate-900 border-white/5" : "bg-white border-slate-200"}`}>
+              <div className="grid gap-4 grid-cols-1 sm:grid-cols-3 items-end">
                 <div className="flex flex-col gap-1">
-                  <label className={`text-xs font-semibold ${isDarkMode ? "text-zinc-400" : "text-slate-600"}`}>Select Campaign Group</label>
-                  <select value={selectedCampaign} onChange={(e) => { setSelectedCampaign(e.target.value); setSelectedTemplate(""); }} className={`h-11 rounded-lg px-3 text-sm outline-none w-full border ${isDarkMode ? "bg-slate-950 border-zinc-800 text-white focus:border-emerald-500" : "bg-white border-slate-300 text-slate-900 focus:border-emerald-500"}`}>
-                    <option value="">Select Campaign</option>
-                    {dynamicCampaignOptions.map((c) => <option key={c} value={c}>{c}</option>)}
-                  </select>
+                  <label className="text-xs font-semibold text-zinc-400">Start Date</label>
+                  <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className={`h-11 rounded-lg px-3 text-sm outline-none border w-full ${isDarkMode ? "bg-slate-950 border-zinc-800 text-white" : "bg-white border-slate-300"}`} />
                 </div>
                 <div className="flex flex-col gap-1">
-                  <label className={`text-xs font-semibold ${isDarkMode ? "text-zinc-400" : "text-slate-600"}`}>Select Target Template</label>
-                  <select value={selectedTemplate} onChange={(e) => setSelectedTemplate(e.target.value)} disabled={!selectedCampaign} className={`h-11 rounded-lg px-3 text-sm outline-none w-full border ${isDarkMode ? "bg-slate-950 border-zinc-800 text-white focus:border-emerald-500" : "bg-white border-slate-300 text-slate-900 focus:border-emerald-500"}`}>
-                    <option value="">{selectedCampaign ? "Select Template" : "Choose Campaign first"}</option>
-                    {dynamicTemplateOptions.length > 0 && <option value="ALL">ALL MATCHED TEMPLATES</option>}
-                    {dynamicTemplateOptions.map((t) => <option key={t} value={t}>{t}</option>)}
-                  </select>
+                  <label className="text-xs font-semibold text-zinc-400">End Date</label>
+                  <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className={`h-11 rounded-lg px-3 text-sm outline-none border w-full ${isDarkMode ? "bg-slate-950 border-zinc-800 text-white" : "bg-white border-slate-300"}`} />
                 </div>
-              </section>
+                <div className="flex flex-col gap-1">
+                  <label className="text-xs font-semibold text-zinc-400">Report Days Duration</label>
+                  <input type="number" min="1" value={reportDays} onChange={(e) => setReportDays(e.target.value)} className={`h-11 rounded-lg px-3 text-sm outline-none border w-full ${isDarkMode ? "bg-slate-950 border-zinc-800 text-white" : "bg-white border-slate-300"}`} />
+                </div>
+              </div>
 
-              {/* HIGHLIGHT DETAILS DISPLAY */}
-              {selectedCampaign && selectedTemplate && globalCampaignCalculatedTotals && (
-                <section className={`rounded-xl p-5 border shadow-xl grid gap-4 grid-cols-1 sm:grid-cols-3 animate-fadeIn ${
-                  isDarkMode ? "bg-gradient-to-br from-slate-900 to-slate-950 border-emerald-500/20 text-white" : "bg-gradient-to-br from-white to-slate-50 border-slate-200 text-slate-900"
-                }`}>
-                  <div className="flex flex-col">
-                    <span className={`text-[10px] uppercase font-bold tracking-wider ${isDarkMode ? "text-zinc-400" : "text-slate-500"}`}>Target Campaign Group</span>
-                    <span className="text-lg font-black mt-0.5 truncate" title={selectedCampaign}>{selectedCampaign}</span>
+              <div className="flex flex-col gap-1.5 mt-2">
+                <label className="text-xs font-semibold text-zinc-400">Select Revenue Ledger Upload (.csv)</label>
+                <input type="file" accept=".csv" onChange={handleCsvFileLoad} className="text-xs text-zinc-400 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-zinc-800 file:text-zinc-200 file:cursor-pointer hover:file:bg-zinc-700" />
+              </div>
+
+              <button 
+                onClick={async () => {
+                  if (!startDate || !endDate || !rawCsvText) return;
+                  setStatus("loading");
+                  try {
+                    const res = await fetch(`/api/mailCounts?startDate=${startDate}&endDate=${endDate}&et=ALL`);
+                    const data = await res.json();
+                    setAllFetchedData(data.breakdown ?? []);
+                    setAnalyticsActive(true);
+                    setStatus("success");
+                  } catch { setStatus("error"); }
+                }}
+                disabled={!startDate || !endDate || !rawCsvText}
+                className="w-full h-11 rounded-lg bg-purple-600 hover:bg-purple-500 font-bold text-xs uppercase text-white tracking-widest cursor-pointer disabled:opacity-40 transition active:scale-95 mt-2"
+              >
+                Compile Revenue Analytics
+              </button>
+            </section>
+
+            {/* Advanced Filters revealed only AFTER compilation finishes */}
+            {analyticsActive && allFetchedData && (
+              <div className="flex flex-col gap-6 animate-fadeIn">
+                <section className={`rounded-xl p-4 sm:p-6 grid gap-4 sm:grid-cols-2 border shadow-xl ${isDarkMode ? "bg-slate-900 border-white/5" : "bg-white border-slate-200"}`}>
+                  <div className="flex flex-col gap-1">
+                    <label className="text-xs font-semibold text-zinc-400">Filter Account (ET)</label>
+                    <select value={analyticsEt} onChange={e => setAnalyticsEt(e.target.value)} className={`h-11 rounded-lg px-3 text-sm outline-none border w-full ${isDarkMode ? "bg-slate-950 border-zinc-800 text-white" : "bg-white border-slate-300"}`}>
+                      <option value="ALL">ALL ACCOUNTS</option>
+                      {ets.map(e => <option key={e} value={e}>{e}</option>)}
+                    </select>
                   </div>
-                  <div className={`flex flex-col border-t sm:border-t-0 sm:border-x sm:px-4 ${isDarkMode ? "border-zinc-800/60" : "border-slate-200"}`}>
-                    <span className={`text-[10px] uppercase font-bold tracking-wider ${isDarkMode ? "text-zinc-400" : "text-slate-500"}`}>Total Mail Matches Count</span>
-                    <span className="text-2xl font-black text-sky-500 mt-0.5">{globalCampaignCalculatedTotals.totalMails.toLocaleString()} <span className="text-xs font-normal text-zinc-500">Mails</span></span>
-                  </div>
-                  <div className="flex flex-col border-t sm:border-t-0 sm:px-4">
-                    <span className="text-[10px] uppercase font-bold text-emerald-500 tracking-wider">Aggregated Total Volume</span>
-                    <span className="text-2xl font-black text-emerald-500 mt-0.5">{globalCampaignCalculatedTotals.calculatedVolume.toLocaleString()}</span>
+                  <div className="flex flex-col gap-1">
+                    <label className="text-xs font-semibold text-zinc-400">Filter Campaign Segment</label>
+                    <select value={analyticsCampaign} onChange={e => setAnalyticsCampaign(e.target.value)} className={`h-11 rounded-lg px-3 text-sm outline-none border w-full ${isDarkMode ? "bg-slate-950 border-zinc-800 text-white" : "bg-white border-slate-300"}`}>
+                      <option value="ALL">ALL CAMPAIGNS</option>
+                      {analyticsCampaignOptions.map(c => <option key={c} value={c}>{c}</option>)}
+                    </select>
                   </div>
                 </section>
-              )}
 
-              {/* CARD CONTAINER MATRIX */}
-              {selectedCampaign && selectedTemplate && (
-                <div className="flex flex-col gap-4">
-                  <div className="flex items-center justify-between">
-                    <h4 className={`text-xs font-bold uppercase tracking-widest ${isDarkMode ? "text-zinc-400" : "text-slate-600"}`}>📌 Account Wise Summary Matrix Split</h4>
-                    <button onClick={() => setAllFetchedData(null)} className="text-xs font-semibold text-emerald-500 hover:underline">← Clear View Back to Dashboard</button>
-                  </div>
-                  
-                  <div className="grid gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
-                    {processedAccountWiseCards.map((card) => (
-                      <div 
-                        key={card.account} 
-                        onClick={() => setSelectedCardAccount(card.account)}
-                        className={`rounded-xl border shadow-lg flex flex-col justify-between overflow-hidden transform transition duration-300 hover:scale-[1.02] hover:shadow-xl ${
-                          isDarkMode ? "bg-slate-900 border-white/5" : "bg-white border-slate-200"
-                        }`}
-                      >
-                        <div className={`p-4 border-b flex justify-between items-center ${isDarkMode ? "border-zinc-800/60 bg-slate-950/40" : "border-slate-200 bg-slate-100"}`}>
-                          <span className="px-2.5 py-0.5 rounded text-[11px] font-black uppercase bg-emerald-500/10 text-emerald-600 border border-emerald-500/20">
-                            {card.account}
-                          </span>
-                          <span className="text-xs font-mono font-bold text-sky-500">{card.totalVolume.toLocaleString()}</span>
+                {/* ADVANCED REVENUE CARD SPLIT VIEW DISPLAY */}
+                <div className="grid gap-6 grid-cols-1 md:grid-cols-2">
+                  {revenueCalculatedCards.map((card) => (
+                    <section key={card.accountName} className={`rounded-xl border shadow-xl flex flex-col justify-between overflow-hidden ${isDarkMode ? "bg-slate-900 border-white/5" : "bg-white border-slate-200"}`}>
+                      
+                      <div className={`p-4 border-b flex justify-between items-center ${isDarkMode ? "bg-slate-950/50 border-zinc-800" : "bg-slate-100 border-slate-200"}`}>
+                        <span className="text-xs font-black text-emerald-500 uppercase">{card.accountName}</span>
+                        <div className="text-right">
+                          <span className="text-[10px] text-zinc-500 font-bold uppercase block">Card Total Revenue</span>
+                          <span className="text-sm font-black text-emerald-400">${card.cardTotalRevenue.toLocaleString()}</span>
                         </div>
+                      </div>
 
-                        <div className={`p-4 flex-1 flex flex-col gap-2 max-h-[180px] overflow-y-auto pr-2 divide-y font-mono text-[11px] ${isDarkMode ? "divide-zinc-800/20" : "divide-slate-200"}`}>
-                          {card.templates.map((tmpl, tIdx) => (
-                            <div key={tIdx} className="pt-2 first:pt-0 flex justify-between items-start gap-3">
-                              <span className={`font-sans break-all leading-tight ${isDarkMode ? "text-zinc-300" : "text-slate-800"}`} title={tmpl.name}>
-                                {tmpl.name}
-                              </span>
-                              <span className={`font-bold shrink-0 text-right ${isDarkMode ? "text-zinc-400" : "text-slate-600"}`}>
-                                {tmpl.count} <span className="text-[9px] font-normal text-zinc-500">m</span>
+                      <div className={`p-4 flex-1 flex flex-col gap-4 overflow-y-auto max-h-[380px] divide-y ${isDarkMode ? "divide-zinc-800/40" : "divide-slate-100"}`}>
+                        {card.templates.map((tmpl, tIdx) => (
+                          <div key={tIdx} className="pt-4 first:pt-0 flex flex-col gap-1.5 font-mono text-xs">
+                            <div className="flex justify-between items-start gap-2">
+                              <span className={`font-sans font-bold break-all leading-tight ${isDarkMode ? "text-zinc-200" : "text-slate-800"}`}>{tmpl.templateName}</span>
+                              <span className={`px-2 py-0.5 rounded text-[9px] font-bold uppercase ${tmpl.conversions > 0 ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20" : "bg-rose-500/10 text-rose-400 border border-rose-500/20"}`}>
+                                {tmpl.conversions > 0 ? `${tmpl.conversions} Conv` : "No Revenue"}
                               </span>
                             </div>
-                          ))}
-                        </div>
+                            <div className="grid grid-cols-3 text-[10px] text-zinc-400 pt-1">
+                              <div>
+                                <span className="block text-[9px] font-sans font-bold uppercase tracking-wide text-zinc-500">Mails Used</span>
+                                <span className={isDarkMode ? "text-zinc-300" : "text-slate-700"}>{tmpl.mailsUsed.toLocaleString()}</span>
+                              </div>
+                              <div>
+                                <span className="block text-[9px] font-sans font-bold uppercase tracking-wide text-zinc-500">Revenue</span>
+                                <span className="font-bold text-emerald-400">${tmpl.revenue.toLocaleString()}</span>
+                              </div>
+                              <div className="text-right">
+                                <span className="block text-[9px] font-sans font-bold uppercase tracking-wide text-zinc-500">Count/Conv</span>
+                                <span className={`font-bold ${tmpl.efficiency ? "text-sky-400" : "text-rose-500"}`}>
+                                  {tmpl.efficiency ? tmpl.efficiency.toLocaleString() : "N/A"}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
 
-                        <div className={`p-3 border-t flex justify-between items-center text-[10px] uppercase font-bold tracking-wider ${isDarkMode ? "bg-slate-950/20 border-zinc-800/40 text-zinc-500" : "bg-slate-50 border-slate-200 text-slate-500"}`}>
-                          <span>Row Total Mails</span>
-                          <span className={`font-mono ${isDarkMode ? "text-zinc-300" : "text-slate-800"}`}>{card.totalMails} Mails</span>
-                        </div>
-                      </div>
-                    ))}
-                    {processedAccountWiseCards.length === 0 && (
-                      <div className="p-6 border rounded-xl border-dashed border-zinc-800 text-center text-xs text-zinc-500 col-span-full">
-                        No parameters match this criteria combination grid. Try broadening selections.
-                      </div>
-                    )}
-                  </div>
+                    </section>
+                  ))}
                 </div>
-              )}
-            </div>
-          )}
-        </div>
+              </div>
+            )}
+          </div>
+        )}
+
       </div>
-    </>
+    </div>
   );
 }
