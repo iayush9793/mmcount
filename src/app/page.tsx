@@ -41,7 +41,8 @@ export default function Home() {
   const [errorMessage, setErrorMessage] = useState("");
 
   // Detailed Analytics Specific States
-  const [rawCsvText, setRawCsvText] = useState("");
+  const [uploadedFilesSummary, setUploadedFilesSummary] = useState<string[]>([]);
+  const [combinedCsvRecords, setCombinedRevenueRecords] = useState<RevenueRecord[]>([]);
   const [reportDays, setReportDays] = useState("1");
   const [analyticsActive, setAnalyticsActive] = useState(false);
   const [analyticsEt, setAnalyticsEt] = useState("");
@@ -139,7 +140,6 @@ export default function Home() {
     dashboardData.forEach((item) => {
       const campUpper = item.campaignSrc.toUpperCase().trim();
       const existing = campaignsMap.get(campUpper) || { totalMails: 0, calculatedVolume: 0 };
-      // FIXED TYPO HERE FROM campaignsVolume -> calculatedVolume
       campaignsMap.set(campUpper, { totalMails: existing.totalMails + item.count, calculatedVolume: existing.calculatedVolume + (item.count * item.multiplier) });
     });
     return Array.from(campaignsMap.entries()).map(([campaign, meta]) => ({ campaign, ...meta }));
@@ -206,30 +206,6 @@ export default function Home() {
     return Array.from(cardsMap.entries()).map(([account, meta]) => ({ account, ...meta }));
   }, [currentFilteredBaseRows]);
 
-  const parsedRevenueRecords = useMemo(() => {
-    if (!rawCsvText) return [];
-    const records: RevenueRecord[] = [];
-    const lines = rawCsvText.split(/\r?\n/);
-    if (lines.length <= 1) return [];
-
-    const headers = lines[0].split(",").map(h => h.trim().toUpperCase());
-    const subidIdx = headers.indexOf("SUBID");
-    let revIdx = headers.indexOf("REVENUE");
-    if (revIdx === -1) revIdx = headers.indexOf("AMOUNT");
-    if (revIdx === -1) revIdx = headers.indexOf("PAYOUT");
-
-    for (let i = 1; i < lines.length; i++) {
-      if (!lines[i].trim()) continue;
-      const cells = lines[i].split(",");
-      const subidVal = cells[subidIdx]?.trim() ?? "";
-      const revVal = Number(cells[revIdx]?.trim() ?? 1);
-      if (subidVal) {
-        records.push({ subid: subidVal, revenue: Number.isNaN(revVal) ? 1 : revVal });
-      }
-    }
-    return records;
-  }, [rawCsvText]);
-
   const analyticsCampaignOptions = useMemo(() => {
     if (!allFetchedData) return [];
     const unique = new Set<string>();
@@ -258,7 +234,7 @@ export default function Home() {
 
     return Array.from(accountGroups.entries()).map(([accountName, rows]) => {
       const templatesList = rows.map(row => {
-        const matchedRevenueHits = parsedRevenueRecords.filter(rec => {
+        const matchedRevenueHits = combinedCsvRecords.filter(rec => {
           const subidUpper = rec.subid.toUpperCase();
           const cleanTmpl = row.template.toUpperCase().trim();
           const cleanEt = accountName.replace(/[^a-zA-Z0-9]/g, "");
@@ -284,19 +260,53 @@ export default function Home() {
       const cardTotalRevenue = templatesList.reduce((sum, t) => sum + t.revenue, 0);
       return { accountName, templates: templatesList, cardTotalRevenue };
     });
-  }, [allFetchedData, analyticsActive, analyticsEt, analyticsCampaign, parsedRevenueRecords]);
+  }, [allFetchedData, analyticsActive, analyticsEt, analyticsCampaign, combinedCsvRecords]);
 
   function rowMultiplier(tabName: string): number {
     const clean = tabName.replace(/[^a-zA-Z0-9]/g, "").toUpperCase();
     return (clean.includes("JSG40") || clean.includes("JSG38")) ? 2000 : 5000;
   }
 
-  const handleCsvFileLoad = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (event) => { setRawCsvText(event.target?.result as string ?? ""); };
-    reader.readAsText(file);
+  // MULTIPLE CSV FILE MULTI-UPLOADER BATCH PARSER
+  const handleMultipleCsvFilesLoad = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    const namesArray: string[] = [];
+    let combinedRecords: RevenueRecord[] = [];
+
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      namesArray.push(`${file.name} (${(file.size / 1024).toFixed(1)} KB)`);
+
+      const text = await new Promise<string>((resolve) => {
+        const reader = new FileReader();
+        reader.onload = (event) => resolve(event.target?.result as string ?? "");
+        reader.readAsText(file);
+      });
+
+      const lines = text.split(/\r?\n/);
+      if (lines.length <= 1) continue;
+
+      const headers = lines[0].split(",").map(h => h.trim().toUpperCase());
+      const subidIdx = headers.indexOf("SUBID");
+      let revIdx = headers.indexOf("REVENUE");
+      if (revIdx === -1) revIdx = headers.indexOf("AMOUNT");
+      if (revIdx === -1) revIdx = headers.indexOf("PAYOUT");
+
+      for (let j = 1; j < lines.length; j++) {
+        if (!lines[j].trim()) continue;
+        const cells = lines[j].split(",");
+        const subidVal = cells[subidIdx]?.trim() ?? "";
+        const revVal = Number(cells[revIdx]?.trim() ?? 1);
+        if (subidVal) {
+          combinedRecords.push({ subid: subidVal, revenue: Number.isNaN(revVal) ? 1 : revVal });
+        }
+      }
+    }
+
+    setUploadedFilesSummary(namesArray);
+    setCombinedRevenueRecords(combinedRecords);
   };
 
   return (
@@ -485,13 +495,24 @@ export default function Home() {
               </div>
 
               <div className="flex flex-col gap-1.5 mt-2">
-                <label className="text-xs font-semibold text-zinc-400">Select Revenue Ledger Upload (.csv)</label>
-                <input type="file" accept=".csv" onChange={handleCsvFileLoad} className="text-xs text-zinc-400 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-zinc-800 file:text-zinc-200 file:cursor-pointer hover:file:bg-zinc-700" />
+                <label className="text-xs font-semibold text-zinc-400">Select Revenue Ledgers Upload (Multiple Allowed .csv)</label>
+                <input type="file" accept=".csv" multiple onChange={handleMultipleCsvFilesLoad} className="text-xs text-zinc-400 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-zinc-800 file:text-zinc-200 file:cursor-pointer hover:file:bg-zinc-700" />
               </div>
+
+              {/* Upload checklist feedback summary log panel */}
+              {uploadedFilesSummary.length > 0 && (
+                <div className={`p-3 rounded-lg border text-xs font-mono flex flex-col gap-1 ${isDarkMode ? "bg-slate-950 border-zinc-800" : "bg-slate-100 border-slate-200"}`}>
+                  <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider font-sans">Stacked Source Files Linked ({uploadedFilesSummary.length})</span>
+                  {uploadedFilesSummary.map((fName, idx) => (
+                    <span key={idx} className={isDarkMode ? "text-zinc-400" : "text-slate-600"}>📄 {fName}</span>
+                  ))}
+                  <span className="text-emerald-500 font-bold mt-1 font-sans">✓ Combined {combinedCsvRecords.length.toLocaleString()} total raw entries.</span>
+                </div>
+              )}
 
               <button 
                 onClick={async () => {
-                  if (!startDate || !endDate || !rawCsvText) return;
+                  if (!startDate || !endDate || combinedCsvRecords.length === 0) return;
                   setStatus("loading");
                   try {
                     const res = await fetch(`/api/mailCounts?startDate=${startDate}&endDate=${endDate}&et=ALL`);
@@ -501,7 +522,7 @@ export default function Home() {
                     setStatus("success");
                   } catch { setStatus("error"); }
                 }}
-                disabled={!startDate || !endDate || !rawCsvText}
+                disabled={!startDate || !endDate || combinedCsvRecords.length === 0}
                 className="w-full h-11 rounded-lg bg-purple-600 hover:bg-purple-500 font-bold text-xs uppercase text-white tracking-widest cursor-pointer disabled:opacity-40 transition active:scale-95 mt-2"
               >
                 Compile Revenue Analytics
@@ -531,7 +552,6 @@ export default function Home() {
                   {revenueCalculatedCards.map((card) => (
                     <section key={card.accountName} className={`rounded-xl border shadow-xl flex flex-col justify-between overflow-hidden ${isDarkMode ? "bg-slate-900 border-white/5" : "bg-white border-slate-200"}`}>
                       
-                      {/* FIXED STRING LITERAL INTERPOLATION ACCURACY TAG CLOSURES HERE */}
                       <div className={`p-4 border-b flex justify-between items-center ${isDarkMode ? "bg-slate-950/50 border-zinc-800 text-white" : "bg-slate-100 border-slate-200 text-slate-900"}`}>
                         <span className="text-xs font-black text-emerald-500 uppercase">{card.accountName}</span>
                         <div className="text-right">
