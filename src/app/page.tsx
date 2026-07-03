@@ -80,7 +80,7 @@ export default function Home() {
 
   const getFilterRule = (campaignName: string): FilterRule => {
     const cleanCamp = campaignName.toUpperCase().trim();
-   if (cleanCamp === "RGR") return { includes: ["RGR"], excludes: [] };
+  if (cleanCamp === "RGR") return { includes: ["RGR"], excludes: [] };
     if (cleanCamp === "ICO") return { includes: ["ICO"], excludes: [] };
     if (cleanCamp === "AHS_AD" || cleanCamp.startsWith("AHS")) return { includes: ["AHS"], excludes: ["DB", "XCE", "GZ", "XC", "ES"] };
     if (cleanCamp === "SHW_ES" || cleanCamp.startsWith("SHW")) return { includes: ["SHW", "ES"], excludes: ["DB", "XCE", "GZ", "XC"] };
@@ -94,6 +94,7 @@ export default function Home() {
     if (cleanCamp === "ADT_AD" || cleanCamp.startsWith("ADT")) return { includes: ["ADT"], excludes: ["DB", "XCE", "GZ", "XC"] };
     if (cleanCamp.includes("RYH FLOORING") || cleanCamp.includes("RYH_FLOORING")) return { includes: ["RHF"], excludes: ["DB", "XCE", "GZ", "XC"] };
     if (cleanCamp === "JG_AD") return { includes: ["JG"], excludes: ["DB", "XCE", "GZ", "XC"] };
+    if (cleanCamp === "ZBH_DB" || cleanCamp.startsWith("ZBH")) return { includes: ["ZBH", "DB"], excludes: ["XCE", "GZ", "XC", "ES"] };
     if (cleanCamp === "CH_XC" || cleanCamp.startsWith("CH")) return { includes: ["CH"], excludes: [] };
     if (cleanCamp === "LBH_DB" || cleanCamp.startsWith("LBH")) return { includes: ["LBH", "DB"], excludes: ["XCE", "GZ", "XC", "ES"] };
     if (cleanCamp === "NDR" || cleanCamp.startsWith("NDR")) return { includes: ["NDR", "CMAD"], excludes: ["XCE", "XC", "ES"] };
@@ -154,24 +155,30 @@ export default function Home() {
   async function handleProcessDataMatrix() {
     if (!startDate || !endDate || !selectedEt) return;
     setErrorMessage("");
-    if (new Date(endDate) < new Date(startDate)) { setErrorMessage("End Date cannot be earlier than Start Date."); return; }
+    
+    // ALLOW IDENTICAL SINGLE-DAY SELECTIONS
+    if (startDate !== endDate && new Date(endDate) < new Date(startDate)) { 
+      setErrorMessage("End Date cannot be earlier than Start Date."); 
+      return; 
+    }
 
-    // CLEAR PREVIOUS RESULTS AND START LOADER
     setAllFetchedData(null);
     setSelectedCampaign("");
     setSelectedTemplate("");
     setSelectedCardAccount(null);
     setStatus("loading");
 
-    try {
-      const lookupEt = selectedEt.toUpperCase().startsWith("ALL") ? "ALL" : selectedEt;
-      const res = await fetch(`/api/mailCounts?startDate=${startDate}&endDate=${endDate}&et=${encodeURIComponent(lookupEt)}`);
-      const data = await res.json();
-      setAllFetchedData(data.breakdown ?? []);
-      setStatus("success");
-    } catch {
-      setStatus("error");
-    }
+    setTimeout(async () => {
+      try {
+        const lookupEt = selectedEt.toUpperCase().startsWith("ALL") ? "ALL" : selectedEt;
+        const res = await fetch(`/api/mailCounts?startDate=${startDate}&endDate=${endDate}&et=${encodeURIComponent(lookupEt)}`);
+        const data = await res.json();
+        setAllFetchedData(data.breakdown ?? []);
+        setStatus("success");
+      } catch {
+        setStatus("error");
+      }
+    }, 60);
   }
 
   const dynamicCampaignOptions = useMemo(() => {
@@ -320,34 +327,35 @@ export default function Home() {
     setCombinedRevenueRecords(combinedRecords);
   };
 
-  const handleCompileAnalytics = async () => {
+  const handleCompileAnalytics = () => {
     if (!startDate || !endDate || combinedCsvRecords.length === 0) return;
     
-    // CLEAR PREVIOUS RESULTS AND START LOADER
     setAllFetchedData(null);
     setAnalyticsActive(false);
     setAnalyticsEt("");
     setAnalyticsCampaign("");
     setStatus("loading");
 
-    try {
-      const res = await fetch(`/api/mailCounts?startDate=${startDate}&endDate=${endDate}&et=ALL`);
-      const data = await res.json();
-      setAllFetchedData(data.breakdown ?? []);
-      setAnalyticsActive(true);
-      setStatus("success");
-    } catch { 
-      setStatus("error"); 
-    }
+    setTimeout(async () => {
+      try {
+        const res = await fetch(`/api/mailCounts?startDate=${startDate}&endDate=${endDate}&et=ALL`);
+        const data = await res.json();
+        setAllFetchedData(data.breakdown ?? []);
+        setAnalyticsActive(true);
+        setStatus("success");
+      } catch { 
+        setStatus("error"); 
+      }
+    }, 60);
   };
 
   return (
     <div className={`min-h-screen transition-colors duration-500 p-4 sm:p-6 flex flex-col justify-between ${isDarkMode ? "bg-slate-950 text-zinc-50" : "bg-slate-50 text-slate-900"}`}>
       <div className="mx-auto max-w-5xl w-full flex flex-col gap-6 flex-1">
         
-        {/* INTERACTIVE LOADERS */}
+        {/* GLOBAL PERSISTENT SPINNING PRELOADER OVERLAY */}
         {(isAppLoading || status === "loading") && (
-          <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-slate-950/75 backdrop-blur-md">
+          <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-slate-950/80 backdrop-blur-md">
             <div className="flex flex-col items-center gap-5 bg-slate-900 border border-white/5 p-8 rounded-2xl shadow-2xl max-w-sm w-full mx-4 text-center">
               <div className="relative h-12 w-12">
                 <div className="absolute inset-0 rounded-full border-4 border-zinc-800" />
@@ -420,7 +428,7 @@ export default function Home() {
                       {dashboardCampaignWiseMetrics.map((item) => (
                         <div key={item.campaign} className="py-2.5 flex justify-between items-center gap-2">
                           <span className="font-sans font-medium truncate">{item.campaign}</span>
-                          <span className="font-bold text-purple-500 shrink-0">{item.calculatedVolume.toLocaleString()} <span className="text-[10px] text-zinc-500 font-normal">({item.totalMails} mails)</span></span>
+                          <span className="font-bold text-purple-400 shrink-0">{item.calculatedVolume.toLocaleString()} <span className="text-[10px] text-zinc-500 font-normal">({item.totalMails} mails)</span></span>
                         </div>
                       ))}
                     </div>
@@ -437,7 +445,7 @@ export default function Home() {
                 </div>
                 <div className="flex flex-col gap-1">
                   <label className="text-xs font-semibold text-zinc-400">End Date</label>
-                  <input type="date" value={endDate} onChange={(e) => Math.abs(Number(e.target.value)) && setEndDate(e.target.value)} className={`h-11 rounded-lg px-3 text-sm outline-none border w-full ${isDarkMode ? "bg-slate-950 border-zinc-800 text-white" : "bg-white border-slate-300"}`} />
+                  <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className={`h-11 rounded-lg px-3 text-sm outline-none border w-full ${isDarkMode ? "bg-slate-950 border-zinc-800 text-white" : "bg-white border-slate-300"}`} />
                 </div>
                 <div className="flex flex-col gap-1">
                   <label className="text-xs font-semibold text-zinc-400">Origin Account (ET)</label>
