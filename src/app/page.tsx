@@ -81,37 +81,67 @@ export default function Home() {
   const getFilterRule = (campaignName: string): FilterRule => {
     const cleanCamp = campaignName.toUpperCase().trim();
   if (cleanCamp === "RGR") return { includes: ["RGR"], excludes: [] };
+
     if (cleanCamp === "ICO") return { includes: ["ICO"], excludes: [] };
+
     if (cleanCamp === "AHS_AD" || cleanCamp.startsWith("AHS")) return { includes: ["AHS"], excludes: ["DB", "XCE", "GZ", "XC", "ES"] };
+
     if (cleanCamp === "SHW_ES" || cleanCamp.startsWith("SHW")) return { includes: ["SHW", "ES"], excludes: ["DB", "XCE", "GZ", "XC"] };
+
     if (cleanCamp === "XCE_AIR" || cleanCamp === "AIR") return { includes: ["AIR"], excludes: [] };
+
     if (cleanCamp === "FIR_XC" || cleanCamp.startsWith("FIR")) return { includes: ["FIR"], excludes: [] };
+
     if (cleanCamp === "HEC_AD" || cleanCamp.startsWith("HEC")) return { includes: ["HEC"], excludes: [] };
+
     if (cleanCamp === "INSURIFY_GZ") return { includes: ["IA"], excludes: ["IAI"] };
+
     if (cleanCamp === "LR_GZ" || cleanCamp.startsWith("LR")) return { includes: ["LR"], excludes: [] };
+
     if (cleanCamp.includes("E-VETERANS_DB") || cleanCamp.includes("VETERANS_DB")) return { includes: ["EVL"], excludes: [] };
+
     if (cleanCamp === "FGLO_DB" || cleanCamp.startsWith("FGLO")) return { includes: ["FGLO"], excludes: [] };
+
     if (cleanCamp === "ADT_AD" || cleanCamp.startsWith("ADT")) return { includes: ["ADT"], excludes: ["DB", "XCE", "GZ", "XC"] };
+
     if (cleanCamp.includes("RYH FLOORING") || cleanCamp.includes("RYH_FLOORING")) return { includes: ["RHF"], excludes: ["DB", "XCE", "GZ", "XC"] };
+
     if (cleanCamp === "JG_AD") return { includes: ["JG"], excludes: ["DB", "XCE", "GZ", "XC"] };
+
     if (cleanCamp === "ZBH_DB" || cleanCamp.startsWith("ZBH")) return { includes: ["ZBH", "DB"], excludes: ["XCE", "GZ", "XC", "ES"] };
+
     if (cleanCamp === "CH_XC" || cleanCamp.startsWith("CH")) return { includes: ["CH"], excludes: [] };
+
     if (cleanCamp === "LBH_DB" || cleanCamp.startsWith("LBH")) return { includes: ["LBH", "DB"], excludes: ["XCE", "GZ", "XC", "ES"] };
+
     if (cleanCamp === "NDR" || cleanCamp.startsWith("NDR")) return { includes: ["NDR", "CMAD"], excludes: ["XCE", "XC", "ES"] };
+
      if (cleanCamp === "ZBH" || cleanCamp.startsWith("ZBH")) return { includes: ["ZBH", "ES"], excludes: ["XCE", "XC", "DB"] };
+
      if (cleanCamp === "WS" || cleanCamp.startsWith("WS")) return { includes: ["WS", "CMAD"], excludes: ["XCE", "XC", "ES"] };
+
      if (cleanCamp === "QLR" || cleanCamp.startsWith("QLR")) return { includes: ["QLR", "ES"], excludes: ["XCE", "XC", "DB"] };
+
     if (cleanCamp === "VIVINT_AD" || cleanCamp === "VIVINT") return { includes: ["VI"], excludes: ["XCE", "XC", "ES", "GZ", "DB"] };
+
     if (cleanCamp === "TRUGREEN_AD") return { includes: ["TRU"], excludes: ["XCE", "XC", "ES", "GZ", "DB"] };
+
     if (cleanCamp.includes("IAI_GZ")) return { includes: ["IAI"], excludes: [] };
+
     if (cleanCamp === "RBA_XCE" || cleanCamp.startsWith("RBA")) return { includes: ["RBA", "XCE"], excludes: ["XC", "ES", "GZ", "DB"] };
+
     if (cleanCamp === "JG_XCE") return { includes: ["JG", "XCE"], excludes: ["XC", "ES", "GZ", "DB"] };
+
     if (cleanCamp === "TRUGREEN_DB") return { includes: ["TRU", "DB"], excludes: ["XC", "ES", "GZ", "XCE"] };
+
     if (cleanCamp === "ASSURITI_DB") return { includes: ["AAW"], excludes: [] };
+
     if (cleanCamp === "QUOTIFII_DB") return { includes: ["QTI"], excludes: [] };
  
     return { includes: [cleanCamp.split("_")[0]], excludes: [] };
+
   };
+ 
 
   const matchTemplate = (templateName: string, rule: FilterRule): boolean => {
     const tmplUpper = templateName.toUpperCase();
@@ -156,7 +186,6 @@ export default function Home() {
     if (!startDate || !endDate || !selectedEt) return;
     setErrorMessage("");
     
-    // ALLOW IDENTICAL SINGLE-DAY SELECTIONS
     if (startDate !== endDate && new Date(endDate) < new Date(startDate)) { 
       setErrorMessage("End Date cannot be earlier than Start Date."); 
       return; 
@@ -232,6 +261,7 @@ export default function Home() {
     return Array.from(unique).sort();
   }, [allFetchedData]);
 
+  // REVENUE MATRIX GENERATION AND COMPILATION CALCULATOR ENGINE
   const revenueCalculatedCards = useMemo(() => {
     if (!allFetchedData || !analyticsActive) return [];
 
@@ -253,11 +283,19 @@ export default function Home() {
 
     return Array.from(accountGroups.entries()).map(([accountName, rows]) => {
       const templatesList = rows.map(row => {
+        // EXPLICIT FIXED LOGIC: Extract exact matching records using the final underscore separator pattern
         const matchedRevenueHits = combinedCsvRecords.filter(rec => {
-          const subidUpper = rec.subid.toUpperCase();
-          const cleanTmpl = row.template.toUpperCase().trim();
-          const cleanEt = accountName.replace(/[^a-zA-Z0-9]/g, "");
-          return subidUpper.includes(cleanTmpl) && subidUpper.includes(cleanEt);
+          const subidStr = rec.subid.trim();
+          const lastUnderscoreIdx = subidStr.lastIndexOf("_");
+          if (lastUnderscoreIdx === -1) return false;
+
+          const parsedTemplateName = subidStr.substring(0, lastUnderscoreIdx).trim().toUpperCase();
+          const parsedAccountName = subidStr.substring(lastUnderscoreIdx + 1).trim().replace(/[^a-zA-Z0-9]/g, "").toUpperCase();
+
+          const cleanSheetTemplate = row.template.trim().toUpperCase();
+          const cleanSheetAccount = accountName.replace(/[^a-zA-Z0-9]/g, "").toUpperCase();
+
+          return parsedTemplateName === cleanSheetTemplate && parsedAccountName === cleanSheetAccount;
         });
 
         const revenueSum = matchedRevenueHits.reduce((sum, r) => sum + r.revenue, 0);
@@ -308,17 +346,17 @@ export default function Home() {
 
       const headers = lines[0].split(",").map(h => h.trim().toUpperCase());
       const subidIdx = headers.indexOf("SUBID");
-      let revIdx = headers.indexOf("REVENUE");
+      let revIdx = headers.indexOf("REV");
+      if (revIdx === -1) revIdx = headers.indexOf("REVENUE");
       if (revIdx === -1) revIdx = headers.indexOf("AMOUNT");
-      if (revIdx === -1) revIdx = headers.indexOf("PAYOUT");
 
       for (let j = 1; j < lines.length; j++) {
         if (!lines[j].trim()) continue;
         const cells = lines[j].split(",");
         const subidVal = cells[subidIdx]?.trim() ?? "";
-        const revVal = Number(cells[revIdx]?.trim() ?? 1);
+        const revVal = Number(cells[revIdx]?.trim() ?? 0);
         if (subidVal) {
-          combinedRecords.push({ subid: subidVal, revenue: Number.isNaN(revVal) ? 1 : revVal });
+          combinedRecords.push({ subid: subidVal, revenue: Number.isNaN(revVal) ? 0 : revVal });
         }
       }
     }
