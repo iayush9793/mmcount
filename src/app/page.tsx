@@ -80,68 +80,40 @@ export default function Home() {
 
   const getFilterRule = (campaignName: string): FilterRule => {
     const cleanCamp = campaignName.toUpperCase().trim();
-  if (cleanCamp === "RGR") return { includes: ["RGR"], excludes: [] };
-
+    if (cleanCamp === "RGR") return { includes: ["RGR"], excludes: [] };
     if (cleanCamp === "ICO") return { includes: ["ICO"], excludes: [] };
-
     if (cleanCamp === "AHS_AD" || cleanCamp.startsWith("AHS")) return { includes: ["AHS"], excludes: ["DB", "XCE", "GZ", "XC", "ES"] };
-
     if (cleanCamp === "SHW_ES" || cleanCamp.startsWith("SHW")) return { includes: ["SHW", "ES"], excludes: ["DB", "XCE", "GZ", "XC"] };
-
     if (cleanCamp === "XCE_AIR" || cleanCamp === "AIR") return { includes: ["AIR"], excludes: [] };
-
     if (cleanCamp === "FIR_XC" || cleanCamp.startsWith("FIR")) return { includes: ["FIR"], excludes: [] };
-
     if (cleanCamp === "HEC_AD" || cleanCamp.startsWith("HEC")) return { includes: ["HEC"], excludes: [] };
-
     if (cleanCamp === "INSURIFY_GZ") return { includes: ["IA"], excludes: ["IAI"] };
-
     if (cleanCamp === "LR_GZ" || cleanCamp.startsWith("LR")) return { includes: ["LR"], excludes: [] };
-
     if (cleanCamp.includes("E-VETERANS_DB") || cleanCamp.includes("VETERANS_DB")) return { includes: ["EVL"], excludes: [] };
-
     if (cleanCamp === "FGLO_DB" || cleanCamp.startsWith("FGLO")) return { includes: ["FGLO"], excludes: [] };
-
     if (cleanCamp === "ADT_AD" || cleanCamp.startsWith("ADT")) return { includes: ["ADT"], excludes: ["DB", "XCE", "GZ", "XC"] };
-
     if (cleanCamp.includes("RYH FLOORING") || cleanCamp.includes("RYH_FLOORING")) return { includes: ["RHF"], excludes: ["DB", "XCE", "GZ", "XC"] };
-
     if (cleanCamp === "JG_AD") return { includes: ["JG"], excludes: ["DB", "XCE", "GZ", "XC"] };
-if (cleanCamp === "SQMH_ES") return { includes: ["SQMH"], excludes: ["DB", "XCE", "GZ", "XC"] };
-  if (cleanCamp === "EFA_ES") return { includes: ["EFA"], excludes: ["DB", "XCE", "GZ", "XC"] };  
-if (cleanCamp === "EAC_CMAD") return { includes: ["EAC"], excludes: ["DB", "XCE", "GZ", "XC"] };
+    if (cleanCamp === "SQMH_ES") return { includes: ["SQMH"], excludes: ["DB", "XCE", "GZ", "XC"] };
+    if (cleanCamp === "EFA_ES") return { includes: ["EFA"], excludes: ["DB", "XCE", "GZ", "XC"] };  
+    if (cleanCamp === "EAC_CMAD") return { includes: ["EAC"], excludes: ["DB", "XCE", "GZ", "XC"] };
     if (cleanCamp === "CH_XC" || cleanCamp.startsWith("CH")) return { includes: ["CH"], excludes: [] };
-
     if (cleanCamp === "LBH_DB" || cleanCamp.startsWith("LBH")) return { includes: ["LBH", "DB"], excludes: ["XCE", "GZ", "XC", "ES"] };
-
     if (cleanCamp === "NDR" || cleanCamp.startsWith("NDR")) return { includes: ["NDR", "CMAD"], excludes: ["XCE", "XC", "ES"] };
-
-     if (cleanCamp === "ZBH" || cleanCamp.startsWith("ZBH")) return { includes: ["ZBH", "ES"], excludes: ["XCE", "XC", "DB"] };
-
-     if (cleanCamp === "WS" || cleanCamp.startsWith("WS")) return { includes: ["WS", "CMAD"], excludes: ["XCE", "XC", "ES"] };
-
-     if (cleanCamp === "QLR" || cleanCamp.startsWith("QLR")) return { includes: ["QLR", "ES"], excludes: ["XCE", "XC", "DB"] };
-
+    if (cleanCamp === "ZBH" || cleanCamp.startsWith("ZBH")) return { includes: ["ZBH", "ES"], excludes: ["XCE", "XC", "DB"] };
+    if (cleanCamp === "WS" || cleanCamp.startsWith("WS")) return { includes: ["WS", "CMAD"], excludes: ["XCE", "XC", "ES"] };
+    if (cleanCamp === "QLR" || cleanCamp.startsWith("QLR")) return { includes: ["QLR", "ES"], excludes: ["XCE", "XC", "DB"] };
     if (cleanCamp === "VIVINT_AD" || cleanCamp === "VIVINT") return { includes: ["VI"], excludes: ["XCE", "XC", "ES", "GZ", "DB"] };
-
     if (cleanCamp === "TRUGREEN_AD") return { includes: ["TRU"], excludes: ["XCE", "XC", "ES", "GZ", "DB"] };
-
     if (cleanCamp.includes("IAI_GZ")) return { includes: ["IAI"], excludes: [] };
-
     if (cleanCamp === "RBA_XCE" || cleanCamp.startsWith("RBA")) return { includes: ["RBA", "XCE"], excludes: ["XC", "ES", "GZ", "DB"] };
-
     if (cleanCamp === "JG_XCE") return { includes: ["JG", "XCE"], excludes: ["XC", "ES", "GZ", "DB"] };
-
     if (cleanCamp === "TRUGREEN_DB") return { includes: ["TRU", "DB"], excludes: ["XC", "ES", "GZ", "XCE"] };
-
     if (cleanCamp === "ASSURITI_DB") return { includes: ["AAW"], excludes: [] };
-
     if (cleanCamp === "QUOTIFII_DB") return { includes: ["QTI"], excludes: [] };
  
     return { includes: [cleanCamp.split("_")[0]], excludes: [] };
-
   };
- 
 
   const matchTemplate = (templateName: string, rule: FilterRule): boolean => {
     const tmplUpper = templateName.toUpperCase();
@@ -261,6 +233,24 @@ if (cleanCamp === "EAC_CMAD") return { includes: ["EAC"], excludes: ["DB", "XCE"
     return Array.from(unique).sort();
   }, [allFetchedData]);
 
+  // SAFE DICTIONARY TRANSLATOR MATRIX MAPPING TAB NAMES TO REVENUE SUBID VALUES PERFECTLY
+  function getReportSubidAccountName(sheetTabName: string): string {
+    const txt = sheetTabName.replace(/[^a-zA-Z0-9]/g, "").toUpperCase();
+    if (txt.includes("JSG43")) return "JSG43MET";
+    if (txt.includes("JSG44")) return "JSG44";
+    if (txt.includes("JSG50")) return "JSG50";
+    if (txt.includes("JSG38NEW") || txt === "JSG38N") return "JSG38N";
+    if (txt.includes("JSG40")) return "JSG40";
+    if (txt.includes("JSG47")) return "JSG47";
+    if (txt.includes("JSG26")) return "JSG26MET";
+    if (txt.includes("JSG36")) return "JSG36MET";
+    if (txt.includes("JSG41")) return "JSG41MET";
+    if (txt.includes("JSG45")) return "JSG45";
+    if (txt.includes("JSG48MET") || txt === "JSG48") return "JSG48MET";
+    if (txt.includes("JSG53")) return "JSG53MET";
+    return txt;
+  }
+
   // REVENUE MATRIX GENERATION AND COMPILATION CALCULATOR ENGINE
   const revenueCalculatedCards = useMemo(() => {
     if (!allFetchedData || !analyticsActive) return [];
@@ -283,7 +273,6 @@ if (cleanCamp === "EAC_CMAD") return { includes: ["EAC"], excludes: ["DB", "XCE"
 
     return Array.from(accountGroups.entries()).map(([accountName, rows]) => {
       const templatesList = rows.map(row => {
-        // EXPLICIT FIXED LOGIC: Extract exact matching records using the final underscore separator pattern
         const matchedRevenueHits = combinedCsvRecords.filter(rec => {
           const subidStr = rec.subid.trim();
           const lastUnderscoreIdx = subidStr.lastIndexOf("_");
@@ -293,7 +282,7 @@ if (cleanCamp === "EAC_CMAD") return { includes: ["EAC"], excludes: ["DB", "XCE"
           const parsedAccountName = subidStr.substring(lastUnderscoreIdx + 1).trim().replace(/[^a-zA-Z0-9]/g, "").toUpperCase();
 
           const cleanSheetTemplate = row.template.trim().toUpperCase();
-          const cleanSheetAccount = accountName.replace(/[^a-zA-Z0-9]/g, "").toUpperCase();
+          const cleanSheetAccount = getReportSubidAccountName(accountName).toUpperCase();
 
           return parsedTemplateName === cleanSheetTemplate && parsedAccountName === cleanSheetAccount;
         });
@@ -650,19 +639,25 @@ if (cleanCamp === "EAC_CMAD") return { includes: ["EAC"], excludes: ["DB", "XCE"
                                 {tmpl.conversions > 0 ? `${tmpl.conversions} Conv` : "No Revenue"}
                               </span>
                             </div>
-                            <div className={`grid grid-cols-3 text-[10px] pt-1 ${isDarkMode ? "text-zinc-400" : "text-slate-500"}`}>
+                            
+                            {/* INTEGRATED EXPANDED ROW BLOCK LOG DISPLAYING TOTAL METRICS MATRIX TRACKING VALUE */}
+                            <div className={`grid grid-cols-2 gap-y-2 text-[10px] pt-1.5 border-t border-dashed mt-1 ${isDarkMode ? "text-zinc-400 border-zinc-800" : "text-slate-500 border-slate-200"}`}>
                               <div>
-                                <span className="block text-[9px] font-sans font-bold uppercase tracking-wide text-zinc-400">Mails Used</span>
-                                <span className={isDarkMode ? "text-zinc-300" : "text-slate-700"}>{tmpl.mailsUsed.toLocaleString()}</span>
+                                <span className="block text-[9px] font-sans font-bold uppercase tracking-wide text-zinc-500">Mails Used</span>
+                                <span className={`font-bold ${isDarkMode ? "text-zinc-300" : "text-slate-700"}`}>{tmpl.mailsUsed.toLocaleString()} m</span>
                               </div>
                               <div>
-                                <span className="block text-[9px] font-sans font-bold uppercase tracking-wide text-zinc-400">Revenue</span>
+                                <span className="block text-[9px] font-sans font-bold uppercase tracking-wide text-zinc-500">Total Sending Volume</span>
+                                <span className="font-bold text-sky-500">{tmpl.sendingVolume.toLocaleString()}</span>
+                              </div>
+                              <div>
+                                <span className="block text-[9px] font-sans font-bold uppercase tracking-wide text-emerald-600">Revenue</span>
                                 <span className="font-bold text-emerald-500">${tmpl.revenue.toLocaleString()}</span>
                               </div>
-                              <div className="text-right">
-                                <span className="block text-[9px] font-sans font-bold uppercase tracking-wide text-zinc-400">Count/Conv</span>
-                                <span className={`font-bold ${tmpl.efficiency ? "text-sky-500" : "text-rose-500"}`}>
-                                  {tmpl.efficiency ? tmpl.efficiency.toLocaleString() : "N/A"}
+                              <div>
+                                <span className="block text-[9px] font-sans font-bold uppercase tracking-wide text-zinc-500">Count / Conversion</span>
+                                <span className={`font-bold ${tmpl.efficiency ? "text-purple-400" : "text-rose-500"}`}>
+                                  {tmpl.efficiency ? `${tmpl.efficiency.toLocaleString()} vol` : "N/A"}
                                 </span>
                               </div>
                             </div>
