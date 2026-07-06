@@ -108,7 +108,7 @@ export default function Home() {
 
     if (cleanCamp === "JG_AD") return { includes: ["JG"], excludes: ["DB", "XCE", "GZ", "XC"] };
 
-    if (cleanCamp === "ZBH_DB" || cleanCamp.startsWith("ZBH")) return { includes: ["ZBH", "DB"], excludes: ["XCE", "GZ", "XC", "ES"] };
+    
 
     if (cleanCamp === "CH_XC" || cleanCamp.startsWith("CH")) return { includes: ["CH"], excludes: [] };
 
