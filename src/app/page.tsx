@@ -165,7 +165,6 @@ export default function Home() {
     setAllFetchedData(null);
     setSelectedCampaign("");
     setSelectedTemplate("");
-    setSelectedCardAccount(null);
     setStatus("loading");
 
     setTimeout(async () => {
@@ -325,12 +324,10 @@ export default function Home() {
     return parsedCards;
   }, [allFetchedData, analyticsActive, analyticsEt, analyticsCampaign, combinedCsvRecords]);
 
-  // Dynamic derivation matrix computing distinct tab groups present inside active dataset array list
   const distinctRevenueAccountTabs = useMemo(() => {
     return revenueCalculatedCards.map(c => c.accountName);
   }, [revenueCalculatedCards]);
 
-  // Filters output deck view straight down to specific tab row clicked inside left workspace column
   const targetedActiveFocusedCard = useMemo(() => {
     if (!selectedTabFocus || revenueCalculatedCards.length === 0) return revenueCalculatedCards[0] || null;
     return revenueCalculatedCards.find(c => c.accountName.toUpperCase() === selectedTabFocus.toUpperCase()) || revenueCalculatedCards[0] || null;
@@ -402,6 +399,11 @@ export default function Home() {
     }, 60);
   };
 
+  const handleApplyAnalyticsFilters = () => {
+    setIsSelectorModalOpen(false);
+    setAnalyticsActive(true);
+  };
+
   return (
     <div className={`min-h-screen transition-colors duration-500 p-4 sm:p-8 flex flex-col justify-between ${isDarkMode ? "bg-[#090d16] text-zinc-100" : "bg-slate-50 text-slate-900"}`}>
       <div className="w-full flex flex-col gap-6 flex-1">
@@ -414,8 +416,8 @@ export default function Home() {
                 <div className="absolute inset-0 rounded-full border-4 border-zinc-800" />
                 <div className="absolute inset-0 rounded-full border-4 border-t-emerald-500 border-r-emerald-500 animate-spin" />
               </div>
-              <h3 className="text-base font-black text-white tracking-wide uppercase">Processing Enterprise Analytics</h3>
-              <p className="text-xs text-zinc-400">Compiling dataset mappings across structural matrices...</p>
+              <h3 className="text-base font-black text-white tracking-wide uppercase">Compiling System Metrics</h3>
+              <p className="text-xs text-zinc-400">Syncing and parsing live ledger fields...</p>
             </div>
           </div>
         )}
@@ -450,7 +452,7 @@ export default function Home() {
                 <button onClick={() => setIsSelectorModalOpen(false)} className="h-10 px-4 rounded-lg bg-zinc-800 text-xs font-bold text-zinc-300 hover:bg-zinc-700 transition">
                   Cancel
                 </button>
-                <button onClick={() => { setIsSelectorModalOpen(false); setAnalyticsActive(true); if(revenueCalculatedCards[0]) setSelectedTabFocus(revenueCalculatedCards[0].accountName); }} className="h-10 px-5 rounded-lg bg-purple-600 text-xs font-bold text-white hover:bg-purple-500 transition shadow-lg">
+                <button onClick={handleApplyAnalyticsFilters} className="h-10 px-5 rounded-lg bg-purple-600 text-xs font-bold text-white hover:bg-purple-500 transition shadow-lg">
                   Show Results
                 </button>
               </div>
@@ -519,7 +521,7 @@ export default function Home() {
                       {dashboardCampaignWiseMetrics.map((item) => (
                         <div key={item.campaign} className="py-3 flex justify-between items-center gap-2">
                           <span className="font-sans font-bold text-zinc-300">{item.campaign}</span>
-                          <span className="font-black text-purple-400 shrink-0 text-base">{item.calculatedVolume.toLocaleString()} <span className="text-xs text-zinc-500 font-normal">({item.totalMails} items)</span></span>
+                          <span className="font-black text-purple-400 shrink-0 text-base">{item.calculatedVolume.toLocaleString()} <span className="text-[10px] text-zinc-500 font-normal">({item.totalMails} items)</span></span>
                         </div>
                       ))}
                     </div>
@@ -606,7 +608,7 @@ export default function Home() {
                             </div>
                           ))}
                         </div>
-                        <div className={`p-4 border-t text-xs uppercase font-bold text-zinc-500 flex justify-between ${isDarkMode ? "bg-slate-950/10 border-zinc-800" : "bg-slate-50 border-slate-200"}`}>
+                        <div className={`p-3 border-t text-[10px] uppercase font-bold text-zinc-500 flex justify-between ${isDarkMode ? "bg-slate-950/10 border-zinc-800" : "bg-slate-50 border-slate-200"}`}>
                           <span>Card Total Mails</span>
                           <span className={`font-black ${isDarkMode ? "text-zinc-300" : "text-slate-900"}`}>{card.totalMails} Mails</span>
                         </div>
@@ -622,8 +624,7 @@ export default function Home() {
         {currentView === "analytics" && (
           <div className="flex flex-col gap-6 animate-fadeIn">
             
-            {/* STEP 1 SETUP AND BATCH COMPILER LOADER SLOTS */}
-            <section className={`rounded-xl p-6 border shadow-xl flex flex-col gap-4 ${isDarkMode ? "bg-[#111726] border-white/5" : "bg-white border-slate-200"}`}>
+            <section className={`rounded-xl p-4 sm:p-6 border shadow-xl flex flex-col gap-4 ${isDarkMode ? "bg-[#111726] border-white/5" : "bg-white border-slate-200"}`}>
               <div className="flex justify-between items-center">
                 <h3 className="text-xs font-black uppercase tracking-widest text-purple-400">📈 Step 1: Upload Conversion Statement & Specify Bounds</h3>
                 
@@ -673,7 +674,6 @@ export default function Home() {
               </button>
             </section>
 
-            {/* SCREEN RE-ARCHITECTED INTO A FULL SCREEN VIEWPORT CANVAS */}
             {analyticsActive && allFetchedData && revenueCalculatedCards.length > 0 && (
               <div className="flex flex-col lg:flex-row gap-6 items-stretch animate-fadeIn w-full">
                 
@@ -725,14 +725,13 @@ export default function Home() {
                           <div key={tIdx} className="pt-5 first:pt-0 flex flex-col gap-3 font-mono">
                             
                             <div className="flex justify-between items-start gap-4">
-                              {/* HIGH IMPACT EXTENDED TEXT SIZING FOR CREATIVES AND BADGES */}
                               <h3 className={`font-sans text-lg font-black break-all tracking-tight leading-snug ${isDarkMode ? "text-zinc-100" : "text-slate-900"}`}>{tmpl.templateName}</h3>
                               <span className={`px-3 py-1 rounded-md text-xs font-black uppercase shrink-0 tracking-widest ${tmpl.conversions > 0 ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 shadow-sm" : "bg-rose-500/10 text-rose-400 border border-rose-500/20"}`}>
                                 {tmpl.conversions > 0 ? `🏆 ${tmpl.conversions} Conversions` : "⚠️ No Revenue"}
                               </span>
                             </div>
                             
-                            <div className={`grid grid-cols-2 md:grid-cols-4 gap-4 text-xs p-4 rounded-xl ${isDarkMode ? "bg-slate-950/40 border border-zinc-800/50 text-zinc-400" : "bg-slate-50 border border-slate-100 text-slate-500"}`}>
+                            <div className={`grid grid-cols-2 md:grid-cols-4 gap-4 text-xs p-4 rounded-xl ${isDarkMode ? "bg-slate-950/40 border border-zinc-800/50 text-zinc-400" : "bg-slate-50 border-slate-100 text-slate-500"}`}>
                               <div>
                                 <span className="block text-[10px] font-sans font-bold uppercase tracking-wider text-zinc-500 mb-0.5">Mails Used</span>
                                 <span className={`text-sm font-black ${isDarkMode ? "text-zinc-300" : "text-slate-800"}`}>{tmpl.mailsUsed.toLocaleString()} m</span>
