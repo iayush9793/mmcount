@@ -47,6 +47,7 @@ export default function Home() {
   const [analyticsActive, setAnalyticsActive] = useState(false);
   const [analyticsEt, setAnalyticsEt] = useState("");
   const [analyticsCampaign, setAnalyticsCampaign] = useState("");
+  const [isSelectorModalOpen, setIsSelectorModalOpen] = useState(false);
 
   // Interactive Popup Modal State
   const [selectedCardAccount, setSelectedCardAccount] = useState<string | null>(null);
@@ -250,7 +251,6 @@ export default function Home() {
     return txt;
   }
 
-  // ALIAS MATCHER DICTIONARY: Normalizes sheet prefixes to match raw report entries perfectly
   function getNormalizedTemplateAlias(sheetTemplate: string): string {
     const original = sheetTemplate.trim().toUpperCase();
     if (original === "K_RGR_905_A5") return "RGR_905_A5";
@@ -269,7 +269,6 @@ export default function Home() {
     return original;
   }
 
-  // REVENUE MATRIX GENERATION AND COMPILATION CALCULATOR ENGINE
   const revenueCalculatedCards = useMemo(() => {
     if (!allFetchedData || !analyticsActive) return [];
 
@@ -299,7 +298,6 @@ export default function Home() {
           const parsedTemplateName = subidStr.substring(0, lastUnderscoreIdx).trim().toUpperCase();
           const parsedAccountName = subidStr.substring(lastUnderscoreIdx + 1).trim().replace(/[^a-zA-Z0-9]/g, "").toUpperCase();
 
-          // Apply alias dictionary lookup to bypass prefix mismatch layers
           const cleanSheetTemplate = getNormalizedTemplateAlias(row.template);
           const cleanSheetAccount = getReportSubidAccountName(accountName).toUpperCase();
 
