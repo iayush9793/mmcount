@@ -165,7 +165,6 @@ export default function Home() {
     setAllFetchedData(null);
     setSelectedCampaign("");
     setSelectedTemplate("");
-    setSelectedCardAccount(null);
     setStatus("loading");
 
     setTimeout(async () => {
@@ -237,7 +236,7 @@ export default function Home() {
     if (txt.includes("JSG43")) return "JSG43MET";
     if (txt.includes("JSG44")) return "JSG44";
     if (txt.includes("JSG50")) return "JSG50";
-    if (txt.includes("JSG38NEW") || txt === "JSG38N") return "JSG38N";
+    if (txt.includes("JSG38NEW") || txt === "JSG38N" || txt === "JSG38") return "JSG38N";
     if (txt.includes("JSG40")) return "JSG40";
     if (txt.includes("JSG47")) return "JSG47";
     if (txt.includes("JSG26")) return "JSG26MET";
@@ -415,6 +414,11 @@ export default function Home() {
     }, 60);
   };
 
+  const handleApplyAnalyticsFilters = () => {
+    setIsSelectorModalOpen(false);
+    setAnalyticsActive(true);
+  };
+
   return (
     <div className={`min-h-screen transition-colors duration-500 p-4 sm:p-8 flex flex-col justify-between ${isDarkMode ? "bg-[#090d16] text-zinc-100" : "bg-slate-50 text-slate-900"}`}>
       <div className="w-full flex flex-col gap-6 flex-1">
@@ -520,7 +524,7 @@ export default function Home() {
                       {dashboardAccountWiseMetrics.map((item) => (
                         <div key={item.account} className="py-3 flex justify-between items-center gap-2">
                           <span className="font-sans font-bold text-zinc-300">{item.account}</span>
-                          <span className="font-black text-sky-400 shrink-0 text-base">{item.calculatedVolume.toLocaleString()} <span className="text-xs text-zinc-500 font-normal">({item.totalMails} items)</span></span>
+                          <span className="font-black text-sky-400 shrink-0 text-base">{item.calculatedVolume.toLocaleString()} <span className="text-[10px] text-zinc-500 font-normal">({item.totalMails} items)</span></span>
                         </div>
                       ))}
                     </div>
@@ -593,7 +597,7 @@ export default function Home() {
                       <p className="text-xl font-black mt-1 text-zinc-100 truncate">{selectedCampaign}</p>
                     </div>
                     <div>
-                      <span className="text-xs uppercase font-bold text-zinc-400 tracking-wider">Mails Used</span>
+                      <span className="text-xs uppercase font-bold text-zinc-400 tracking-wider">Mails Count</span>
                       <p className="text-3xl font-black text-sky-400 mt-1">{globalCampaignCalculatedTotals.totalMails.toLocaleString()}</p>
                     </div>
                     <div>
@@ -746,21 +750,21 @@ export default function Home() {
                               </span>
                             </div>
                             
-                            <div className={`grid grid-cols-2 md:grid-cols-4 gap-4 text-xs p-4 rounded-xl ${isDarkMode ? "bg-slate-950/40 border border-zinc-800/50 text-zinc-400" : "bg-slate-50 border border-slate-100 text-slate-500"}`}>
+                            <div className={`grid grid-cols-2 md:grid-cols-4 gap-4 text-xs p-4 rounded-xl ${isDarkMode ? "bg-slate-950/40 border-zinc-800/50 text-zinc-400" : "bg-slate-50 border-slate-100 text-slate-500"}`}>
                               <div>
                                 <span className="block text-[10px] font-sans font-bold uppercase tracking-wider text-zinc-500 mb-0.5">Mails Used</span>
                                 <span className={`text-sm font-black ${isDarkMode ? "text-zinc-300" : "text-slate-800"}`}>{tmpl.mailsUsed.toLocaleString()}</span>
                               </div>
                               <div>
-                                <span className="block text-[10px] font-sans font-bold uppercase tracking-wider text-zinc-500 mb-0.5">Total Sending Volume</span>
+                                <span className="block text-[10px] font-sans font-bold uppercase tracking-wide text-zinc-400">Total Sending Volume</span>
                                 <span className="text-sm font-black text-sky-400">{tmpl.sendingVolume.toLocaleString()}</span>
                               </div>
                               <div>
-                                <span className="block text-[10px] font-sans font-bold uppercase tracking-wider text-zinc-500 mb-0.5">Revenue</span>
-                                <span className="text-sm font-black text-emerald-400">${tmpl.revenue.toLocaleString()}</span>
+                                <span className="block text-[10px] font-sans font-bold uppercase tracking-wide text-zinc-400">Revenue</span>
+                                <span className="font-bold text-emerald-400">${tmpl.revenue.toLocaleString()}</span>
                               </div>
                               <div>
-                                <span className="block text-[10px] font-sans font-bold uppercase tracking-wider text-zinc-500 mb-0.5">Count / Conversion</span>
+                                <span className="block text-[10px] font-sans font-bold uppercase tracking-wide text-zinc-400">Count / Conversion</span>
                                 <span className={`text-sm font-black ${tmpl.efficiency ? "text-sky-400" : "text-rose-500"}`}>
                                   {tmpl.efficiency ? tmpl.efficiency.toLocaleString() : "N/A"}
                                 </span>
