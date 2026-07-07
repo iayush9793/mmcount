@@ -48,6 +48,7 @@ export default function Home() {
   const [analyticsEt, setAnalyticsEt] = useState("");
   const [analyticsCampaign, setAnalyticsCampaign] = useState("");
   const [isSelectorModalOpen, setIsSelectorModalOpen] = useState(false);
+  const [selectedTabFocus, setSelectedTabFocus] = useState<string>("");
 
   useEffect(() => {
     const iso = new Date().toISOString().slice(0, 10);
@@ -164,6 +165,7 @@ export default function Home() {
     setAllFetchedData(null);
     setSelectedCampaign("");
     setSelectedTemplate("");
+    setSelectedCardAccount(null);
     setStatus("loading");
 
     setTimeout(async () => {
@@ -284,7 +286,7 @@ export default function Home() {
       accountGroups.set(key, existing);
     });
 
-    return Array.from(accountGroups.entries()).map(([accountName, rows]) => {
+    const parsedCards = Array.from(accountGroups.entries()).map(([accountName, rows]) => {
       const templatesList = rows.map(row => {
         const matchedRevenueHits = combinedCsvRecords.filter(rec => {
           const subidStr = rec.subid.trim();
@@ -319,7 +321,20 @@ export default function Home() {
       const cardTotalRevenue = templatesList.reduce((sum, t) => sum + t.revenue, 0);
       return { accountName, templates: templatesList, cardTotalRevenue };
     });
+
+    return parsedCards;
   }, [allFetchedData, analyticsActive, analyticsEt, analyticsCampaign, combinedCsvRecords]);
+
+  // Dynamic derivation matrix computing distinct tab groups present inside active dataset array list
+  const distinctRevenueAccountTabs = useMemo(() => {
+    return revenueCalculatedCards.map(c => c.accountName);
+  }, [revenueCalculatedCards]);
+
+  // Filters output deck view straight down to specific tab row clicked inside left workspace column
+  const targetedActiveFocusedCard = useMemo(() => {
+    if (!selectedTabFocus || revenueCalculatedCards.length === 0) return revenueCalculatedCards[0] || null;
+    return revenueCalculatedCards.find(c => c.accountName.toUpperCase() === selectedTabFocus.toUpperCase()) || revenueCalculatedCards[0] || null;
+  }, [selectedTabFocus, revenueCalculatedCards]);
 
   function rowMultiplier(tabName: string): number {
     const clean = tabName.replace(/[^a-zA-Z0-9]/g, "").toUpperCase();
@@ -379,7 +394,6 @@ export default function Home() {
         const res = await fetch(`/api/mailCounts?startDate=${startDate}&endDate=${endDate}&et=ALL`);
         const data = await res.json();
         setAllFetchedData(data.breakdown ?? []);
-        // OPEN SELECTOR POPUP MODAL IMMEDIATELY
         setIsSelectorModalOpen(true);
         setStatus("success");
       } catch { 
@@ -389,8 +403,8 @@ export default function Home() {
   };
 
   return (
-    <div className={`min-h-screen transition-colors duration-500 p-4 sm:p-6 flex flex-col justify-between ${isDarkMode ? "bg-slate-950 text-zinc-50" : "bg-slate-50 text-slate-900"}`}>
-      <div className="mx-auto max-w-5xl w-full flex flex-col gap-6 flex-1">
+    <div className={`min-h-screen transition-colors duration-500 p-4 sm:p-8 flex flex-col justify-between ${isDarkMode ? "bg-[#090d16] text-zinc-100" : "bg-slate-50 text-slate-900"}`}>
+      <div className="w-full flex flex-col gap-6 flex-1">
         
         {/* GLOBAL PERSISTENT SPINNING PRELOADER OVERLAY */}
         {(isAppLoading || status === "loading") && (
@@ -400,42 +414,43 @@ export default function Home() {
                 <div className="absolute inset-0 rounded-full border-4 border-zinc-800" />
                 <div className="absolute inset-0 rounded-full border-4 border-t-emerald-500 border-r-emerald-500 animate-spin" />
               </div>
-              <h3 className="text-sm font-bold text-white tracking-wide uppercase">Compiling System Metrics</h3>
-              <p className="text-xs text-zinc-400">Syncing and parsing live ledger fields...</p>
+              <h3 className="text-base font-black text-white tracking-wide uppercase">Processing Enterprise Analytics</h3>
+              <p className="text-xs text-zinc-400">Compiling dataset mappings across structural matrices...</p>
             </div>
           </div>
         )}
 
-        {/* STEP 2 INTERACTIVE POPUP FILTERS SELECTION MODAL LAYER */}
+        {/* STEP 2: DYNAMIC FILTER SELECTOR POPUP MODAL CONTROL UTILITY */}
         {isSelectorModalOpen && allFetchedData && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 backdrop-blur-sm p-4 animate-fadeIn">
-            <div className="w-full max-w-md rounded-2xl border shadow-2xl p-6 flex flex-col bg-slate-900 border-white/10 text-white">
-              <div className="pb-3 border-b border-zinc-800 mb-4">
-                <h3 className="text-sm font-bold uppercase tracking-wider text-purple-400">🎯 Select Segments to Display</h3>
-                <p className="text-xs text-zinc-400 mt-0.5">Filter combined sending ledger logs by target metrics</p>
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/75 backdrop-blur-sm p-4 animate-fadeIn">
+            <div className="w-full max-w-md rounded-2xl border shadow-2xl p-6 flex flex-col bg-[#111726] border-white/10 text-white gap-4">
+              <div>
+                <h3 className="text-base font-black uppercase tracking-wider text-purple-400">🎯 Filter Target Parameters</h3>
+                <p className="text-xs text-zinc-400 mt-0.5">Isolate report matrices frames to narrow audit views</p>
               </div>
 
-              <div className="flex flex-col gap-4">
+              <div className="flex flex-col gap-3">
                 <div className="flex flex-col gap-1">
-                  <label className="text-xs font-semibold text-zinc-400">Select Target Account (ET)</label>
-                  <select value={analyticsEt} onChange={e => setAnalyticsEt(e.target.value)} className="h-11 rounded-lg px-3 text-sm bg-slate-950 border border-zinc-800 text-white focus:border-purple-500 outline-none w-full">
+                  <label className="text-xs font-semibold text-zinc-400">Filter Account (ET)</label>
+                  <select value={analyticsEt} onChange={e => setAnalyticsEt(e.target.value)} className="h-11 rounded-lg px-3 text-sm outline-none border bg-slate-950 border-zinc-800 text-white focus:border-purple-500">
                     <option value="ALL">ALL ACCOUNTS</option>
                     {ets.map(e => <option key={e} value={e}>{e}</option>)}
                   </select>
                 </div>
-
                 <div className="flex flex-col gap-1">
-                  <label className="text-xs font-semibold text-zinc-400">Select Target Campaign Segment</label>
-                  <select value={analyticsCampaign} onChange={e => setAnalyticsCampaign(e.target.value)} className="h-11 rounded-lg px-3 text-sm bg-slate-950 border border-zinc-800 text-white focus:border-purple-500 outline-none w-full">
+                  <label className="text-xs font-semibold text-zinc-400">Filter Campaign Segment</label>
+                  <select value={analyticsCampaign} onChange={e => setAnalyticsCampaign(e.target.value)} className="h-11 rounded-lg px-3 text-sm outline-none border bg-slate-950 border-zinc-800 text-white focus:border-purple-500">
                     <option value="ALL">ALL CAMPAIGNS</option>
                     {analyticsCampaignOptions.map(c => <option key={c} value={c}>{c}</option>)}
                   </select>
                 </div>
+              </div>
 
-                <button 
-                  onClick={() => { setIsSelectorModalOpen(false); setAnalyticsActive(true); }}
-                  className="w-full h-11 rounded-lg bg-purple-600 hover:bg-purple-500 font-bold text-xs uppercase tracking-wider text-white transition mt-2 cursor-pointer"
-                >
+              <div className="flex gap-2 justify-end mt-2">
+                <button onClick={() => setIsSelectorModalOpen(false)} className="h-10 px-4 rounded-lg bg-zinc-800 text-xs font-bold text-zinc-300 hover:bg-zinc-700 transition">
+                  Cancel
+                </button>
+                <button onClick={() => { setIsSelectorModalOpen(false); setAnalyticsActive(true); if(revenueCalculatedCards[0]) setSelectedTabFocus(revenueCalculatedCards[0].accountName); }} className="h-10 px-5 rounded-lg bg-purple-600 text-xs font-bold text-white hover:bg-purple-500 transition shadow-lg">
                   Show Results
                 </button>
               </div>
@@ -449,16 +464,16 @@ export default function Home() {
               <Image src="/logo.png" alt="Logo" fill priority className="object-contain object-left" />
             </div>
             <div className="flex rounded-lg p-1 bg-slate-900/60 border border-white/5 shadow-inner">
-              <button onClick={() => { setCurrentView("standard"); setAllFetchedData(null); setAnalyticsActive(false); }} className={`px-4 py-1.5 text-xs font-bold rounded-md transition ${currentView === "standard" ? "bg-emerald-500 text-white shadow" : "text-zinc-400 hover:text-zinc-200"}`}>
-                Standard Tracking
+              <button onClick={() => { setCurrentView("standard"); setAllFetchedData(null); setAnalyticsActive(false); }} className={`px-5 py-2 text-xs font-black rounded-md transition ${currentView === "standard" ? "bg-emerald-500 text-white shadow-lg" : "text-zinc-400 hover:text-zinc-200"}`}>
+                Standard Volume Tracking
               </button>
-              <button onClick={() => { setCurrentView("analytics"); setAllFetchedData(null); }} className={`px-4 py-1.5 text-xs font-bold rounded-md transition ${currentView === "analytics" ? "bg-emerald-500 text-white shadow" : "text-zinc-400 hover:text-zinc-200"}`}>
-                Detailed Analytics
+              <button onClick={() => { setCurrentView("analytics"); setAllFetchedData(null); }} className={`px-5 py-2 text-xs font-black rounded-md transition ${currentView === "analytics" ? "bg-emerald-500 text-white shadow-lg" : "text-zinc-400 hover:text-zinc-200"}`}>
+                Detailed Conversion Analytics
               </button>
             </div>
           </div>
-          <button onClick={() => setIsDarkMode(!isDarkMode)} className={`p-2 rounded-full border text-xs font-bold ${isDarkMode ? "border-zinc-800 text-white hover:bg-zinc-900" : "border-slate-300 text-slate-800 hover:bg-slate-100"}`}>
-            {isDarkMode ? "🌙 Dark" : "☀️ Light"}
+          <button onClick={() => setIsDarkMode(!isDarkMode)} className={`p-2.5 rounded-full border text-xs font-bold transition ${isDarkMode ? "border-zinc-800 text-white hover:bg-zinc-900" : "border-slate-300 text-slate-800 hover:bg-slate-100"}`}>
+            {isDarkMode ? "🌙 Dark Mode" : "☀️ Light Mode"}
           </button>
         </header>
 
@@ -466,19 +481,19 @@ export default function Home() {
           <>
             {!allFetchedData && (
               <div className="flex flex-col gap-6 animate-fadeIn">
-                <section className={`rounded-xl p-4 sm:p-6 border shadow-xl ${isDarkMode ? "bg-slate-900 border-white/5" : "bg-white border-slate-200"}`}>
-                  <h3 className="text-xs font-bold uppercase tracking-wider text-emerald-500 mb-4">🔥 Top 5 Active Campaigns Going with Highest Volume (Today)</h3>
+                <section className={`rounded-xl p-6 border shadow-xl ${isDarkMode ? "bg-[#111726] border-white/5" : "bg-white border-slate-200"}`}>
+                  <h3 className="text-xs font-black uppercase tracking-widest text-emerald-500 mb-4">🔥 Top Active Campaigns Matrix Split</h3>
                   {isDashboardLoading ? (
                     <div className="h-12 flex items-center justify-center text-xs text-zinc-400 font-medium">Syncing live dashboard summaries...</div>
                   ) : topFiveCampaignsSummary.length === 0 ? (
                     <div className="h-12 flex items-center justify-center text-xs text-zinc-400">No active records logged today.</div>
                   ) : (
-                    <div className="grid gap-3 grid-cols-1 sm:grid-cols-5">
+                    <div className="grid gap-4 grid-cols-1 sm:grid-cols-5">
                       {topFiveCampaignsSummary.map((item, idx) => (
-                        <div key={item.name} className={`p-3 rounded-lg border flex flex-col ${isDarkMode ? "bg-slate-950 border-zinc-800 text-white" : "bg-slate-50 border-slate-200"}`}>
-                          <span className="text-[10px] font-bold text-zinc-500 uppercase">Rank #{idx + 1}</span>
-                          <span className="text-xs font-bold truncate mt-0.5" title={item.name}>{item.name}</span>
-                          <span className="text-sm font-black text-emerald-500 mt-1">{item.volume.toLocaleString()}</span>
+                        <div key={item.name} className={`p-4 rounded-xl border flex flex-col justify-between ${isDarkMode ? "bg-slate-950/40 border-zinc-800 text-white" : "bg-slate-50 border-slate-200"}`}>
+                          <span className="text-[10px] font-black text-zinc-500 uppercase tracking-wider">Rank #{idx + 1}</span>
+                          <span className="text-sm font-black truncate mt-1 text-zinc-200" title={item.name}>{item.name}</span>
+                          <span className="text-lg font-black text-emerald-500 mt-2">{item.volume.toLocaleString()}</span>
                         </div>
                       ))}
                     </div>
@@ -486,25 +501,25 @@ export default function Home() {
                 </section>
 
                 <div className="grid gap-6 grid-cols-1 md:grid-cols-2">
-                  <section className={`rounded-xl p-4 sm:p-6 border shadow-xl ${isDarkMode ? "bg-slate-900 border-white/5" : "bg-white border-slate-200"}`}>
-                    <h3 className="text-xs font-bold uppercase tracking-wider text-sky-400 mb-3">📋 Section 1: Account Wise Track Volume</h3>
-                    <div className={`max-h-[300px] overflow-y-auto divide-y font-mono text-xs pr-2 ${isDarkMode ? "divide-zinc-800/40 text-zinc-300" : "divide-slate-200"}`}>
+                  <section className={`rounded-xl p-6 border shadow-xl ${isDarkMode ? "bg-[#111726] border-white/5" : "bg-white border-slate-200"}`}>
+                    <h3 className="text-xs font-black uppercase tracking-widest text-sky-400 mb-4">📋 Origin Account Wise Sending Splits</h3>
+                    <div className={`max-h-[350px] overflow-y-auto divide-y font-mono text-sm pr-2 ${isDarkMode ? "divide-zinc-800/40 text-zinc-300" : "divide-slate-200"}`}>
                       {dashboardAccountWiseMetrics.map((item) => (
-                        <div key={item.account} className="py-2.5 flex justify-between items-center gap-2">
-                          <span className="font-sans font-medium truncate">{item.account}</span>
-                          <span className="font-bold text-sky-500 shrink-0">{item.calculatedVolume.toLocaleString()} <span className="text-[10px] text-zinc-500 font-normal">({item.totalMails} mails)</span></span>
+                        <div key={item.account} className="py-3 flex justify-between items-center gap-2">
+                          <span className="font-sans font-bold text-zinc-300">{item.account}</span>
+                          <span className="font-black text-sky-400 shrink-0 text-base">{item.calculatedVolume.toLocaleString()} <span className="text-xs text-zinc-500 font-normal">({item.totalMails} items)</span></span>
                         </div>
                       ))}
                     </div>
                   </section>
 
-                  <section className={`rounded-xl p-4 sm:p-6 border shadow-xl ${isDarkMode ? "bg-slate-900 border-white/5" : "bg-white border-slate-200"}`}>
-                    <h3 className="text-xs font-bold uppercase tracking-wider text-purple-400 mb-3">📊 Section 2: Campaign Wise Track Volume</h3>
-                    <div className={`max-h-[300px] overflow-y-auto divide-y font-mono text-xs pr-2 ${isDarkMode ? "divide-zinc-800/40 text-zinc-300" : "divide-slate-200"}`}>
+                  <section className={`rounded-xl p-6 border shadow-xl ${isDarkMode ? "bg-[#111726] border-white/5" : "bg-white border-slate-200"}`}>
+                    <h3 className="text-xs font-black uppercase tracking-widest text-purple-400 mb-4">📊 Broad Campaign Aggregate Metrics</h3>
+                    <div className={`max-h-[350px] overflow-y-auto divide-y font-mono text-sm pr-2 ${isDarkMode ? "divide-zinc-800/40 text-zinc-300" : "divide-slate-200"}`}>
                       {dashboardCampaignWiseMetrics.map((item) => (
-                        <div key={item.campaign} className="py-2.5 flex justify-between items-center gap-2">
-                          <span className="font-sans font-medium truncate">{item.campaign}</span>
-                          <span className="font-bold text-purple-400 shrink-0">{item.calculatedVolume.toLocaleString()} <span className="text-[10px] text-zinc-500 font-normal">({item.totalMails} mails)</span></span>
+                        <div key={item.campaign} className="py-3 flex justify-between items-center gap-2">
+                          <span className="font-sans font-bold text-zinc-300">{item.campaign}</span>
+                          <span className="font-black text-purple-400 shrink-0 text-base">{item.calculatedVolume.toLocaleString()} <span className="text-xs text-zinc-500 font-normal">({item.totalMails} items)</span></span>
                         </div>
                       ))}
                     </div>
@@ -513,44 +528,44 @@ export default function Home() {
               </div>
             )}
 
-            <section className={`rounded-xl p-4 sm:p-6 flex flex-col gap-4 border shadow-xl ${isDarkMode ? "bg-slate-900 border-white/5" : "bg-white border-slate-200"}`}>
+            <section className={`rounded-xl p-6 flex flex-col gap-4 border shadow-xl ${isDarkMode ? "bg-[#111726] border-white/5" : "bg-white border-slate-200"}`}>
               <div className="grid gap-4 grid-cols-1 sm:grid-cols-3 items-end">
-                <div className="flex flex-col gap-1">
-                  <label className="text-xs font-semibold text-zinc-400">Start Date</label>
-                  <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className={`h-11 rounded-lg px-3 text-sm outline-none border w-full ${isDarkMode ? "bg-slate-950 border-zinc-800 text-white" : "bg-white border-slate-300"}`} />
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-xs font-bold uppercase tracking-wider text-zinc-400">Start Date</label>
+                  <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className={`h-12 rounded-lg px-3 text-sm outline-none border w-full ${isDarkMode ? "bg-slate-950 border-zinc-800 text-white focus:border-emerald-500" : "bg-white border-slate-300"}`} />
                 </div>
-                <div className="flex flex-col gap-1">
-                  <label className="text-xs font-semibold text-zinc-400">End Date</label>
-                  <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className={`h-11 rounded-lg px-3 text-sm outline-none border w-full ${isDarkMode ? "bg-slate-950 border-zinc-800 text-white" : "bg-white border-slate-300"}`} />
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-xs font-bold uppercase tracking-wider text-zinc-400">End Date</label>
+                  <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className={`h-12 rounded-lg px-3 text-sm outline-none border w-full ${isDarkMode ? "bg-slate-950 border-zinc-800 text-white focus:border-emerald-500" : "bg-white border-slate-300"}`} />
                 </div>
-                <div className="flex flex-col gap-1">
-                  <label className="text-xs font-semibold text-zinc-400">Origin Account (ET)</label>
-                  <select value={selectedEt} onChange={(e) => setSelectedEt(e.target.value)} className={`h-11 rounded-lg px-3 text-sm outline-none border w-full ${isDarkMode ? "bg-slate-950 border-zinc-800 text-white" : "bg-white border-slate-300"}`}>
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-xs font-bold uppercase tracking-wider text-zinc-400">Origin Account (ET)</label>
+                  <select value={selectedEt} onChange={(e) => setSelectedEt(e.target.value)} className={`h-12 rounded-lg px-3 text-sm outline-none border w-full ${isDarkMode ? "bg-slate-950 border-zinc-800 text-white focus:border-emerald-500" : "bg-white border-slate-300"}`}>
                     <option value="">Select ET Account</option>
                     <option value="ALL">ALL ET'S (Combine All Sheets)</option>
                     {ets.map((e) => <option key={e} value={e}>{e}</option>)}
                   </select>
                 </div>
               </div>
-              {errorMessage && <p className="text-xs font-semibold text-rose-500 bg-rose-500/5 p-2 rounded border border-rose-500/10">⚠️ {errorMessage}</p>}
-              <button onClick={handleProcessDataMatrix} className="w-full h-11 rounded-lg bg-emerald-500 hover:bg-emerald-400 font-bold text-xs uppercase text-white tracking-widest cursor-pointer transition active:scale-95 duration-150">
+              {errorMessage && <p className="text-xs font-semibold text-rose-500 bg-rose-500/5 p-3 rounded-lg border border-rose-500/10">⚠️ {errorMessage}</p>}
+              <button onClick={handleProcessDataMatrix} className="w-full h-12 rounded-lg bg-emerald-500 hover:bg-emerald-400 font-bold text-xs uppercase text-white tracking-widest cursor-pointer transition active:scale-95 duration-150 shadow-lg">
                 Process Data Matrix
               </button>
             </section>
 
             {allFetchedData && (
               <div className="flex flex-col gap-6 animate-fadeIn">
-                <section className={`rounded-xl p-4 sm:p-6 grid gap-4 sm:grid-cols-2 border shadow-xl ${isDarkMode ? "bg-slate-900 border-white/5" : "bg-white border-slate-200"}`}>
-                  <div className="flex flex-col gap-1">
-                    <label className="text-xs font-semibold text-zinc-400">Select Campaign Group</label>
-                    <select value={selectedCampaign} onChange={(e) => { setSelectedCampaign(e.target.value); setSelectedTemplate(""); }} className={`h-11 rounded-lg px-3 text-sm outline-none border w-full ${isDarkMode ? "bg-slate-950 border-zinc-800 text-white" : "bg-white border-slate-300"}`}>
+                <section className={`rounded-xl p-6 grid gap-4 sm:grid-cols-2 border shadow-xl ${isDarkMode ? "bg-[#111726] border-white/5" : "bg-white border-slate-200"}`}>
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-xs font-bold uppercase tracking-wider text-zinc-400">Select Campaign Group</label>
+                    <select value={selectedCampaign} onChange={(e) => { setSelectedCampaign(e.target.value); setSelectedTemplate(""); }} className={`h-12 rounded-lg px-3 text-sm outline-none border w-full ${isDarkMode ? "bg-slate-950 border-zinc-800 text-white" : "bg-white border-slate-300"}`}>
                       <option value="">Select Campaign</option>
                       {dynamicCampaignOptions.map(c => <option key={c} value={c}>{c}</option>)}
                     </select>
                   </div>
-                  <div className="flex flex-col gap-1">
-                    <label className="text-xs font-semibold text-zinc-400">Select Target Template</label>
-                    <select value={selectedTemplate} onChange={(e) => setSelectedTemplate(e.target.value)} disabled={!selectedCampaign} className={`h-11 rounded-lg px-3 text-sm outline-none border w-full ${isDarkMode ? "bg-slate-950 border-zinc-800 text-white" : "bg-white border-slate-300"}`}>
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-xs font-bold uppercase tracking-wider text-zinc-400">Select Target Template</label>
+                    <select value={selectedTemplate} onChange={(e) => setSelectedTemplate(e.target.value)} disabled={!selectedCampaign} className={`h-12 rounded-lg px-3 text-sm outline-none border w-full ${isDarkMode ? "bg-slate-950 border-zinc-800 text-white" : "bg-white border-slate-300"}`}>
                       <option value="">{selectedCampaign ? "Select Template" : "Choose Campaign first"}</option>
                       {dynamicTemplateOptions.length > 0 && <option value="ALL">ALL MATCHED TEMPLATES</option>}
                       {dynamicTemplateOptions.map(t => <option key={t} value={t}>{t}</option>)}
@@ -559,18 +574,18 @@ export default function Home() {
                 </section>
 
                 {selectedCampaign && selectedTemplate && globalCampaignCalculatedTotals && (
-                  <section className={`rounded-xl p-5 border shadow-xl grid gap-4 grid-cols-1 sm:grid-cols-3 ${isDarkMode ? "bg-slate-900 border-emerald-500/20 text-white" : "bg-white border-slate-200 text-slate-900"}`}>
+                  <section className={`rounded-xl p-6 border shadow-xl grid gap-4 grid-cols-1 sm:grid-cols-3 ${isDarkMode ? "bg-[#111726] border-emerald-500/20 text-white" : "bg-white border-slate-200"}`}>
                     <div>
-                      <span className="text-[10px] uppercase font-bold text-zinc-500">Campaign Focus</span>
-                      <p className="text-lg font-black truncate">{selectedCampaign}</p>
+                      <span className="text-xs uppercase font-bold text-zinc-400 tracking-wider">Campaign Focus</span>
+                      <p className="text-xl font-black mt-1 text-zinc-100 truncate">{selectedCampaign}</p>
                     </div>
                     <div>
-                      <span className="text-[10px] uppercase font-bold text-zinc-500">Mails Count</span>
-                      <p className="text-2xl font-black text-sky-500">{globalCampaignCalculatedTotals.totalMails.toLocaleString()}</p>
+                      <span className="text-xs uppercase font-bold text-zinc-400 tracking-wider">Mails Count</span>
+                      <p className="text-3xl font-black text-sky-400 mt-1">{globalCampaignCalculatedTotals.totalMails.toLocaleString()}</p>
                     </div>
                     <div>
-                      <span className="text-[10px] uppercase font-bold text-emerald-500">Aggregated Volume</span>
-                      <p className="text-2xl font-black text-emerald-500">{globalCampaignCalculatedTotals.calculatedVolume.toLocaleString()}</p>
+                      <span className="text-xs uppercase font-bold text-emerald-500 tracking-wider">Aggregated Volume</span>
+                      <p className="text-3xl font-black text-emerald-500 mt-1">{globalCampaignCalculatedTotals.calculatedVolume.toLocaleString()}</p>
                     </div>
                   </section>
                 )}
@@ -580,20 +595,20 @@ export default function Home() {
                     {processedAccountWiseCards.map((card) => (
                       <div key={card.account} className={`rounded-xl border shadow-lg flex flex-col justify-between overflow-hidden ${isDarkMode ? "bg-slate-900 border-white/5" : "bg-white border-slate-200"}`}>
                         <div className={`p-4 border-b flex justify-between items-center ${isDarkMode ? "bg-slate-950/40 border-zinc-800 text-white" : "bg-slate-100 border-slate-200 text-slate-900"}`}>
-                          <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-500/10 text-emerald-600 border border-emerald-500/20 uppercase">{card.account}</span>
-                          <span className="font-mono font-bold text-sky-500 text-xs">{card.totalVolume.toLocaleString()}</span>
+                          <span className="px-3 py-1 rounded-md text-xs font-black bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 uppercase tracking-wide">{card.account}</span>
+                          <span className="font-mono font-black text-sky-400 text-sm">{card.totalVolume.toLocaleString()}</span>
                         </div>
-                        <div className={`p-4 flex-1 overflow-y-auto max-h-[160px] font-mono text-xs gap-2 flex flex-col ${isDarkMode ? "text-zinc-300" : "text-slate-800"}`}>
+                        <div className={`p-4 flex-1 overflow-y-auto max-h-[200px] font-mono text-sm gap-2.5 flex flex-col ${isDarkMode ? "text-zinc-300" : "text-slate-800"}`}>
                           {card.templates.map((t, idx) => (
-                            <div key={idx} className="flex justify-between items-start gap-2">
-                              <span className="font-sans truncate break-all">{t.name}</span>
-                              <span className="font-bold shrink-0">{t.count} m</span>
+                            <div key={idx} className="flex justify-between items-start gap-3 border-b border-dashed border-zinc-800/60 pb-1.5 last:border-0">
+                              <span className="font-sans font-bold truncate break-all text-zinc-400">{t.name}</span>
+                              <span className="font-black text-zinc-200 shrink-0">{t.count} m</span>
                             </div>
                           ))}
                         </div>
-                        <div className={`p-3 border-t text-[10px] uppercase font-bold text-zinc-500 flex justify-between ${isDarkMode ? "bg-slate-950/10 border-zinc-800" : "bg-slate-50 border-slate-200"}`}>
+                        <div className={`p-4 border-t text-xs uppercase font-bold text-zinc-500 flex justify-between ${isDarkMode ? "bg-slate-950/10 border-zinc-800" : "bg-slate-50 border-slate-200"}`}>
                           <span>Card Total Mails</span>
-                          <span className={isDarkMode ? "text-zinc-300" : "text-slate-900"}>{card.totalMails} Mails</span>
+                          <span className={`font-black ${isDarkMode ? "text-zinc-300" : "text-slate-900"}`}>{card.totalMails} Mails</span>
                         </div>
                       </div>
                     ))}
@@ -606,113 +621,152 @@ export default function Home() {
 
         {currentView === "analytics" && (
           <div className="flex flex-col gap-6 animate-fadeIn">
-            {/* Step 1 Form Header Bar */}
-            <section className={`rounded-xl p-4 sm:p-6 border shadow-xl flex flex-col gap-4 ${isDarkMode ? "bg-slate-900 border-white/5" : "bg-white border-slate-200"}`}>
-              <h3 className="text-xs font-bold uppercase tracking-wider text-purple-400">📈 Step 1: Upload Conversion Statement & Specify Bounds</h3>
+            
+            {/* STEP 1 SETUP AND BATCH COMPILER LOADER SLOTS */}
+            <section className={`rounded-xl p-6 border shadow-xl flex flex-col gap-4 ${isDarkMode ? "bg-[#111726] border-white/5" : "bg-white border-slate-200"}`}>
+              <div className="flex justify-between items-center">
+                <h3 className="text-xs font-black uppercase tracking-widest text-purple-400">📈 Step 1: Upload Conversion Statement & Specify Bounds</h3>
+                
+                {analyticsActive && (
+                  <button onClick={() => setIsSelectorModalOpen(true)} className="px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-black font-sans text-xs transition uppercase tracking-wider shadow-lg active:scale-95 duration-150">
+                    🔄 Change Filters (AGAIN)
+                  </button>
+                )}
+              </div>
               
               <div className="grid gap-4 grid-cols-1 sm:grid-cols-3 items-end">
-                <div className="flex flex-col gap-1">
-                  <label className="text-xs font-semibold text-zinc-400">Start Date</label>
-                  <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className={`h-11 rounded-lg px-3 text-sm outline-none border w-full ${isDarkMode ? "bg-slate-950 border-zinc-800 text-white" : "bg-white border-slate-300"}`} />
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-xs font-bold uppercase tracking-wider text-zinc-400">Start Date</label>
+                  <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className={`h-12 rounded-lg px-3 text-sm outline-none border w-full ${isDarkMode ? "bg-slate-950 border-zinc-800 text-white focus:border-purple-500" : "bg-white border-slate-300"}`} />
                 </div>
-                <div className="flex flex-col gap-1">
-                  <label className="text-xs font-semibold text-zinc-400">End Date</label>
-                  <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className={`h-11 rounded-lg px-3 text-sm outline-none border w-full ${isDarkMode ? "bg-slate-950 border-zinc-800 text-white" : "bg-white border-slate-300"}`} />
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-xs font-bold uppercase tracking-wider text-zinc-400">End Date</label>
+                  <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className={`h-12 rounded-lg px-3 text-sm outline-none border w-full ${isDarkMode ? "bg-slate-950 border-zinc-800 text-white focus:border-purple-500" : "bg-white border-slate-300"}`} />
                 </div>
-                <div className="flex flex-col gap-1">
-                  <label className="text-xs font-semibold text-zinc-400">Report Days Duration</label>
-                  <input type="number" min="1" value={reportDays} onChange={(e) => setReportDays(e.target.value)} className={`h-11 rounded-lg px-3 text-sm outline-none border w-full ${isDarkMode ? "bg-slate-950 border-zinc-800 text-white" : "bg-white border-slate-300"}`} />
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-xs font-bold uppercase tracking-wider text-zinc-400">Report Days Duration</label>
+                  <input type="number" min="1" value={reportDays} onChange={(e) => setReportDays(e.target.value)} className={`h-12 rounded-lg px-3 text-sm outline-none border w-full ${isDarkMode ? "bg-slate-950 border-zinc-800 text-white focus:border-purple-500" : "bg-white border-slate-300"}`} />
                 </div>
               </div>
 
               <div className="flex flex-col gap-1.5 mt-2">
-                <label className="text-xs font-semibold text-zinc-400">Select Revenue Ledgers Upload (Multiple Allowed .csv)</label>
-                <input type="file" accept=".csv" multiple onChange={handleMultipleCsvFilesLoad} className="text-xs text-zinc-400 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-zinc-800 file:text-zinc-200 file:cursor-pointer hover:file:bg-zinc-700" />
+                <label className="text-xs font-bold uppercase tracking-wider text-zinc-400">Select Revenue Ledgers Upload (Multiple Allowed .csv)</label>
+                <input type="file" accept=".csv" multiple onChange={handleMultipleCsvFilesLoad} className="text-xs text-zinc-400 file:mr-4 file:py-2.5 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-black file:bg-zinc-800 file:text-zinc-200 file:cursor-pointer hover:file:bg-zinc-700" />
               </div>
 
               {uploadedFilesSummary.length > 0 && (
-                <div className={`p-3 rounded-lg border text-xs font-mono flex flex-col gap-1 ${isDarkMode ? "bg-slate-950 border-zinc-800" : "bg-slate-100 border-slate-200"}`}>
-                  <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider font-sans">Stacked Source Files Linked ({uploadedFilesSummary.length})</span>
+                <div className={`p-4 rounded-xl border text-sm font-mono flex flex-col gap-1.5 ${isDarkMode ? "bg-slate-950 border-zinc-800" : "bg-slate-100 border-slate-200"}`}>
+                  <span className="text-xs font-black text-zinc-500 uppercase tracking-wider font-sans">Stacked Source Files Linked ({uploadedFilesSummary.length})</span>
                   {uploadedFilesSummary.map((fName, idx) => (
                     <span key={idx} className={isDarkMode ? "text-zinc-400" : "text-slate-600"}>📄 {fName}</span>
                   ))}
-                  <span className="text-emerald-500 font-bold mt-1 font-sans">✓ Combined {combinedCsvRecords.length.toLocaleString()} total raw entries.</span>
+                  <span className="text-emerald-400 font-black mt-1 font-sans text-base">✓ Combined {combinedCsvRecords.length.toLocaleString()} total raw entries.</span>
                 </div>
               )}
 
               <button 
                 onClick={handleCompileAnalytics}
                 disabled={!startDate || !endDate || combinedCsvRecords.length === 0}
-                className="w-full h-11 rounded-lg bg-purple-600 hover:bg-purple-500 font-bold text-xs uppercase text-white tracking-widest cursor-pointer disabled:opacity-40 transition active:scale-95 mt-2"
+                className="w-full h-12 rounded-lg bg-purple-600 hover:bg-purple-500 font-bold text-xs uppercase text-white tracking-widest cursor-pointer disabled:opacity-40 transition active:scale-95 shadow-xl mt-2"
               >
                 Compile Revenue Analytics
               </button>
             </section>
 
-            {analyticsActive && allFetchedData && (
-              <div className="flex flex-col gap-6 animate-fadeIn">
-                {/* Advanced Header Filter Toolbar featuring the new 'AGAIN' trigger option */}
-                <div className="flex justify-between items-center gap-4">
-                  <div className="text-xs text-zinc-400 font-mono">
-                    Showing results for Account: <strong className="text-purple-400 uppercase font-bold">{analyticsEt || "ALL"}</strong> | Campaign: <strong className="text-purple-400 uppercase font-bold">{analyticsCampaign || "ALL"}</strong>
+            {/* SCREEN RE-ARCHITECTED INTO A FULL SCREEN VIEWPORT CANVAS */}
+            {analyticsActive && allFetchedData && revenueCalculatedCards.length > 0 && (
+              <div className="flex flex-col lg:flex-row gap-6 items-stretch animate-fadeIn w-full">
+                
+                {/* INTERACTIVE LEFT-SIDE ACCOUNT TOGGLE NAVIGATOR */}
+                <div className={`lg:w-1/4 shrink-0 rounded-2xl border p-4 flex flex-row lg:flex-col gap-2 overflow-auto shadow-xl ${isDarkMode ? "bg-[#111726] border-white/5" : "bg-white border-slate-200"}`}>
+                  <div className="hidden lg:block border-b border-zinc-800 pb-2 mb-2">
+                    <span className="text-[10px] uppercase font-black tracking-widest text-zinc-500">Workspace Ledger</span>
+                    <h4 className="text-xs font-black text-purple-400 uppercase mt-0.5">Select Account Tab</h4>
                   </div>
-                  <button 
-                    onClick={() => setIsSelectorModalOpen(true)} 
-                    className="h-10 px-4 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-xs font-bold uppercase tracking-wider text-purple-400 border border-purple-500/20 transition shrink-0 cursor-pointer"
-                  >
-                    🔄 Change Filters (AGAIN)
-                  </button>
+                  {distinctRevenueAccountTabs.map((tabName) => {
+                    const isActive = (selectedTabFocus || distinctRevenueAccountTabs[0])?.toUpperCase() === tabName.toUpperCase();
+                    return (
+                      <button 
+                        key={tabName}
+                        onClick={() => setSelectedTabFocus(tabName)}
+                        className={`px-4 py-3 rounded-xl text-xs font-black tracking-wider text-left transition shrink-0 whitespace-nowrap lg:whitespace-normal uppercase flex justify-between items-center ${
+                          isActive 
+                            ? "bg-purple-600 text-white shadow-lg font-black scale-[1.02]" 
+                            : isDarkMode ? "bg-slate-950/50 text-zinc-400 border border-zinc-800/40 hover:text-zinc-200 hover:bg-slate-900" : "bg-slate-100 text-slate-700 hover:bg-slate-200"
+                        }`}
+                      >
+                        <span>📂 {tabName}</span>
+                        <span className={`text-[10px] ml-2 px-1.5 py-0.5 rounded ${isActive ? "bg-white/20 text-white" : "bg-zinc-800 text-zinc-400"}`}>
+                          ${revenueCalculatedCards.find(c => c.accountName === tabName)?.cardTotalRevenue.toLocaleString() ?? "0"}
+                        </span>
+                      </button>
+                    );
+                  })}
                 </div>
 
-                <div className="grid gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
-                  {revenueCalculatedCards.map((card) => (
-                    <section key={card.accountName} className={`rounded-xl border shadow-xl flex flex-col justify-between overflow-hidden ${isDarkMode ? "bg-slate-900 border-white/5" : "bg-white border-slate-200"}`}>
+                {/* THE RIGHT-SIDE FULL CANVASS DISPLAY PROJECTS CHOSEN TAB ITEMS COVERS ENTIRE WIDTH */}
+                <div className="flex-1 min-w-0">
+                  {targetedActiveFocusedCard && (
+                    <div className={`rounded-2xl border shadow-2xl flex flex-col justify-between overflow-hidden h-full w-full ${isDarkMode ? "bg-[#111726] border-white/5" : "bg-white border-slate-200"}`}>
                       
-                      <div className={`p-4 border-b flex justify-between items-center ${isDarkMode ? "bg-slate-950/50 border-zinc-800 text-white" : "bg-slate-100 border-slate-200 text-slate-900"}`}>
-                        <span className="text-xs font-black text-emerald-500 uppercase">{card.accountName}</span>
+                      <div className={`p-5 border-b flex justify-between items-center ${isDarkMode ? "bg-slate-950/60 border-zinc-800 text-white" : "bg-slate-100 border-slate-200 text-slate-900"}`}>
+                        <div className="flex items-center gap-3">
+                          <span className="h-2.5 w-2.5 rounded-full bg-emerald-500 animate-ping" />
+                          <h2 className="text-xl font-black text-emerald-400 tracking-wide uppercase">{targetedActiveFocusedCard.accountName} Matrix Workspace</h2>
+                        </div>
                         <div className="text-right">
-                          <span className="text-[10px] text-zinc-500 font-bold uppercase block">Card Total Revenue</span>
-                          <span className="text-sm font-black text-emerald-500">${card.cardTotalRevenue.toLocaleString()}</span>
+                          <span className="text-[10px] text-zinc-500 font-black uppercase tracking-wider block">Card Total Revenue</span>
+                          <span className="text-2xl font-black text-emerald-400">${targetedActiveFocusedCard.cardTotalRevenue.toLocaleString()}</span>
                         </div>
                       </div>
 
-                      <div className={`p-4 flex-1 flex flex-col gap-4 overflow-y-auto max-h-[380px] divide-y ${isDarkMode ? "divide-zinc-800/40" : "divide-slate-100"}`}>
-                        {card.templates.map((tmpl, tIdx) => (
-                          <div key={tIdx} className="pt-4 first:pt-0 flex flex-col gap-1.5 font-mono text-xs">
-                            <div className="flex justify-between items-start gap-2">
-                              <span className={`font-sans font-bold break-all leading-tight ${isDarkMode ? "text-zinc-200" : "text-slate-800"}`}>{tmpl.templateName}</span>
-                              <span className={`px-2 py-0.5 rounded text-[9px] font-bold uppercase ${tmpl.conversions > 0 ? "bg-emerald-500/10 text-emerald-600 border border-emerald-500/20" : "bg-rose-500/10 text-rose-600 border border-rose-500/20"}`}>
-                                {tmpl.conversions > 0 ? `${tmpl.conversions} Conv` : "No Revenue"}
+                      <div className={`p-6 flex-1 flex flex-col gap-6 overflow-y-auto max-h-[600px] divide-y ${isDarkMode ? "divide-zinc-800/50" : "divide-slate-200"}`}>
+                        {targetedActiveFocusedCard.templates.map((tmpl, tIdx) => (
+                          <div key={tIdx} className="pt-5 first:pt-0 flex flex-col gap-3 font-mono">
+                            
+                            <div className="flex justify-between items-start gap-4">
+                              {/* HIGH IMPACT EXTENDED TEXT SIZING FOR CREATIVES AND BADGES */}
+                              <h3 className={`font-sans text-lg font-black break-all tracking-tight leading-snug ${isDarkMode ? "text-zinc-100" : "text-slate-900"}`}>{tmpl.templateName}</h3>
+                              <span className={`px-3 py-1 rounded-md text-xs font-black uppercase shrink-0 tracking-widest ${tmpl.conversions > 0 ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 shadow-sm" : "bg-rose-500/10 text-rose-400 border border-rose-500/20"}`}>
+                                {tmpl.conversions > 0 ? `🏆 ${tmpl.conversions} Conversions` : "⚠️ No Revenue"}
                               </span>
                             </div>
                             
-                            <div className={`grid grid-cols-2 gap-y-2 text-[10px] pt-1.5 border-t border-dashed mt-1 ${isDarkMode ? "text-zinc-400 border-zinc-800" : "text-slate-500 border-slate-200"}`}>
+                            <div className={`grid grid-cols-2 md:grid-cols-4 gap-4 text-xs p-4 rounded-xl ${isDarkMode ? "bg-slate-950/40 border border-zinc-800/50 text-zinc-400" : "bg-slate-50 border border-slate-100 text-slate-500"}`}>
                               <div>
-                                <span className="block text-[9px] font-sans font-bold uppercase tracking-wide text-zinc-500">Mails Used</span>
-                                <span className={`font-bold ${isDarkMode ? "text-zinc-300" : "text-slate-700"}`}>{tmpl.mailsUsed.toLocaleString()} m</span>
+                                <span className="block text-[10px] font-sans font-bold uppercase tracking-wider text-zinc-500 mb-0.5">Mails Used</span>
+                                <span className={`text-sm font-black ${isDarkMode ? "text-zinc-300" : "text-slate-800"}`}>{tmpl.mailsUsed.toLocaleString()} m</span>
                               </div>
                               <div>
-                                <span className="block text-[9px] font-sans font-bold uppercase tracking-wide text-zinc-500">Total Sending Volume</span>
-                                <span className="font-bold text-sky-500">{tmpl.sendingVolume.toLocaleString()}</span>
+                                <span className="block text-[10px] font-sans font-bold uppercase tracking-wider text-zinc-500 mb-0.5">Total Sending Volume</span>
+                                <span className="text-sm font-black text-sky-400">{tmpl.sendingVolume.toLocaleString()} vol</span>
                               </div>
                               <div>
-                                <span className="block text-[9px] font-sans font-bold uppercase tracking-wide text-emerald-600">Revenue</span>
-                                <span className="font-bold text-emerald-500">${tmpl.revenue.toLocaleString()}</span>
+                                <span className="block text-[10px] font-sans font-bold uppercase tracking-wider text-zinc-500 mb-0.5">Revenue</span>
+                                <span className="text-sm font-black text-emerald-400">${tmpl.revenue.toLocaleString()}</span>
                               </div>
                               <div>
-                                <span className="block text-[9px] font-sans font-bold uppercase tracking-wide text-zinc-500">Count / Conversion</span>
-                                <span className={`font-bold ${tmpl.efficiency ? "text-purple-400" : "text-rose-500"}`}>
+                                <span className="block text-[10px] font-sans font-bold uppercase tracking-wider text-zinc-500 mb-0.5">Count / Conversion</span>
+                                <span className={`text-sm font-black ${tmpl.efficiency ? "text-purple-400" : "text-rose-500"}`}>
                                   {tmpl.efficiency ? `${tmpl.efficiency.toLocaleString()} vol` : "N/A"}
                                 </span>
                               </div>
                             </div>
+
                           </div>
                         ))}
                       </div>
 
-                    </section>
-                  ))}
+                    </div>
+                  )}
                 </div>
+
+              </div>
+            )}
+            
+            {analyticsActive && allFetchedData && revenueCalculatedCards.length === 0 && (
+              <div className="p-12 border-2 border-dashed border-zinc-800 rounded-2xl text-center text-zinc-500 text-sm font-bold bg-[#111726]/40">
+                No data parameters matched this criteria combination grid. Try running compiling parameters again.
               </div>
             )}
           </div>
