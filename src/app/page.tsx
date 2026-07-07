@@ -49,9 +49,6 @@ export default function Home() {
   const [analyticsCampaign, setAnalyticsCampaign] = useState("");
   const [isSelectorModalOpen, setIsSelectorModalOpen] = useState(false);
 
-  // Interactive Popup Modal State
-  const [selectedCardAccount, setSelectedCardAccount] = useState<string | null>(null);
-
   useEffect(() => {
     const iso = new Date().toISOString().slice(0, 10);
     setStartDate(iso);
@@ -167,7 +164,6 @@ export default function Home() {
     setAllFetchedData(null);
     setSelectedCampaign("");
     setSelectedTemplate("");
-    setSelectedCardAccount(null);
     setStatus("loading");
 
     setTimeout(async () => {
@@ -376,8 +372,6 @@ export default function Home() {
     
     setAllFetchedData(null);
     setAnalyticsActive(false);
-    setAnalyticsEt("");
-    setAnalyticsCampaign("");
     setStatus("loading");
 
     setTimeout(async () => {
@@ -385,7 +379,8 @@ export default function Home() {
         const res = await fetch(`/api/mailCounts?startDate=${startDate}&endDate=${endDate}&et=ALL`);
         const data = await res.json();
         setAllFetchedData(data.breakdown ?? []);
-        setAnalyticsActive(true);
+        // OPEN SELECTOR POPUP MODAL IMMEDIATELY
+        setIsSelectorModalOpen(true);
         setStatus("success");
       } catch { 
         setStatus("error"); 
@@ -407,6 +402,43 @@ export default function Home() {
               </div>
               <h3 className="text-sm font-bold text-white tracking-wide uppercase">Compiling System Metrics</h3>
               <p className="text-xs text-zinc-400">Syncing and parsing live ledger fields...</p>
+            </div>
+          </div>
+        )}
+
+        {/* STEP 2 INTERACTIVE POPUP FILTERS SELECTION MODAL LAYER */}
+        {isSelectorModalOpen && allFetchedData && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 backdrop-blur-sm p-4 animate-fadeIn">
+            <div className="w-full max-w-md rounded-2xl border shadow-2xl p-6 flex flex-col bg-slate-900 border-white/10 text-white">
+              <div className="pb-3 border-b border-zinc-800 mb-4">
+                <h3 className="text-sm font-bold uppercase tracking-wider text-purple-400">🎯 Select Segments to Display</h3>
+                <p className="text-xs text-zinc-400 mt-0.5">Filter combined sending ledger logs by target metrics</p>
+              </div>
+
+              <div className="flex flex-col gap-4">
+                <div className="flex flex-col gap-1">
+                  <label className="text-xs font-semibold text-zinc-400">Select Target Account (ET)</label>
+                  <select value={analyticsEt} onChange={e => setAnalyticsEt(e.target.value)} className="h-11 rounded-lg px-3 text-sm bg-slate-950 border border-zinc-800 text-white focus:border-purple-500 outline-none w-full">
+                    <option value="ALL">ALL ACCOUNTS</option>
+                    {ets.map(e => <option key={e} value={e}>{e}</option>)}
+                  </select>
+                </div>
+
+                <div className="flex flex-col gap-1">
+                  <label className="text-xs font-semibold text-zinc-400">Select Target Campaign Segment</label>
+                  <select value={analyticsCampaign} onChange={e => setAnalyticsCampaign(e.target.value)} className="h-11 rounded-lg px-3 text-sm bg-slate-950 border border-zinc-800 text-white focus:border-purple-500 outline-none w-full">
+                    <option value="ALL">ALL CAMPAIGNS</option>
+                    {analyticsCampaignOptions.map(c => <option key={c} value={c}>{c}</option>)}
+                  </select>
+                </div>
+
+                <button 
+                  onClick={() => { setIsSelectorModalOpen(false); setAnalyticsActive(true); }}
+                  className="w-full h-11 rounded-lg bg-purple-600 hover:bg-purple-500 font-bold text-xs uppercase tracking-wider text-white transition mt-2 cursor-pointer"
+                >
+                  Show Results
+                </button>
+              </div>
             </div>
           </div>
         )}
@@ -574,6 +606,7 @@ export default function Home() {
 
         {currentView === "analytics" && (
           <div className="flex flex-col gap-6 animate-fadeIn">
+            {/* Step 1 Form Header Bar */}
             <section className={`rounded-xl p-4 sm:p-6 border shadow-xl flex flex-col gap-4 ${isDarkMode ? "bg-slate-900 border-white/5" : "bg-white border-slate-200"}`}>
               <h3 className="text-xs font-bold uppercase tracking-wider text-purple-400">📈 Step 1: Upload Conversion Statement & Specify Bounds</h3>
               
@@ -618,22 +651,18 @@ export default function Home() {
 
             {analyticsActive && allFetchedData && (
               <div className="flex flex-col gap-6 animate-fadeIn">
-                <section className={`rounded-xl p-4 sm:p-6 grid gap-4 sm:grid-cols-2 border shadow-xl ${isDarkMode ? "bg-slate-900 border-white/5" : "bg-white border-slate-200"}`}>
-                  <div className="flex flex-col gap-1">
-                    <label className="text-xs font-semibold text-zinc-400">Filter Account (ET)</label>
-                    <select value={analyticsEt} onChange={e => setAnalyticsEt(e.target.value)} className={`h-11 rounded-lg px-3 text-sm outline-none border w-full ${isDarkMode ? "bg-slate-950 border-zinc-800 text-white" : "bg-white border-slate-300"}`}>
-                      <option value="ALL">ALL ACCOUNTS</option>
-                      {ets.map(e => <option key={e} value={e}>{e}</option>)}
-                    </select>
+                {/* Advanced Header Filter Toolbar featuring the new 'AGAIN' trigger option */}
+                <div className="flex justify-between items-center gap-4">
+                  <div className="text-xs text-zinc-400 font-mono">
+                    Showing results for Account: <strong className="text-purple-400 uppercase font-bold">{analyticsEt || "ALL"}</strong> | Campaign: <strong className="text-purple-400 uppercase font-bold">{analyticsCampaign || "ALL"}</strong>
                   </div>
-                  <div className="flex flex-col gap-1">
-                    <label className="text-xs font-semibold text-zinc-400">Filter Campaign Segment</label>
-                    <select value={analyticsCampaign} onChange={e => setAnalyticsCampaign(e.target.value)} className={`h-11 rounded-lg px-3 text-sm outline-none border w-full ${isDarkMode ? "bg-slate-950 border-zinc-800 text-white" : "bg-white border-slate-300"}`}>
-                      <option value="ALL">ALL CAMPAIGNS</option>
-                      {analyticsCampaignOptions.map(c => <option key={c} value={c}>{c}</option>)}
-                    </select>
-                  </div>
-                </section>
+                  <button 
+                    onClick={() => setIsSelectorModalOpen(true)} 
+                    className="h-10 px-4 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-xs font-bold uppercase tracking-wider text-purple-400 border border-purple-500/20 transition shrink-0 cursor-pointer"
+                  >
+                    🔄 Change Filters (AGAIN)
+                  </button>
+                </div>
 
                 <div className="grid gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
                   {revenueCalculatedCards.map((card) => (
