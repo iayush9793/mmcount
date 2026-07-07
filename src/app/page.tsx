@@ -18,6 +18,7 @@ interface RevenueRecord {
   revenue: number;
 }
 
+// Extracted interface for standard PWA installation hook compatibility
 interface BeforeInstallPromptEvent extends Event {
   readonly platforms: Array<string>;
   readonly userChoice: Promise<{
@@ -28,7 +29,7 @@ interface BeforeInstallPromptEvent extends Event {
   prompt(): Promise<void>;
 }
 
-// GLOBAL UTILITY MAPPERS AND RESOLVERS
+// GLOBAL UTILITY FUNCTIONS
 function rowMultiplier(tabName: string): number {
   const clean = tabName.replace(/[^a-zA-Z0-9]/g, "").toUpperCase();
   return (clean.includes("JSG40") || clean.includes("JSG38")) ? 2000 : 5000;
@@ -175,7 +176,7 @@ export default function Home() {
     if (cleanCamp === "RGR") return { includes: ["RGR"], excludes: [] };
     if (cleanCamp === "ICO") return { includes: ["ICO"], excludes: [] };
     if (cleanCamp === "AHS_AD" || cleanCamp.startsWith("AHS")) return { includes: ["AHS"], excludes: ["DB", "XCE", "GZ", "XC", "ES"] };
-    if (cleanCamp === "SHW_ES" || cleanCamp.startsWith("SHW")) return { includes: ["SHW"], excludes: ["DB", "XCE", "GZ", "XC"] };
+    if (cleanCamp === "SHW_ES" || cleanCamp.startsWith("SHW")) return { includes: ["SHW", "ES"], excludes: ["DB", "XCE", "GZ", "XC"] };
     if (cleanCamp === "XCE_AIR" || cleanCamp === "AIR") return { includes: ["AIR"], excludes: [] };
     if (cleanCamp === "FIR_XC" || cleanCamp.startsWith("FIR")) return { includes: ["FIR"], excludes: [] };
     if (cleanCamp === "HEC_AD" || cleanCamp.startsWith("HEC")) return { includes: ["HEC"], excludes: [] };
@@ -190,7 +191,7 @@ export default function Home() {
     if (cleanCamp === "EFA_ES") return { includes: ["EFA"], excludes: ["DB", "XCE", "GZ", "XC"] };  
     if (cleanCamp === "EAC_CMAD") return { includes: ["EAC"], excludes: ["DB", "XCE", "GZ", "XC"] };
     if (cleanCamp === "CH_XC" || cleanCamp.startsWith("CH")) return { includes: ["CH"], excludes: [] };
-    if (cleanCamp === "LBH_DB" || cleanCamp.startsWith("LBH")) return { includes: ["LBH"], excludes: ["XCE", "GZ", "XC", "ES"] };
+    if (cleanCamp === "LBH_DB" || cleanCamp.startsWith("LBH")) return { includes: ["LBH", "DB"], excludes: ["XCE", "GZ", "XC", "ES"] };
     if (cleanCamp === "NDR" || cleanCamp.startsWith("NDR")) return { includes: ["NDR", "CMAD"], excludes: ["XCE", "XC", "ES"] };
     if (cleanCamp === "ZBH" || cleanCamp.startsWith("ZBH")) return { includes: ["ZBH", "ES"], excludes: ["XCE", "XC", "DB"] };
     if (cleanCamp === "WS" || cleanCamp.startsWith("WS")) return { includes: ["WS", "CMAD"], excludes: ["XCE", "XC", "ES"] };
@@ -458,7 +459,7 @@ export default function Home() {
   return (
     <div className={`min-h-screen transition-colors duration-500 p-4 sm:p-8 flex flex-col justify-between ${isDarkMode ? "bg-[#090d16] text-zinc-100 font-sans" : "bg-slate-50 text-slate-900 font-sans"}`}>
       
-      {/* 80% WIDTH CONTAINER LAYOUT SPEC */}
+      {/* EXPLICIT COMPLIANCE BOUND: STRICT 80% SCREEN WIDTH SIZE VIEWPORT CANVAS BOX BLOCK */}
       <div className="w-full xl:max-w-[80vw] xl:mx-auto flex flex-col gap-6 flex-1">
         
         <header className={`border-b pb-5 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 ${isDarkMode ? "border-white/10" : "border-slate-200"}`}>
@@ -699,10 +700,10 @@ export default function Home() {
                       <button 
                         key={tabName}
                         onClick={() => setSelectedTabFocus(tabName)}
-                        className={`px-4 py-3 rounded-xl text-sm font-bold tracking-wide text-left transition-all duration-300 transform ease-in-out shrink-0 whitespace-nowrap lg:whitespace-normal flex justify-between items-center shadow-sm hover:translate-x-1 ${
+                        className={`px-4 py-3 rounded-xl text-sm font-bold tracking-wide text-left transition-all duration-300 transform ease-in-out shrink-0 whitespace-nowrap lg:whitespace-normal uppercase flex justify-between items-center ${
                           isActive 
                             ? "bg-purple-600 text-white shadow-purple-500/20 font-black" 
-                            : isDarkMode ? "bg-[#161f33] text-zinc-300 border border-zinc-800/60 hover:text-zinc-100 hover:bg-[#1c2942]" : "bg-slate-100 text-slate-700 hover:bg-slate-200"
+                            : isDarkMode ? "bg-[#161f33] text-zinc-300 border border-zinc-800/40 hover:text-zinc-200 hover:bg-[#1c2942]" : "bg-slate-100 text-slate-700 hover:bg-slate-200"
                         }`}
                       >
                         <div className="flex items-center gap-2.5">
