@@ -265,6 +265,7 @@ export default function Home() {
     if (original === "E_R_RGR_2083_RM") return "RGR_2083_RM";
     if (original === "E_RGR_031_D") return "RGR_031_D";
     if (original === "P_R_TRU_541_OG2") return "TRU_541_OG2";
+    if (original === "RGR_KARTIK0905_NV") return "RGR_KARTIK0905";
     return original;
   }
 
