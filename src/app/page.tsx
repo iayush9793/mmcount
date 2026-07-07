@@ -18,6 +18,17 @@ interface RevenueRecord {
   revenue: number;
 }
 
+// Extracted interface for standard PWA installation hook compatibility
+interface BeforeInstallPromptEvent extends Event {
+  readonly platforms: Array<string>;
+  readonly userChoice: Promise<{
+    outcome: "accepted" | "dismissed";
+    // eslint-disable-next-line @typescript-eslint/naming-convention
+    allowed_platforms: Array<string>;
+  }>;
+  prompt(): Promise<void>;
+}
+
 export default function Home() {
   const [isAppLoading, setIsAppLoading] = useState(true);
   const [isDarkMode, setIsDarkMode] = useState(true);
@@ -50,11 +61,27 @@ export default function Home() {
   const [isSelectorModalOpen, setIsSelectorModalOpen] = useState(false);
   const [selectedTabFocus, setSelectedTabFocus] = useState<string>("");
 
+  // Native PWA Deferred Installation Prompt Holder State
+  const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
+  const [showInstallBtn, setShowInstallBtn] = useState(false);
+
   useEffect(() => {
     const iso = new Date().toISOString().slice(0, 10);
     setStartDate(iso);
     setEndDate(iso);
     setIsDashboardLoading(true);
+
+    // Bind native PWA baseline installer ecosystem triggers
+    window.addEventListener("beforeinstallprompt", (e) => {
+      e.preventDefault();
+      setDeferredPrompt(e as BeforeInstallPromptEvent);
+      setShowInstallBtn(true);
+    });
+
+    window.addEventListener("appinstalled", () => {
+      setDeferredPrompt(null);
+      setShowInstallBtn(false);
+    });
     
     fetch("/api/ets")
       .then((res) => res.json())
@@ -76,6 +103,16 @@ export default function Home() {
         setIsAppLoading(false);
       });
   }, []);
+
+  const handlePwaDownloadApp = async () => {
+    if (!deferredPrompt) return;
+    await deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+    if (outcome === "accepted") {
+      setDeferredPrompt(null);
+      setShowInstallBtn(false);
+    }
+  };
 
   const getFilterRule = (campaignName: string): FilterRule => {
     const cleanCamp = campaignName.toUpperCase().trim();
@@ -348,80 +385,11 @@ export default function Home() {
     return revenueCalculatedCards.find(c => c.accountName.toUpperCase() === selectedTabFocus.toUpperCase()) || revenueCalculatedCards[0] || null;
   }, [selectedTabFocus, revenueCalculatedCards]);
 
-  function rowMultiplier(tabName: string): number {
-    const clean = tabName.replace(/[^a-zA-Z0-9]/g, "").toUpperCase();
-    return (clean.includes("JSG40") || clean.includes("JSG38")) ? 2000 : 5000;
-  }
-
-  const handleMultipleCsvFilesLoad = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (!files || files.length === 0) return;
-
-    const namesArray: string[] = [];
-    let combinedRecords: RevenueRecord[] = [];
-
-    for (let i = 0; i < files.length; i++) {
-      const file = files[i];
-      namesArray.push(`${file.name} (${(file.size / 1024).toFixed(1)} KB)`);
-
-      const text = await new Promise<string>((resolve) => {
-        const reader = new FileReader();
-        reader.onload = (event) => resolve(event.target?.result as string ?? "");
-        reader.readAsText(file);
-      });
-
-      const lines = text.split(/\r?\n/);
-      if (lines.length <= 1) continue;
-
-      const headers = lines[0].split(",").map(h => h.trim().toUpperCase());
-      const subidIdx = headers.indexOf("SUBID");
-      let revIdx = headers.indexOf("REV");
-      if (revIdx === -1) revIdx = headers.indexOf("REVENUE");
-      if (revIdx === -1) revIdx = headers.indexOf("AMOUNT");
-
-      for (let j = 1; j < lines.length; j++) {
-        if (!lines[j].trim()) continue;
-        const cells = lines[j].split(",");
-        const subidVal = cells[subidIdx]?.trim() ?? "";
-        const revVal = Number(cells[revIdx]?.trim() ?? 0);
-        if (subidVal) {
-          combinedRecords.push({ subid: subidVal, revenue: Number.isNaN(revVal) ? 0 : revVal });
-        }
-      }
-    }
-
-    setUploadedFilesSummary(namesArray);
-    setCombinedRevenueRecords(combinedRecords);
-  };
-
-  const handleCompileAnalytics = () => {
-    if (!startDate || !endDate || combinedCsvRecords.length === 0) return;
-    
-    setAllFetchedData(null);
-    setAnalyticsActive(false);
-    setStatus("loading");
-
-    setTimeout(async () => {
-      try {
-        const res = await fetch(`/api/mailCounts?startDate=${startDate}&endDate=${endDate}&et=ALL`);
-        const data = await res.json();
-        setAllFetchedData(data.breakdown ?? []);
-        setIsSelectorModalOpen(true);
-        setStatus("success");
-      } catch { 
-        setStatus("error"); 
-      }
-    }, 60);
-  };
-
-  const handleApplyAnalyticsFilters = () => {
-    setIsSelectorModalOpen(false);
-    setAnalyticsActive(true);
-  };
-
   return (
     <div className={`min-h-screen transition-colors duration-500 p-4 sm:p-8 flex flex-col justify-between ${isDarkMode ? "bg-[#090d16] text-zinc-100 font-sans" : "bg-slate-50 text-slate-900 font-sans"}`}>
-      <div className="w-full flex flex-col gap-6 flex-1">
+      
+      {/* EXPLICIT COMPLIANCE BOUND: STRICT 80% SCREEN WIDTH SIZE VIEWPORT CANVAS BOX BLOCK */}
+      <div className="w-full xl:max-w-[80vw] xl:mx-auto flex flex-col gap-6 flex-1">
         
         {/* GLOBAL PERSISTENT SPINNING PRELOADER OVERLAY */}
         {(isAppLoading || status === "loading") && (
@@ -489,9 +457,18 @@ export default function Home() {
               </button>
             </div>
           </div>
-          <button onClick={() => setIsDarkMode(!isDarkMode)} className={`p-2.5 rounded-full border text-xs font-bold transition ${isDarkMode ? "border-zinc-800 text-white hover:bg-zinc-900" : "border-slate-300 text-slate-800 hover:bg-slate-100"}`}>
-            {isDarkMode ? "🌙 Dark Mode" : "☀️ Light Mode"}
-          </button>
+          
+          <div className="flex items-center gap-3 w-full sm:w-auto justify-end">
+            {/* INTEGRATED PROGRESSIVE WEB APP (PWA) DISCOVERY INSTALL BUTTON ASSET */}
+            {showInstallBtn && (
+              <button onClick={handlePwaDownloadApp} className="px-4 py-2 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 text-white text-xs font-black shadow-lg shadow-purple-500/10 hover:opacity-90 active:scale-95 transition-all flex items-center gap-2 animate-bounce">
+                <span>📥</span> Download App
+              </button>
+            )}
+            <button onClick={() => setIsDarkMode(!isDarkMode)} className={`p-2.5 rounded-full border text-xs font-bold transition ${isDarkMode ? "border-zinc-800 text-white hover:bg-zinc-900" : "border-slate-300 text-slate-800 hover:bg-slate-100"}`}>
+              {isDarkMode ? "🌙 Dark Mode" : "☀️ Light Mode"}
+            </button>
+          </div>
         </header>
 
         {currentView === "standard" && (
@@ -524,7 +501,7 @@ export default function Home() {
                       {dashboardAccountWiseMetrics.map((item) => (
                         <div key={item.account} className="py-3 flex justify-between items-center gap-2">
                           <span className="font-sans font-bold text-zinc-300">{item.account}</span>
-                          <span className="font-black text-sky-400 shrink-0 text-base">{item.calculatedVolume.toLocaleString()} <span className="text-xs text-zinc-500 font-normal">({item.totalMails} items)</span></span>
+                          <span className="font-black text-sky-400 shrink-0 text-base">{item.calculatedVolume.toLocaleString()} <span className="text-[10px] text-zinc-500 font-normal">({item.totalMails} items)</span></span>
                         </div>
                       ))}
                     </div>
@@ -723,7 +700,7 @@ export default function Home() {
                   })}
                 </div>
 
-                {/* REDESIGNED COMPACT TEMPLATE LISTING FRAME - BLANK SPACINGS ELIMINATED */}
+                {/* THE RIGHT-SIDE FULL CANVASS DISPLAY PROJECTS CHOSEN TAB ITEMS COVERS ENTIRE WIDTH */}
                 <div className="flex-1 min-w-0">
                   {targetedActiveFocusedCard && (
                     <div className={`rounded-2xl border shadow-2xl flex flex-col justify-between overflow-hidden h-full w-full ${isDarkMode ? "bg-[#111726] border-white/5" : "bg-white border-slate-200"}`}>
@@ -739,7 +716,6 @@ export default function Home() {
                         </div>
                       </div>
 
-                      {/* COMPACT VIEW CONTAINER WITH BALANCED ROW-PADDING PACKING */}
                       <div className={`p-5 flex-1 flex flex-col overflow-y-auto max-h-[600px] divide-y ${isDarkMode ? "divide-zinc-800/40" : "divide-slate-200"}`}>
                         {targetedActiveFocusedCard.templates.map((tmpl, tIdx) => (
                           <div key={tIdx} className="py-4 first:pt-0 last:pb-0 flex flex-col gap-2.5 font-sans">
@@ -751,7 +727,6 @@ export default function Home() {
                               </span>
                             </div>
                             
-                            {/* ALIGNED GRID LABELS WITHOUT SUFFIX CHARACTERS */}
                             <div className="grid grid-cols-2 md:grid-cols-4 gap-x-6 gap-y-2.5 text-xs">
                               <div>
                                 <span className="block text-[10px] font-bold uppercase tracking-wider text-zinc-500">Mails Used</span>
