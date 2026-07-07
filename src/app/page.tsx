@@ -233,7 +233,6 @@ export default function Home() {
     return Array.from(unique).sort();
   }, [allFetchedData]);
 
-  // SAFE DICTIONARY TRANSLATOR MATRIX MAPPING TAB NAMES TO REVENUE SUBID VALUES PERFECTLY
   function getReportSubidAccountName(sheetTabName: string): string {
     const txt = sheetTabName.replace(/[^a-zA-Z0-9]/g, "").toUpperCase();
     if (txt.includes("JSG43")) return "JSG43MET";
@@ -249,6 +248,24 @@ export default function Home() {
     if (txt.includes("JSG48MET") || txt === "JSG48") return "JSG48MET";
     if (txt.includes("JSG53")) return "JSG53MET";
     return txt;
+  }
+
+  // ALIAS MATCHER DICTIONARY: Normalizes sheet prefixes to match raw report entries perfectly
+  function getNormalizedTemplateAlias(sheetTemplate: string): string {
+    const original = sheetTemplate.trim().toUpperCase();
+    if (original === "K_RGR_905_A5") return "RGR_905_A5";
+    if (original === "K_RGR_905_A1") return "RGR_905_A1";
+    if (original === "P_R_ADT_542_OFF_IMG") return "ADT_542_OFF_IMG";
+    if (original === "P_R_AHS_403_OG2") return "AHS_403_OG2";
+    if (original === "K_RGR_905_A2") return "RGR_905_A2";
+    if (original === "K_RGR_905_A4") return "RGR_905_A4";
+    if (original === "E_RGR_029_D") return "RGR_029_D";
+    if (original === "E_RGR_028_D") return "RGR_028_D";
+    if (original === "P_R_RHF_009_IMG") return "RHF_009_IMG";
+    if (original === "E_R_RGR_2083_RM") return "RGR_2083_RM";
+    if (original === "E_RGR_031_D") return "RGR_031_D";
+    if (original === "P_R_TRU_541_OG2") return "TRU_541_OG2";
+    return original;
   }
 
   // REVENUE MATRIX GENERATION AND COMPILATION CALCULATOR ENGINE
@@ -281,7 +298,8 @@ export default function Home() {
           const parsedTemplateName = subidStr.substring(0, lastUnderscoreIdx).trim().toUpperCase();
           const parsedAccountName = subidStr.substring(lastUnderscoreIdx + 1).trim().replace(/[^a-zA-Z0-9]/g, "").toUpperCase();
 
-          const cleanSheetTemplate = row.template.trim().toUpperCase();
+          // Apply alias dictionary lookup to bypass prefix mismatch layers
+          const cleanSheetTemplate = getNormalizedTemplateAlias(row.template);
           const cleanSheetAccount = getReportSubidAccountName(accountName).toUpperCase();
 
           return parsedTemplateName === cleanSheetTemplate && parsedAccountName === cleanSheetAccount;
@@ -640,7 +658,6 @@ export default function Home() {
                               </span>
                             </div>
                             
-                            {/* INTEGRATED EXPANDED ROW BLOCK LOG DISPLAYING TOTAL METRICS MATRIX TRACKING VALUE */}
                             <div className={`grid grid-cols-2 gap-y-2 text-[10px] pt-1.5 border-t border-dashed mt-1 ${isDarkMode ? "text-zinc-400 border-zinc-800" : "text-slate-500 border-slate-200"}`}>
                               <div>
                                 <span className="block text-[9px] font-sans font-bold uppercase tracking-wide text-zinc-500">Mails Used</span>
