@@ -118,7 +118,7 @@ export default function Home() {
   const [isSelectorModalOpen, setIsSelectorModalOpen] = useState(false);
   const [selectedTabFocus, setSelectedTabFocus] = useState<string>("");
 
-  // Native PWA Prompt States
+  // Native PWA Deferred Installation Prompt Holder State
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [showInstallBtn, setShowInstallBtn] = useState(false);
 
@@ -175,7 +175,7 @@ export default function Home() {
     if (cleanCamp === "RGR") return { includes: ["RGR"], excludes: [] };
     if (cleanCamp === "ICO") return { includes: ["ICO"], excludes: [] };
     if (cleanCamp === "AHS_AD" || cleanCamp.startsWith("AHS")) return { includes: ["AHS"], excludes: ["DB", "XCE", "GZ", "XC", "ES"] };
-    if (cleanCamp === "SHW_ES" || cleanCamp.startsWith("SHW")) return { includes: ["SHW", "ES"], excludes: ["DB", "XCE", "GZ", "XC"] };
+    if (cleanCamp === "SHW_ES" || cleanCamp.startsWith("SHW")) return { includes: ["SHW"], excludes: ["DB", "XCE", "GZ", "XC"] };
     if (cleanCamp === "XCE_AIR" || cleanCamp === "AIR") return { includes: ["AIR"], excludes: [] };
     if (cleanCamp === "FIR_XC" || cleanCamp.startsWith("FIR")) return { includes: ["FIR"], excludes: [] };
     if (cleanCamp === "HEC_AD" || cleanCamp.startsWith("HEC")) return { includes: ["HEC"], excludes: [] };
@@ -190,7 +190,7 @@ export default function Home() {
     if (cleanCamp === "EFA_ES") return { includes: ["EFA"], excludes: ["DB", "XCE", "GZ", "XC"] };  
     if (cleanCamp === "EAC_CMAD") return { includes: ["EAC"], excludes: ["DB", "XCE", "GZ", "XC"] };
     if (cleanCamp === "CH_XC" || cleanCamp.startsWith("CH")) return { includes: ["CH"], excludes: [] };
-    if (cleanCamp === "LBH_DB" || cleanCamp.startsWith("LBH")) return { includes: ["LBH", "DB"], excludes: ["XCE", "GZ", "XC", "ES"] };
+    if (cleanCamp === "LBH_DB" || cleanCamp.startsWith("LBH")) return { includes: ["LBH"], excludes: ["XCE", "GZ", "XC", "ES"] };
     if (cleanCamp === "NDR" || cleanCamp.startsWith("NDR")) return { includes: ["NDR", "CMAD"], excludes: ["XCE", "XC", "ES"] };
     if (cleanCamp === "ZBH" || cleanCamp.startsWith("ZBH")) return { includes: ["ZBH", "ES"], excludes: ["XCE", "XC", "DB"] };
     if (cleanCamp === "WS" || cleanCamp.startsWith("WS")) return { includes: ["WS", "CMAD"], excludes: ["XCE", "XC", "ES"] };
@@ -493,7 +493,7 @@ export default function Home() {
             {!allFetchedData && (
               <div className="flex flex-col gap-6 animate-fadeIn">
                 <section className={`rounded-xl p-6 border shadow-xl ${isDarkMode ? "bg-[#111726] border-white/5" : "bg-white border-slate-200"}`}>
-                  <h3 className="text-xs font-black uppercase tracking-widest text-emerald-500 mb-4">🔥 Top Active Campaigns Campaigns Matrix Split</h3>
+                  <h3 className="text-xs font-black uppercase tracking-widest text-emerald-500 mb-4">🔥 Top Active Campaigns Matrix Split</h3>
                   {isDashboardLoading ? (
                     <div className="h-12 flex items-center justify-center text-xs text-zinc-400 font-medium">Syncing live dashboard summaries...</div>
                   ) : topFiveCampaignsSummary.length === 0 ? (
@@ -513,7 +513,7 @@ export default function Home() {
 
                 <div className="grid gap-6 grid-cols-1 md:grid-cols-2">
                   <section className={`rounded-xl p-6 border shadow-xl ${isDarkMode ? "bg-[#111726] border-white/5" : "bg-white border-slate-200"}`}>
-                    <h3 className="text-xs font-black uppercase tracking-widest text-sky-400 mb-4">📋 Origin Account Wise Sending Splits</h3>
+                    <h3 className="text-xs font-black uppercase tracking-wider text-sky-400 mb-4">📋 Origin Account Wise Sending Splits</h3>
                     <div className={`max-h-[350px] overflow-y-auto divide-y font-mono text-sm pr-2 ${isDarkMode ? "divide-zinc-800/40 text-zinc-300" : "divide-slate-200"}`}>
                       {dashboardAccountWiseMetrics.map((item) => (
                         <div key={item.account} className="py-3 flex justify-between items-center gap-2">
@@ -525,7 +525,7 @@ export default function Home() {
                   </section>
 
                   <section className={`rounded-xl p-6 border shadow-xl ${isDarkMode ? "bg-[#111726] border-white/5" : "bg-white border-slate-200"}`}>
-                    <h3 className="text-xs font-black uppercase tracking-widest text-purple-400 mb-4">📊 Broad Campaign Aggregate Metrics</h3>
+                    <h3 className="text-xs font-black uppercase tracking-wider text-purple-400 mb-4">📊 Broad Campaign Aggregate Metrics</h3>
                     <div className={`max-h-[350px] overflow-y-auto divide-y font-mono text-sm pr-2 ${isDarkMode ? "divide-zinc-800/40 text-zinc-300" : "divide-slate-200"}`}>
                       {dashboardCampaignWiseMetrics.map((item) => (
                         <div key={item.campaign} className="py-3 flex justify-between items-center gap-2">
