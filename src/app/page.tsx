@@ -165,6 +165,7 @@ export default function Home() {
     setAllFetchedData(null);
     setSelectedCampaign("");
     setSelectedTemplate("");
+    setSelectedCardAccount(null);
     setStatus("loading");
 
     setTimeout(async () => {
@@ -266,6 +267,23 @@ export default function Home() {
     return original;
   }
 
+  function formatTabBeautifulLabel(tabName: string): string {
+    const raw = tabName.replace(/[^a-zA-Z0-9]/g, "").toUpperCase();
+    if (raw.includes("JSG43")) return "JSG43 (STACK 13)";
+    if (raw.includes("JSG44")) return "JSG44 (STACK 11)";
+    if (raw.includes("JSG50")) return "JSG50 (STACK 7)";
+    if (raw.includes("JSG38NEW") || raw === "JSG38N" || raw === "JSG38") return "JSG38NEW (STACK 12)";
+    if (raw.includes("JSG40")) return "JSG40 (STACK 12)";
+    if (raw.includes("JSG47")) return "JSG47 (STACK 7)";
+    if (raw.includes("JSG26")) return "JSG26 (STACK 7)";
+    if (raw.includes("JSG36")) return "JSG36 (STACK 6)";
+    if (raw.includes("JSG41")) return "JSG41 (STACK 1)";
+    if (raw.includes("JSG45")) return "JSG45 (STACK 1)";
+    if (raw.includes("JSG48")) return "JSG48MET";
+    if (raw.includes("JSG53")) return "JSG53 (STACK 11)";
+    return tabName;
+  }
+
   const revenueCalculatedCards = useMemo(() => {
     if (!allFetchedData || !analyticsActive) return [];
 
@@ -285,7 +303,7 @@ export default function Home() {
       accountGroups.set(key, existing);
     });
 
-    const parsedCards = Array.from(accountGroups.entries()).map(([accountName, rows]) => {
+    return Array.from(accountGroups.entries()).map(([accountName, rows]) => {
       const templatesList = rows.map(row => {
         const matchedRevenueHits = combinedCsvRecords.filter(rec => {
           const subidStr = rec.subid.trim();
@@ -320,8 +338,6 @@ export default function Home() {
       const cardTotalRevenue = templatesList.reduce((sum, t) => sum + t.revenue, 0);
       return { accountName, templates: templatesList, cardTotalRevenue };
     });
-
-    return parsedCards;
   }, [allFetchedData, analyticsActive, analyticsEt, analyticsCampaign, combinedCsvRecords]);
 
   const distinctRevenueAccountTabs = useMemo(() => {
@@ -399,11 +415,6 @@ export default function Home() {
     }, 60);
   };
 
-  const handleApplyAnalyticsFilters = () => {
-    setIsSelectorModalOpen(false);
-    setAnalyticsActive(true);
-  };
-
   return (
     <div className={`min-h-screen transition-colors duration-500 p-4 sm:p-8 flex flex-col justify-between ${isDarkMode ? "bg-[#090d16] text-zinc-100" : "bg-slate-50 text-slate-900"}`}>
       <div className="w-full flex flex-col gap-6 flex-1">
@@ -452,7 +463,7 @@ export default function Home() {
                 <button onClick={() => setIsSelectorModalOpen(false)} className="h-10 px-4 rounded-lg bg-zinc-800 text-xs font-bold text-zinc-300 hover:bg-zinc-700 transition">
                   Cancel
                 </button>
-                <button onClick={handleApplyAnalyticsFilters} className="h-10 px-5 rounded-lg bg-purple-600 text-xs font-bold text-white hover:bg-purple-500 transition shadow-lg">
+                <button onClick={() => { setIsSelectorModalOpen(false); setAnalyticsActive(true); if(revenueCalculatedCards[0]) setSelectedTabFocus(revenueCalculatedCards[0].accountName); }} className="h-10 px-5 rounded-lg bg-purple-600 text-xs font-bold text-white hover:bg-purple-500 transition shadow-lg">
                   Show Results
                 </button>
               </div>
@@ -582,7 +593,7 @@ export default function Home() {
                       <p className="text-xl font-black mt-1 text-zinc-100 truncate">{selectedCampaign}</p>
                     </div>
                     <div>
-                      <span className="text-xs uppercase font-bold text-zinc-400 tracking-wider">Mails Count</span>
+                      <span className="text-xs uppercase font-bold text-zinc-400 tracking-wider">Mails Used</span>
                       <p className="text-3xl font-black text-sky-400 mt-1">{globalCampaignCalculatedTotals.totalMails.toLocaleString()}</p>
                     </div>
                     <div>
@@ -604,7 +615,7 @@ export default function Home() {
                           {card.templates.map((t, idx) => (
                             <div key={idx} className="flex justify-between items-start gap-3 border-b border-dashed border-zinc-800/60 pb-1.5 last:border-0">
                               <span className="font-sans font-bold truncate break-all text-zinc-400">{t.name}</span>
-                              <span className="font-black text-zinc-200 shrink-0">{t.count} m</span>
+                              <span className="font-black text-zinc-200 shrink-0">{t.count}</span>
                             </div>
                           ))}
                         </div>
@@ -677,27 +688,31 @@ export default function Home() {
             {analyticsActive && allFetchedData && revenueCalculatedCards.length > 0 && (
               <div className="flex flex-col lg:flex-row gap-6 items-stretch animate-fadeIn w-full">
                 
-                {/* INTERACTIVE LEFT-SIDE ACCOUNT TOGGLE NAVIGATOR */}
-                <div className={`lg:w-1/4 shrink-0 rounded-2xl border p-4 flex flex-row lg:flex-col gap-2 overflow-auto shadow-xl ${isDarkMode ? "bg-[#111726] border-white/5" : "bg-white border-slate-200"}`}>
-                  <div className="hidden lg:block border-b border-zinc-800 pb-2 mb-2">
+                {/* INTERACTIVE LEFT-SIDE ACCOUNT TOGGLE NAVIGATOR CAPSULES */}
+                <div className={`lg:w-1/3 shrink-0 rounded-2xl p-4 flex flex-row lg:flex-col gap-3 overflow-auto shadow-2xl ${isDarkMode ? "bg-[#111726]/40 border border-white/5" : "bg-white border-slate-200"}`}>
+                  <div className="hidden lg:block border-b border-zinc-800/60 pb-2 mb-1">
                     <span className="text-[10px] uppercase font-black tracking-widest text-zinc-500">Workspace Ledger</span>
                     <h4 className="text-xs font-black text-purple-400 uppercase mt-0.5">Select Account Tab</h4>
                   </div>
                   {distinctRevenueAccountTabs.map((tabName) => {
                     const isActive = (selectedTabFocus || distinctRevenueAccountTabs[0])?.toUpperCase() === tabName.toUpperCase();
+                    const cardData = revenueCalculatedCards.find(c => c.accountName === tabName);
                     return (
                       <button 
                         key={tabName}
                         onClick={() => setSelectedTabFocus(tabName)}
-                        className={`px-4 py-3 rounded-xl text-xs font-black tracking-wider text-left transition shrink-0 whitespace-nowrap lg:whitespace-normal uppercase flex justify-between items-center ${
+                        className={`px-4 py-3 rounded-xl text-sm font-bold tracking-wide text-left transition-all duration-300 transform ease-in-out shrink-0 whitespace-nowrap lg:whitespace-normal flex justify-between items-center shadow-sm hover:translate-x-1 ${
                           isActive 
-                            ? "bg-purple-600 text-white shadow-lg font-black scale-[1.02]" 
-                            : isDarkMode ? "bg-slate-950/50 text-zinc-400 border border-zinc-800/40 hover:text-zinc-200 hover:bg-slate-900" : "bg-slate-100 text-slate-700 hover:bg-slate-200"
+                            ? "bg-purple-600 text-white shadow-purple-500/20 font-black" 
+                            : isDarkMode ? "bg-[#161f33] text-zinc-300 border border-zinc-800/60 hover:text-zinc-100 hover:bg-[#1c2942]" : "bg-slate-100 text-slate-700 hover:bg-slate-200"
                         }`}
                       >
-                        <span>📂 {tabName}</span>
-                        <span className={`text-[10px] ml-2 px-1.5 py-0.5 rounded ${isActive ? "bg-white/20 text-white" : "bg-zinc-800 text-zinc-400"}`}>
-                          ${revenueCalculatedCards.find(c => c.accountName === tabName)?.cardTotalRevenue.toLocaleString() ?? "0"}
+                        <div className="flex items-center gap-2.5">
+                          <span className="text-base">📁</span>
+                          <span className="truncate max-w-[160px] lg:max-w-none">{formatTabBeautifulLabel(tabName)}</span>
+                        </div>
+                        <span className={`text-xs font-mono font-black ml-3 px-2.5 py-1 rounded-lg transition-colors ${isActive ? "bg-white/20 text-white" : "bg-[#090d16] text-purple-400 border border-purple-500/10"}`}>
+                          ${cardData?.cardTotalRevenue.toLocaleString() ?? "0"}
                         </span>
                       </button>
                     );
@@ -712,7 +727,7 @@ export default function Home() {
                       <div className={`p-5 border-b flex justify-between items-center ${isDarkMode ? "bg-slate-950/60 border-zinc-800 text-white" : "bg-slate-100 border-slate-200 text-slate-900"}`}>
                         <div className="flex items-center gap-3">
                           <span className="h-2.5 w-2.5 rounded-full bg-emerald-500 animate-ping" />
-                          <h2 className="text-xl font-black text-emerald-400 tracking-wide uppercase">{targetedActiveFocusedCard.accountName} Matrix Workspace</h2>
+                          <h2 className="text-xl font-black text-emerald-400 tracking-wide uppercase">{getReportSubidAccountName(targetedActiveFocusedCard.accountName)} Workspace</h2>
                         </div>
                         <div className="text-right">
                           <span className="text-[10px] text-zinc-500 font-black uppercase tracking-wider block">Card Total Revenue</span>
@@ -725,20 +740,20 @@ export default function Home() {
                           <div key={tIdx} className="pt-5 first:pt-0 flex flex-col gap-3 font-mono">
                             
                             <div className="flex justify-between items-start gap-4">
-                              <h3 className={`font-sans text-lg font-black break-all tracking-tight leading-snug ${isDarkMode ? "text-zinc-100" : "text-slate-900"}`}>{tmpl.templateName}</h3>
+                              <h3 className={`font-sans text-xl font-black break-all tracking-tight leading-snug ${isDarkMode ? "text-zinc-100" : "text-slate-900"}`}>{tmpl.templateName}</h3>
                               <span className={`px-3 py-1 rounded-md text-xs font-black uppercase shrink-0 tracking-widest ${tmpl.conversions > 0 ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 shadow-sm" : "bg-rose-500/10 text-rose-400 border border-rose-500/20"}`}>
-                                {tmpl.conversions > 0 ? `🏆 ${tmpl.conversions} Conversions` : "⚠️ No Revenue"}
+                                {tmpl.conversions > 0 ? `🏆 ${tmpl.conversions} Conv` : "⚠️ No Revenue"}
                               </span>
                             </div>
                             
-                            <div className={`grid grid-cols-2 md:grid-cols-4 gap-4 text-xs p-4 rounded-xl ${isDarkMode ? "bg-slate-950/40 border border-zinc-800/50 text-zinc-400" : "bg-slate-50 border-slate-100 text-slate-500"}`}>
+                            <div className={`grid grid-cols-2 md:grid-cols-4 gap-4 text-xs p-4 rounded-xl ${isDarkMode ? "bg-slate-950/40 border border-zinc-800/50 text-zinc-400" : "bg-slate-50 border border-slate-100 text-slate-500"}`}>
                               <div>
                                 <span className="block text-[10px] font-sans font-bold uppercase tracking-wider text-zinc-500 mb-0.5">Mails Used</span>
-                                <span className={`text-sm font-black ${isDarkMode ? "text-zinc-300" : "text-slate-800"}`}>{tmpl.mailsUsed.toLocaleString()} m</span>
+                                <span className={`text-sm font-black ${isDarkMode ? "text-zinc-300" : "text-slate-800"}`}>{tmpl.mailsUsed.toLocaleString()}</span>
                               </div>
                               <div>
                                 <span className="block text-[10px] font-sans font-bold uppercase tracking-wider text-zinc-500 mb-0.5">Total Sending Volume</span>
-                                <span className="text-sm font-black text-sky-400">{tmpl.sendingVolume.toLocaleString()} vol</span>
+                                <span className="text-sm font-black text-sky-400">{tmpl.sendingVolume.toLocaleString()}</span>
                               </div>
                               <div>
                                 <span className="block text-[10px] font-sans font-bold uppercase tracking-wider text-zinc-500 mb-0.5">Revenue</span>
@@ -746,8 +761,8 @@ export default function Home() {
                               </div>
                               <div>
                                 <span className="block text-[10px] font-sans font-bold uppercase tracking-wider text-zinc-500 mb-0.5">Count / Conversion</span>
-                                <span className={`text-sm font-black ${tmpl.efficiency ? "text-purple-400" : "text-rose-500"}`}>
-                                  {tmpl.efficiency ? `${tmpl.efficiency.toLocaleString()} vol` : "N/A"}
+                                <span className={`text-sm font-black ${tmpl.efficiency ? "text-sky-400" : "text-rose-500"}`}>
+                                  {tmpl.efficiency ? tmpl.efficiency.toLocaleString() : "N/A"}
                                 </span>
                               </div>
                             </div>
