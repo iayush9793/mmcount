@@ -80,6 +80,7 @@ export default function Home() {
   const getFilterRule = (campaignName: string): FilterRule => {
     const cleanCamp = campaignName.toUpperCase().trim();
     if (cleanCamp === "RGR") return { includes: ["RGR"], excludes: [] };
+     if (cleanCamp === "ARW_AD") return { includes: ["ARW"], excludes: [] };
     if (cleanCamp === "ICO") return { includes: ["ICO"], excludes: [] };
     if (cleanCamp === "AHS_AD" || cleanCamp.startsWith("AHS")) return { includes: ["AHS"], excludes: ["DB", "XCE", "GZ", "XC", "ES"] };
     if (cleanCamp === "SHW_ES" || cleanCamp.startsWith("SHW")) return { includes: ["SHW", "ES"], excludes: ["DB", "XCE", "GZ", "XC"] };
@@ -92,7 +93,7 @@ export default function Home() {
     if (cleanCamp === "FGLO_DB" || cleanCamp.startsWith("FGLO")) return { includes: ["FGLO"], excludes: [] };
     if (cleanCamp === "ADT_AD" || cleanCamp.startsWith("ADT")) return { includes: ["ADT"], excludes: ["DB", "XCE", "GZ", "XC"] };
     if (cleanCamp.includes("RYH FLOORING") || cleanCamp.includes("RYH_FLOORING")) return { includes: ["RHF"], excludes: ["DB", "XCE", "GZ", "XC"] };
-    if (cleanCamp === "JG_AD") return { includes: ["JG"], excludes: ["DB", "XCE", "GZ", "XC"] };
+    if (cleanCamp === "JG_CMAD") return { includes: ["JG"], excludes: ["DB", "XCE", "GZ", "XC"] };
     if (cleanCamp === "SQMH_ES") return { includes: ["SQMH"], excludes: ["DB", "XCE", "GZ", "XC"] };
     if (cleanCamp === "EFA_ES") return { includes: ["EFA"], excludes: ["DB", "XCE", "GZ", "XC"] };  
     if (cleanCamp === "EAC_CMAD") return { includes: ["EAC"], excludes: ["DB", "XCE", "GZ", "XC"] };
