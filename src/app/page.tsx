@@ -100,6 +100,7 @@ export default function Home() {
     if (cleanCamp === "CH_XC" || cleanCamp.startsWith("CH")) return { includes: ["CH"], excludes: [] };
     if (cleanCamp === "LBH_DB" || cleanCamp.startsWith("LBH")) return { includes: ["LBH", "DB"], excludes: ["XCE", "GZ", "XC", "ES"] };
     if (cleanCamp === "NDR" || cleanCamp.startsWith("NDR")) return { includes: ["NDR", "CMAD"], excludes: ["XCE", "XC", "ES"] };
+     if (cleanCamp === "NDR" || cleanCamp.startsWith("NDR")) return { includes: ["NDR", "GZ"], excludes: ["XCE", "XC", "ES"] };
     if (cleanCamp === "ZBH" || cleanCamp.startsWith("ZBH")) return { includes: ["ZBH", "ES"], excludes: ["XCE", "XC", "DB"] };
     if (cleanCamp === "WS" || cleanCamp.startsWith("WS")) return { includes: ["WS", "CMAD"], excludes: ["XCE", "XC", "ES"] };
     if (cleanCamp === "QLR" || cleanCamp.startsWith("QLR")) return { includes: ["QLR", "ES"], excludes: ["XCE", "XC", "DB"] };
