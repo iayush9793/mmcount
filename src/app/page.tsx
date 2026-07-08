@@ -176,7 +176,7 @@ export default function Home() {
     if (cleanCamp === "ARW_AD") return { includes: ["ARW"], excludes: [] };
     if (cleanCamp === "ICO") return { includes: ["ICO"], excludes: [] };
     if (cleanCamp === "AHS_AD" || cleanCamp.startsWith("AHS")) return { includes: ["AHS"], excludes: ["DB", "XCE", "GZ", "XC", "ES"] };
-    if (cleanCamp === "SHW_ES" || cleanCamp.startsWith("SHW")) return { includes: ["SHW", "ES"], excludes: ["DB", "XCE", "GZ", "XC"] };
+    if (cleanCamp === "SHW_ES" || cleanCamp.startsWith("SHW")) return { includes: ["SHW"], excludes: ["DB", "XCE", "GZ", "XC"] };
     if (cleanCamp === "XCE_AIR" || cleanCamp === "AIR") return { includes: ["AIR"], excludes: [] };
     if (cleanCamp === "FIR_XC" || cleanCamp.startsWith("FIR")) return { includes: ["FIR"], excludes: [] };
     if (cleanCamp === "HEC_AD" || cleanCamp.startsWith("HEC")) return { includes: ["HEC"], excludes: [] };
@@ -466,6 +466,58 @@ export default function Home() {
       {/* 80% WIDTH CONTAINER LAYOUT */}
       <div className="w-full xl:max-w-[80vw] xl:mx-auto flex flex-col gap-6 flex-1">
         
+        {/* GLOBAL PERSISTENT SPINNING PRELOADER OVERLAY */}
+        {(isAppLoading || status === "loading") && (
+          <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-slate-950/80 backdrop-blur-md">
+            <div className="flex flex-col items-center gap-5 bg-slate-900 border border-white/5 p-8 rounded-2xl shadow-2xl max-w-sm w-full mx-4 text-center">
+              <div className="relative h-12 w-12">
+                <div className="absolute inset-0 rounded-full border-4 border-zinc-800" />
+                <div className="absolute inset-0 rounded-full border-4 border-t-emerald-500 border-r-emerald-500 animate-spin" />
+              </div>
+              <h3 className="text-base font-black text-white tracking-wide uppercase">Compiling System Metrics</h3>
+              <p className="text-xs text-zinc-400">Syncing and parsing live ledger fields...</p>
+            </div>
+          </div>
+        )}
+
+        {/* STEP 2: DYNAMIC FILTER SELECTOR POPUP MODAL CONTROL UTILITY */}
+        {isSelectorModalOpen && allFetchedData && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/75 backdrop-blur-sm p-4 animate-fadeIn">
+            <div className="w-full max-w-md rounded-2xl border shadow-2xl p-6 flex flex-col bg-[#111726] border-white/10 text-white gap-4">
+              <div>
+                <h3 className="text-base font-black uppercase tracking-wider text-purple-400">🎯 Filter Target Parameters</h3>
+                <p className="text-xs text-zinc-400 mt-0.5">Isolate report matrices frames to narrow audit views</p>
+              </div>
+
+              <div className="flex flex-col gap-3">
+                <div className="flex flex-col gap-1">
+                  <label className="text-xs font-semibold text-zinc-400">Filter Account (ET)</label>
+                  <select value={analyticsEt} onChange={e => setAnalyticsEt(e.target.value)} className="h-11 rounded-lg px-3 text-sm outline-none border bg-slate-950 border-zinc-800 text-white focus:border-purple-500">
+                    <option value="ALL">ALL ACCOUNTS</option>
+                    {ets.map(e => <option key={e} value={e}>{e}</option>)}
+                  </select>
+                </div>
+                <div className="flex flex-col gap-1">
+                  <label className="text-xs font-semibold text-zinc-400">Filter Campaign Segment</label>
+                  <select value={analyticsCampaign} onChange={e => setAnalyticsCampaign(e.target.value)} className="h-11 rounded-lg px-3 text-sm outline-none border bg-slate-950 border-zinc-800 text-white focus:border-purple-500">
+                    <option value="ALL">ALL CAMPAIGNS</option>
+                    {analyticsCampaignOptions.map(c => <option key={c} value={c}>{c}</option>)}
+                  </select>
+                </div>
+              </div>
+
+              <div className="flex gap-2 justify-end mt-2">
+                <button onClick={() => setIsSelectorModalOpen(false)} className="h-10 px-4 rounded-lg bg-zinc-800 text-xs font-bold text-zinc-300 hover:bg-zinc-700 transition">
+                  Cancel
+                </button>
+                <button onClick={handleApplyAnalyticsFilters} className="h-10 px-5 rounded-lg bg-purple-600 text-xs font-bold text-white hover:bg-purple-500 transition shadow-lg">
+                  Show Results
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
         <header className={`border-b pb-5 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 ${isDarkMode ? "border-white/10" : "border-slate-200"}`}>
           <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 w-full sm:w-auto">
             <div className="relative h-20 w-48 shrink-0">
@@ -589,7 +641,7 @@ export default function Home() {
                   </div>
                 </section>
 
-                {selectedCampaign && selectedTemplate && globalCampaignCalculatedTotals && (
+                {selectedCampaign && selectedTemplate && globalCampaignCalculTotals && (
                   <section className={`rounded-xl p-6 border shadow-xl grid gap-4 grid-cols-1 sm:grid-cols-3 ${isDarkMode ? "bg-[#111726] border-emerald-500/20 text-white" : "bg-white border-slate-200"}`}>
                     <div>
                       <span className="text-xs uppercase font-bold text-zinc-400 tracking-wider">Campaign Focus</span>
@@ -643,7 +695,7 @@ export default function Home() {
                 <h3 className="text-xs font-black uppercase tracking-widest text-purple-400">📈 Step 1: Upload Conversion Statement & Specify Bounds</h3>
                 
                 {analyticsActive && (
-                  <button onClick={() => setIsSelectorModalOpen(true)} className="px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-black font-sans text-xs transition uppercase tracking-wider shadow-lg active:scale-95 duration-150">
+                  <button onClick={() => setIsSelectorModalOpen(true)} className="px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-black font-sans text-xs transition uppercase tracking-wider shadow-xl active:scale-95 duration-150">
                     🔄 Change Filters (AGAIN)
                   </button>
                 )}
@@ -704,7 +756,7 @@ export default function Home() {
                       <button 
                         key={tabName}
                         onClick={() => setSelectedTabFocus(tabName)}
-                        className={`px-4 py-3 rounded-xl text-sm font-bold tracking-wide text-left transition-all duration-300 transform ease-in-out shrink-0 whitespace-nowrap lg:whitespace-normal flex justify-between items-center shadow-sm hover:translate-x-1 ${
+                        className={`px-4 py-3 rounded-xl text-sm font-bold tracking-wide text-left transition-all duration-300 transform ease-in-out shrink-0 whitespace-nowrap lg:whitespace-normal flex justify-between items-center ${
                           isActive 
                             ? "bg-purple-600 text-white shadow-purple-500/20 font-black" 
                             : isDarkMode ? "bg-[#161f33] text-zinc-300 border border-zinc-800/60 hover:text-zinc-100 hover:bg-[#1c2942]" : "bg-slate-100 text-slate-700 hover:bg-slate-200"
