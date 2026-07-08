@@ -18,6 +18,74 @@ interface RevenueRecord {
   revenue: number;
 }
 
+interface BeforeInstallPromptEvent extends Event {
+  readonly platforms: Array<string>;
+  readonly userChoice: Promise<{
+    outcome: "accepted" | "dismissed";
+    allowed_platforms: Array<string>;
+  }>;
+  prompt(): Promise<void>;
+}
+
+// GLOBAL UTILITY MAPPERS AND RESOLVERS
+function rowMultiplier(tabName: string): number {
+  const clean = tabName.replace(/[^a-zA-Z0-9]/g, "").toUpperCase();
+  return (clean.includes("JSG40") || clean.includes("JSG38")) ? 2000 : 5000;
+}
+
+// Exact Account Suffix Conversions
+function getReportSubidAccountName(sheetTabName: string): string {
+  const txt = sheetTabName.replace(/[^a-zA-Z0-9]/g, "").toUpperCase();
+  if (txt.includes("JSG43")) return "JSG43MET";
+  if (txt.includes("JSG44")) return "JSG44";
+  if (txt.includes("JSG50")) return "JSG50";
+  if (txt.includes("JSG38NEW") || txt === "JSG38N" || txt === "JSG38") return "JSG38N";
+  if (txt.includes("JSG40")) return "JSG40";
+  if (txt.includes("JSG47")) return "JSG47";
+  if (txt.includes("JSG26")) return "JSG26MET";
+  if (txt.includes("JSG36")) return "JSG36MET";
+  if (txt.includes("JSG41")) return "JSG41MET";
+  if (txt.includes("JSG45")) return "JSG45";
+  if (txt.includes("JSG48MET") || txt === "JSG48") return "JSG48MET";
+  if (txt.includes("JSG53")) return "JSG53MET";
+  return txt;
+}
+
+function getNormalizedTemplateAlias(sheetTemplate: string): string {
+  const original = sheetTemplate.trim().toUpperCase();
+  if (original === "K_RGR_905_A5") return "RGR_905_A5";
+  if (original === "K_RGR_905_A1") return "RGR_905_A1";
+  if (original === "P_R_ADT_542_OFF_IMG") return "ADT_542_OFF_IMG";
+  if (original === "P_R_AHS_403_OG2") return "AHS_403_OG2";
+  if (original === "K_RGR_905_A2") return "RGR_905_A2";
+  if (original === "K_RGR_905_A4") return "RGR_905_A4";
+  if (original === "E_RGR_029_D") return "RGR_029_D";
+  if (original === "E_RGR_028_D") return "RGR_028_D";
+  if (original === "P_R_RHF_009_IMG") return "RHF_009_IMG";
+  if (original === "E_R_RGR_2083_RM") return "RGR_2083_RM";
+  if (original === "E_RGR_031_D") return "RGR_031_D";
+  if (original === "P_R_TRU_541_OG2") return "TRU_541_OG2";
+  if (original === "RGR_KARTIK0905_NV") return "RGR_KARTIK0905";
+  return original;
+}
+
+function formatTabBeautifulLabel(tabName: string): string {
+  const raw = tabName.replace(/[^a-zA-Z0-9]/g, "").toUpperCase();
+  if (raw.includes("JSG43")) return "JSG43 (STACK 13)";
+  if (raw.includes("JSG44")) return "JSG44 (STACK 11)";
+  if (raw.includes("JSG50")) return "JSG50 (STACK 7)";
+  if (raw.includes("JSG38NEW") || raw === "JSG38N" || raw === "JSG38") return "JSG38NEW (STACK 12)";
+  if (raw.includes("JSG40")) return "JSG40 (STACK 12)";
+  if (raw.includes("JSG47")) return "JSG47 (STACK 7)";
+  if (raw.includes("JSG26")) return "JSG26 (STACK 7)";
+  if (raw.includes("JSG36")) return "JSG36 (STACK 6)";
+  if (raw.includes("JSG41")) return "JSG41 (STACK 1)";
+  if (raw.includes("JSG45")) return "JSG45 (STACK 1)";
+  if (raw.includes("JSG48")) return "JSG48MET";
+  if (raw.includes("JSG53")) return "JSG53 (STACK 11)";
+  return tabName;
+}
+
 export default function Home() {
   const [isAppLoading, setIsAppLoading] = useState(true);
   const [isDarkMode, setIsDarkMode] = useState(true);
@@ -50,11 +118,26 @@ export default function Home() {
   const [isSelectorModalOpen, setIsSelectorModalOpen] = useState(false);
   const [selectedTabFocus, setSelectedTabFocus] = useState<string>("");
 
+  // Native PWA Prompt States
+  const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
+  const [showInstallBtn, setShowInstallBtn] = useState(false);
+
   useEffect(() => {
     const iso = new Date().toISOString().slice(0, 10);
     setStartDate(iso);
     setEndDate(iso);
     setIsDashboardLoading(true);
+
+    window.addEventListener("beforeinstallprompt", (e) => {
+      e.preventDefault();
+      setDeferredPrompt(e as BeforeInstallPromptEvent);
+      setShowInstallBtn(true);
+    });
+
+    window.addEventListener("appinstalled", () => {
+      setDeferredPrompt(null);
+      setShowInstallBtn(false);
+    });
     
     fetch("/api/ets")
       .then((res) => res.json())
@@ -77,10 +160,20 @@ export default function Home() {
       });
   }, []);
 
+  const handlePwaDownloadApp = async () => {
+    if (!deferredPrompt) return;
+    await deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+    if (outcome === "accepted") {
+      setDeferredPrompt(null);
+      setShowInstallBtn(false);
+    }
+  };
+
   const getFilterRule = (campaignName: string): FilterRule => {
     const cleanCamp = campaignName.toUpperCase().trim();
     if (cleanCamp === "RGR") return { includes: ["RGR"], excludes: [] };
-     if (cleanCamp === "ARW_AD") return { includes: ["ARW"], excludes: [] };
+    if (cleanCamp === "ARW_AD") return { includes: ["ARW"], excludes: [] };
     if (cleanCamp === "ICO") return { includes: ["ICO"], excludes: [] };
     if (cleanCamp === "AHS_AD" || cleanCamp.startsWith("AHS")) return { includes: ["AHS"], excludes: ["DB", "XCE", "GZ", "XC", "ES"] };
     if (cleanCamp === "SHW_ES" || cleanCamp.startsWith("SHW")) return { includes: ["SHW", "ES"], excludes: ["DB", "XCE", "GZ", "XC"] };
@@ -99,8 +192,11 @@ export default function Home() {
     if (cleanCamp === "EAC_CMAD") return { includes: ["EAC"], excludes: ["DB", "XCE", "GZ", "XC"] };
     if (cleanCamp === "CH_XC" || cleanCamp.startsWith("CH")) return { includes: ["CH"], excludes: [] };
     if (cleanCamp === "LBH_DB" || cleanCamp.startsWith("LBH")) return { includes: ["LBH", "DB"], excludes: ["XCE", "GZ", "XC", "ES"] };
-    if (cleanCamp === "NDR" || cleanCamp.startsWith("NDR")) return { includes: ["NDR", "CMAD"], excludes: ["XCE", "XC", "ES"] };
-     if (cleanCamp === "NDR" || cleanCamp.startsWith("NDR")) return { includes: ["NDR", "GZ"], excludes: ["XCE", "XC", "ES", "CMAD"] };
+    
+    // EXPLICIT SEPARATION BETWEEN NDR_CMAD AND NDR_GZ LOOKUPS
+    if (cleanCamp === "NDR_CMAD") return { includes: ["NDR", "CMAD"], excludes: ["XCE", "XC", "ES"] };
+    if (cleanCamp === "NDR_GZ" || cleanCamp === "NDR") return { includes: ["NDR", "GZ"], excludes: ["XCE", "XC", "ES", "CMAD"] };
+    
     if (cleanCamp === "ZBH" || cleanCamp.startsWith("ZBH")) return { includes: ["ZBH", "ES"], excludes: ["XCE", "XC", "DB"] };
     if (cleanCamp === "WS" || cleanCamp.startsWith("WS")) return { includes: ["WS", "CMAD"], excludes: ["XCE", "XC", "ES"] };
     if (cleanCamp === "QLR" || cleanCamp.startsWith("QLR")) return { includes: ["QLR", "ES"], excludes: ["XCE", "XC", "DB"] };
@@ -233,58 +329,6 @@ export default function Home() {
     return Array.from(unique).sort();
   }, [allFetchedData]);
 
-  function getReportSubidAccountName(sheetTabName: string): string {
-    const txt = sheetTabName.replace(/[^a-zA-Z0-9]/g, "").toUpperCase();
-    if (txt.includes("JSG43")) return "JSG43MET";
-    if (txt.includes("JSG44")) return "JSG44";
-    if (txt.includes("JSG50")) return "JSG50";
-    if (txt.includes("JSG38NEW") || txt === "JSG38N" || txt === "JSG38") return "JSG38N";
-    if (txt.includes("JSG40")) return "JSG40";
-    if (txt.includes("JSG47")) return "JSG47";
-    if (txt.includes("JSG26")) return "JSG26MET";
-    if (txt.includes("JSG36")) return "JSG36MET";
-    if (txt.includes("JSG41")) return "JSG41MET";
-    if (txt.includes("JSG45")) return "JSG45";
-    if (txt.includes("JSG48MET") || txt === "JSG48") return "JSG48MET";
-    if (txt.includes("JSG53")) return "JSG53MET";
-    return txt;
-  }
-
-  function getNormalizedTemplateAlias(sheetTemplate: string): string {
-    const original = sheetTemplate.trim().toUpperCase();
-    if (original === "K_RGR_905_A5") return "RGR_905_A5";
-    if (original === "K_RGR_905_A1") return "RGR_905_A1";
-    if (original === "P_R_ADT_542_OFF_IMG") return "ADT_542_OFF_IMG";
-    if (original === "P_R_AHS_403_OG2") return "AHS_403_OG2";
-    if (original === "K_RGR_905_A2") return "RGR_905_A2";
-    if (original === "K_RGR_905_A4") return "RGR_905_A4";
-    if (original === "E_RGR_029_D") return "RGR_029_D";
-    if (original === "E_RGR_028_D") return "RGR_028_D";
-    if (original === "P_R_RHF_009_IMG") return "RHF_009_IMG";
-    if (original === "E_R_RGR_2083_RM") return "RGR_2083_RM";
-    if (original === "E_RGR_031_D") return "RGR_031_D";
-    if (original === "P_R_TRU_541_OG2") return "TRU_541_OG2";
-    if (original === "RGR_KARTIK0905_NV") return "RGR_KARTIK0905";
-    return original;
-  }
-
-  function formatTabBeautifulLabel(tabName: string): string {
-    const raw = tabName.replace(/[^a-zA-Z0-9]/g, "").toUpperCase();
-    if (raw.includes("JSG43")) return "JSG43 (STACK 13)";
-    if (raw.includes("JSG44")) return "JSG44 (STACK 11)";
-    if (raw.includes("JSG50")) return "JSG50 (STACK 7)";
-    if (raw.includes("JSG38NEW") || raw === "JSG38N" || raw === "JSG38") return "JSG38NEW (STACK 12)";
-    if (raw.includes("JSG40")) return "JSG40 (STACK 12)";
-    if (raw.includes("JSG47")) return "JSG47 (STACK 7)";
-    if (raw.includes("JSG26")) return "JSG26 (STACK 7)";
-    if (raw.includes("JSG36")) return "JSG36 (STACK 6)";
-    if (raw.includes("JSG41")) return "JSG41 (STACK 1)";
-    if (raw.includes("JSG45")) return "JSG45 (STACK 1)";
-    if (raw.includes("JSG48")) return "JSG48MET";
-    if (raw.includes("JSG53")) return "JSG53 (STACK 11)";
-    return tabName;
-  }
-
   const revenueCalculatedCards = useMemo(() => {
     if (!allFetchedData || !analyticsActive) return [];
 
@@ -349,11 +393,6 @@ export default function Home() {
     if (!selectedTabFocus || revenueCalculatedCards.length === 0) return revenueCalculatedCards[0] || null;
     return revenueCalculatedCards.find(c => c.accountName.toUpperCase() === selectedTabFocus.toUpperCase()) || revenueCalculatedCards[0] || null;
   }, [selectedTabFocus, revenueCalculatedCards]);
-
-  function rowMultiplier(tabName: string): number {
-    const clean = tabName.replace(/[^a-zA-Z0-9]/g, "").toUpperCase();
-    return (clean.includes("JSG40") || clean.includes("JSG38")) ? 2000 : 5000;
-  }
 
   const handleMultipleCsvFilesLoad = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
@@ -423,60 +462,10 @@ export default function Home() {
 
   return (
     <div className={`min-h-screen transition-colors duration-500 p-4 sm:p-8 flex flex-col justify-between ${isDarkMode ? "bg-[#090d16] text-zinc-100 font-sans" : "bg-slate-50 text-slate-900 font-sans"}`}>
-      <div className="w-full flex flex-col gap-6 flex-1">
+      
+      {/* 80% WIDTH CONTAINER LAYOUT */}
+      <div className="w-full xl:max-w-[80vw] xl:mx-auto flex flex-col gap-6 flex-1">
         
-        {/* GLOBAL PERSISTENT SPINNING PRELOADER OVERLAY */}
-        {(isAppLoading || status === "loading") && (
-          <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-slate-950/80 backdrop-blur-md">
-            <div className="flex flex-col items-center gap-5 bg-slate-900 border border-white/5 p-8 rounded-2xl shadow-2xl max-w-sm w-full mx-4 text-center">
-              <div className="relative h-12 w-12">
-                <div className="absolute inset-0 rounded-full border-4 border-zinc-800" />
-                <div className="absolute inset-0 rounded-full border-4 border-t-emerald-500 border-r-emerald-500 animate-spin" />
-              </div>
-              <h3 className="text-base font-black text-white tracking-wide uppercase">Compiling System Metrics</h3>
-              <p className="text-xs text-zinc-400">Syncing and parsing live ledger fields...</p>
-            </div>
-          </div>
-        )}
-
-        {/* STEP 2: DYNAMIC FILTER SELECTOR POPUP MODAL CONTROL UTILITY */}
-        {isSelectorModalOpen && allFetchedData && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/75 backdrop-blur-sm p-4 animate-fadeIn">
-            <div className="w-full max-w-md rounded-2xl border shadow-2xl p-6 flex flex-col bg-[#111726] border-white/10 text-white gap-4">
-              <div>
-                <h3 className="text-base font-black uppercase tracking-wider text-purple-400">🎯 Filter Target Parameters</h3>
-                <p className="text-xs text-zinc-400 mt-0.5">Isolate report matrices frames to narrow audit views</p>
-              </div>
-
-              <div className="flex flex-col gap-3">
-                <div className="flex flex-col gap-1">
-                  <label className="text-xs font-semibold text-zinc-400">Filter Account (ET)</label>
-                  <select value={analyticsEt} onChange={e => setAnalyticsEt(e.target.value)} className="h-11 rounded-lg px-3 text-sm outline-none border bg-slate-950 border-zinc-800 text-white focus:border-purple-500">
-                    <option value="ALL">ALL ACCOUNTS</option>
-                    {ets.map(e => <option key={e} value={e}>{e}</option>)}
-                  </select>
-                </div>
-                <div className="flex flex-col gap-1">
-                  <label className="text-xs font-semibold text-zinc-400">Filter Campaign Segment</label>
-                  <select value={analyticsCampaign} onChange={e => setAnalyticsCampaign(e.target.value)} className="h-11 rounded-lg px-3 text-sm outline-none border bg-slate-950 border-zinc-800 text-white focus:border-purple-500">
-                    <option value="ALL">ALL CAMPAIGNS</option>
-                    {analyticsCampaignOptions.map(c => <option key={c} value={c}>{c}</option>)}
-                  </select>
-                </div>
-              </div>
-
-              <div className="flex gap-2 justify-end mt-2">
-                <button onClick={() => setIsSelectorModalOpen(false)} className="h-10 px-4 rounded-lg bg-zinc-800 text-xs font-bold text-zinc-300 hover:bg-zinc-700 transition">
-                  Cancel
-                </button>
-                <button onClick={handleApplyAnalyticsFilters} className="h-10 px-5 rounded-lg bg-purple-600 text-xs font-bold text-white hover:bg-purple-500 transition shadow-lg">
-                  Show Results
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-
         <header className={`border-b pb-5 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 ${isDarkMode ? "border-white/10" : "border-slate-200"}`}>
           <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 w-full sm:w-auto">
             <div className="relative h-20 w-48 shrink-0">
@@ -491,9 +480,17 @@ export default function Home() {
               </button>
             </div>
           </div>
-          <button onClick={() => setIsDarkMode(!isDarkMode)} className={`p-2.5 rounded-full border text-xs font-bold transition ${isDarkMode ? "border-zinc-800 text-white hover:bg-zinc-900" : "border-slate-300 text-slate-800 hover:bg-slate-100"}`}>
-            {isDarkMode ? "🌙 Dark Mode" : "☀️ Light Mode"}
-          </button>
+          
+          <div className="flex items-center gap-3 w-full sm:w-auto justify-end">
+            {showInstallBtn && (
+              <button onClick={handlePwaDownloadApp} className="px-4 py-2 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 text-white text-xs font-black shadow-lg shadow-purple-500/10 hover:opacity-90 active:scale-95 transition-all flex items-center gap-2 animate-bounce">
+                <span>📥</span> Download App
+              </button>
+            )}
+            <button onClick={() => setIsDarkMode(!isDarkMode)} className={`p-2.5 rounded-full border text-xs font-bold transition ${isDarkMode ? "border-zinc-800 text-white hover:bg-zinc-900" : "border-slate-300 text-slate-800 hover:bg-slate-100"}`}>
+              {isDarkMode ? "🌙 Dark Mode" : "☀️ Light Mode"}
+            </button>
+          </div>
         </header>
 
         {currentView === "standard" && (
@@ -521,7 +518,7 @@ export default function Home() {
 
                 <div className="grid gap-6 grid-cols-1 md:grid-cols-2">
                   <section className={`rounded-xl p-6 border shadow-xl ${isDarkMode ? "bg-[#111726] border-white/5" : "bg-white border-slate-200"}`}>
-                    <h3 className="text-xs font-black uppercase tracking-widest text-sky-400 mb-4">📋 Origin Account Wise Sending Splits</h3>
+                    <h3 className="text-xs font-black uppercase tracking-wider text-sky-400 mb-4">📋 Origin Account Wise Sending Splits</h3>
                     <div className={`max-h-[350px] overflow-y-auto divide-y font-mono text-sm pr-2 ${isDarkMode ? "divide-zinc-800/40 text-zinc-300" : "divide-slate-200"}`}>
                       {dashboardAccountWiseMetrics.map((item) => (
                         <div key={item.account} className="py-3 flex justify-between items-center gap-2">
@@ -533,7 +530,7 @@ export default function Home() {
                   </section>
 
                   <section className={`rounded-xl p-6 border shadow-xl ${isDarkMode ? "bg-[#111726] border-white/5" : "bg-white border-slate-200"}`}>
-                    <h3 className="text-xs font-black uppercase tracking-widest text-purple-400 mb-4">📊 Broad Campaign Aggregate Metrics</h3>
+                    <h3 className="text-xs font-black uppercase tracking-wider text-purple-400 mb-4">📊 Broad Campaign Aggregate Metrics</h3>
                     <div className={`max-h-[350px] overflow-y-auto divide-y font-mono text-sm pr-2 ${isDarkMode ? "divide-zinc-800/40 text-zinc-300" : "divide-slate-200"}`}>
                       {dashboardCampaignWiseMetrics.map((item) => (
                         <div key={item.campaign} className="py-3 flex justify-between items-center gap-2">
@@ -725,7 +722,7 @@ export default function Home() {
                   })}
                 </div>
 
-                {/* REDESIGNED COMPACT TEMPLATE LISTING FRAME - BLANK SPACINGS ELIMINATED */}
+                {/* THE RIGHT-SIDE FULL CANVASS DISPLAY PROJECTS CHOSEN TAB ITEMS COVERS ENTIRE WIDTH */}
                 <div className="flex-1 min-w-0">
                   {targetedActiveFocusedCard && (
                     <div className={`rounded-2xl border shadow-2xl flex flex-col justify-between overflow-hidden h-full w-full ${isDarkMode ? "bg-[#111726] border-white/5" : "bg-white border-slate-200"}`}>
@@ -741,7 +738,6 @@ export default function Home() {
                         </div>
                       </div>
 
-                      {/* COMPACT VIEW CONTAINER WITH BALANCED ROW-PADDING PACKING */}
                       <div className={`p-5 flex-1 flex flex-col overflow-y-auto max-h-[600px] divide-y ${isDarkMode ? "divide-zinc-800/40" : "divide-slate-200"}`}>
                         {targetedActiveFocusedCard.templates.map((tmpl, tIdx) => (
                           <div key={tIdx} className="py-4 first:pt-0 last:pb-0 flex flex-col gap-2.5 font-sans">
@@ -753,7 +749,6 @@ export default function Home() {
                               </span>
                             </div>
                             
-                            {/* ALIGNED GRID LABELS WITHOUT SUFFIX CHARACTERS */}
                             <div className="grid grid-cols-2 md:grid-cols-4 gap-x-6 gap-y-2.5 text-xs">
                               <div>
                                 <span className="block text-[10px] font-bold uppercase tracking-wider text-zinc-500">Mails Used</span>
