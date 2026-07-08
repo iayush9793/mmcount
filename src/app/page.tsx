@@ -33,7 +33,6 @@ function rowMultiplier(tabName: string): number {
   return (clean.includes("JSG40") || clean.includes("JSG38")) ? 2000 : 5000;
 }
 
-// Exact Account Suffix Conversions
 function getReportSubidAccountName(sheetTabName: string): string {
   const txt = sheetTabName.replace(/[^a-zA-Z0-9]/g, "").toUpperCase();
   if (txt.includes("JSG43")) return "JSG43MET";
@@ -176,7 +175,7 @@ export default function Home() {
     if (cleanCamp === "ARW_AD") return { includes: ["ARW"], excludes: [] };
     if (cleanCamp === "ICO") return { includes: ["ICO"], excludes: [] };
     if (cleanCamp === "AHS_AD" || cleanCamp.startsWith("AHS")) return { includes: ["AHS"], excludes: ["DB", "XCE", "GZ", "XC", "ES"] };
-    if (cleanCamp === "SHW_ES" || cleanCamp.startsWith("SHW")) return { includes: ["SHW"], excludes: ["DB", "XCE", "GZ", "XC"] };
+    if (cleanCamp === "SHW_ES" || cleanCamp.startsWith("SHW")) return { includes: ["SHW", "ES"], excludes: ["DB", "XCE", "GZ", "XC"] };
     if (cleanCamp === "XCE_AIR" || cleanCamp === "AIR") return { includes: ["AIR"], excludes: [] };
     if (cleanCamp === "FIR_XC" || cleanCamp.startsWith("FIR")) return { includes: ["FIR"], excludes: [] };
     if (cleanCamp === "HEC_AD" || cleanCamp.startsWith("HEC")) return { includes: ["HEC"], excludes: [] };
@@ -193,7 +192,6 @@ export default function Home() {
     if (cleanCamp === "CH_XC" || cleanCamp.startsWith("CH")) return { includes: ["CH"], excludes: [] };
     if (cleanCamp === "LBH_DB" || cleanCamp.startsWith("LBH")) return { includes: ["LBH", "DB"], excludes: ["XCE", "GZ", "XC", "ES"] };
     
-    // EXPLICIT SEPARATION BETWEEN NDR_CMAD AND NDR_GZ LOOKUPS
     if (cleanCamp === "NDR_CMAD") return { includes: ["NDR", "CMAD"], excludes: ["XCE", "XC", "ES"] };
     if (cleanCamp === "NDR_GZ" || cleanCamp === "NDR") return { includes: ["NDR", "GZ"], excludes: ["XCE", "XC", "ES", "CMAD"] };
     
@@ -463,7 +461,7 @@ export default function Home() {
   return (
     <div className={`min-h-screen transition-colors duration-500 p-4 sm:p-8 flex flex-col justify-between ${isDarkMode ? "bg-[#090d16] text-zinc-100 font-sans" : "bg-slate-50 text-slate-900 font-sans"}`}>
       
-      {/* 80% WIDTH CONTAINER LAYOUT */}
+      {/* 80% SCREEN SIZE CONTAINER */}
       <div className="w-full xl:max-w-[80vw] xl:mx-auto flex flex-col gap-6 flex-1">
         
         {/* GLOBAL PERSISTENT SPINNING PRELOADER OVERLAY */}
@@ -570,7 +568,7 @@ export default function Home() {
 
                 <div className="grid gap-6 grid-cols-1 md:grid-cols-2">
                   <section className={`rounded-xl p-6 border shadow-xl ${isDarkMode ? "bg-[#111726] border-white/5" : "bg-white border-slate-200"}`}>
-                    <h3 className="text-xs font-black uppercase tracking-wider text-sky-400 mb-4">📋 Origin Account Wise Sending Splits</h3>
+                    <h3 className="text-xs font-black uppercase tracking-widest text-sky-400 mb-4">📋 Origin Account Wise Sending Splits</h3>
                     <div className={`max-h-[350px] overflow-y-auto divide-y font-mono text-sm pr-2 ${isDarkMode ? "divide-zinc-800/40 text-zinc-300" : "divide-slate-200"}`}>
                       {dashboardAccountWiseMetrics.map((item) => (
                         <div key={item.account} className="py-3 flex justify-between items-center gap-2">
@@ -641,7 +639,7 @@ export default function Home() {
                   </div>
                 </section>
 
-                {selectedCampaign && selectedTemplate && globalCampaignCalculTotals && (
+                {selectedCampaign && selectedTemplate && globalCampaignCalculatedTotals && (
                   <section className={`rounded-xl p-6 border shadow-xl grid gap-4 grid-cols-1 sm:grid-cols-3 ${isDarkMode ? "bg-[#111726] border-emerald-500/20 text-white" : "bg-white border-slate-200"}`}>
                     <div>
                       <span className="text-xs uppercase font-bold text-zinc-400 tracking-wider">Campaign Focus</span>
@@ -695,7 +693,7 @@ export default function Home() {
                 <h3 className="text-xs font-black uppercase tracking-widest text-purple-400">📈 Step 1: Upload Conversion Statement & Specify Bounds</h3>
                 
                 {analyticsActive && (
-                  <button onClick={() => setIsSelectorModalOpen(true)} className="px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-black font-sans text-xs transition uppercase tracking-wider shadow-xl active:scale-95 duration-150">
+                  <button onClick={() => setIsSelectorModalOpen(true)} className="px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-black font-sans text-xs transition uppercase tracking-wider shadow-lg active:scale-95 duration-150">
                     🔄 Change Filters (AGAIN)
                   </button>
                 )}
