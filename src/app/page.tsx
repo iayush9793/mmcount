@@ -27,7 +27,7 @@ interface BeforeInstallPromptEvent extends Event {
   prompt(): Promise<void>;
 }
 
-// CONVERTS HTML YYYY-MM-DD INPUT TO SHEET COMPATIBLE FORMAT
+// FORMATS HTML YYYY-MM-DD INPUT TO MATCH SHEET DD-MM-YYYY
 function formatDateToSheet(dateStr: string): string {
   if (!dateStr) return "";
   if (dateStr.includes("-")) {
@@ -279,11 +279,9 @@ export default function Home() {
 
     setTimeout(async () => {
       try {
-        // Normalizing ET string to strip parenthetical label
         const rawEt = selectedEt.split("(")[0].trim();
         const lookupEt = rawEt.toUpperCase().startsWith("ALL") ? "ALL" : rawEt;
 
-        // Converting dates to sheet format DD-MM-YYYY
         const sheetStart = formatDateToSheet(startDate);
         const sheetEnd = formatDateToSheet(endDate);
 
