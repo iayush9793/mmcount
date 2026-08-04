@@ -597,19 +597,14 @@ export default function Home() {
   }, [allFetchedData, selectedCampaign, selectedTemplate]);
 
 
-
-  const globalCampaignCalculatedTotals = useMemo(() => {
-
+const globalCampaignCalculatedTotals = useMemo(() => {
     if (currentFilteredBaseRows.length === 0) return null;
-
+    const uniqueTemplatesCount = new Set(currentFilteredBaseRows.map((r) => r.template.toUpperCase().trim())).size;
     return {
-
       totalMails: currentFilteredBaseRows.reduce((sum, item) => sum + item.count, 0),
-
-      calculatedVolume: currentFilteredBaseRows.reduce((sum, item) => sum + (item.count * item.multiplier), 0)
-
+      calculatedVolume: currentFilteredBaseRows.reduce((sum, item) => sum + (item.count * item.multiplier), 0),
+      uniqueTemplates: uniqueTemplatesCount,
     };
-
   }, [currentFilteredBaseRows]);
 
 
@@ -1280,36 +1275,25 @@ export default function Home() {
 
 
 
-                {selectedCampaign && selectedTemplate && globalCampaignCalculatedTotals && (
-
-                  <section className={`rounded-xl p-6 border shadow-xl grid gap-4 grid-cols-1 sm:grid-cols-3 ${isDarkMode ? "bg-[#111726] border-emerald-500/20 text-white" : "bg-white border-slate-200"}`}>
-
+           {selectedCampaign && selectedTemplate && globalCampaignCalculatedTotals && (
+                  <section className={`rounded-xl p-6 border shadow-xl grid gap-4 grid-cols-1 sm:grid-cols-4 ${isDarkMode ? "bg-[#111726] border-emerald-500/20 text-white" : "bg-white border-slate-200"}`}>
                     <div>
-
                       <span className="text-xs uppercase font-bold text-zinc-400 tracking-wider">Campaign Focus</span>
-
                       <p className="text-xl font-black mt-1 text-zinc-100 truncate">{selectedCampaign}</p>
-
                     </div>
-
                     <div>
-
+                      <span className="text-xs uppercase font-bold text-zinc-400 tracking-wider">Templates Count</span>
+                      <p className="text-3xl font-black text-purple-400 mt-1">{globalCampaignCalculatedTotals.uniqueTemplates.toLocaleString()}</p>
+                    </div>
+                    <div>
                       <span className="text-xs uppercase font-bold text-zinc-400 tracking-wider">Mails Count</span>
-
                       <p className="text-3xl font-black text-sky-400 mt-1">{globalCampaignCalculatedTotals.totalMails.toLocaleString()}</p>
-
                     </div>
-
                     <div>
-
                       <span className="text-xs uppercase font-bold text-emerald-500 tracking-wider">Aggregated Volume</span>
-
                       <p className="text-3xl font-black text-emerald-500 mt-1">{globalCampaignCalculatedTotals.calculatedVolume.toLocaleString()}</p>
-
                     </div>
-
                   </section>
-
                 )}
 
 
