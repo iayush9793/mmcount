@@ -265,7 +265,10 @@ export default function Home() {
 
     setTimeout(async () => {
       try {
-        const lookupEt = selectedEt.toUpperCase().startsWith("ALL") ? "ALL" : selectedEt;
+        // Normalize ET string to strip parenthetical label
+        const rawEt = selectedEt.split("(")[0].trim();
+        const lookupEt = rawEt.toUpperCase().startsWith("ALL") ? "ALL" : rawEt;
+
         const res = await fetch(`/api/mailCounts?startDate=${startDate}&endDate=${endDate}&et=${encodeURIComponent(lookupEt)}`);
         const data = await res.json();
         setAllFetchedData(data.breakdown ?? []);
@@ -334,7 +337,8 @@ export default function Home() {
 
     let filteredBase = allFetchedData;
     if (analyticsEt && !analyticsEt.toUpperCase().startsWith("ALL")) {
-      filteredBase = filteredBase.filter(item => item.etSource.replace(/[^a-zA-Z0-9]/g, "").toUpperCase() === analyticsEt.replace(/[^a-zA-Z0-9]/g, "").toUpperCase());
+      const cleanAnalyticEt = analyticsEt.split("(")[0].replace(/[^a-zA-Z0-9]/g, "").toUpperCase();
+      filteredBase = filteredBase.filter(item => item.etSource.replace(/[^a-zA-Z0-9]/g, "").toUpperCase() === cleanAnalyticEt);
     }
     if (analyticsCampaign && !analyticsCampaign.toUpperCase().startsWith("ALL")) {
       filteredBase = filteredBase.filter(item => item.campaignSrc.toUpperCase().trim() === analyticsCampaign.toUpperCase().trim());
