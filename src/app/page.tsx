@@ -265,7 +265,6 @@ export default function Home() {
 
     setTimeout(async () => {
       try {
-        // Normalize ET string to strip parenthetical label
         const rawEt = selectedEt.split("(")[0].trim();
         const lookupEt = rawEt.toUpperCase().startsWith("ALL") ? "ALL" : rawEt;
 
