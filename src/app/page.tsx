@@ -383,8 +383,8 @@ export default function Home() {
     if (cleanCamp === "CH_XC" || cleanCamp.startsWith("CH")) return { includes: ["CH"], excludes: [] };
 
     if (cleanCamp === "LBH_DB" || cleanCamp.startsWith("LBH")) return { includes: ["LBH", "DB"], excludes: ["XCE", "GZ", "XC", "ES"] };
-
-    
+ if (cleanCamp === "ENDURANCE_XC") return { includes: ["EAC", "XC"], excludes: [ "AD"] };
+     if (cleanCamp === "ENDURANCE_AD") return { includes: ["EAC", "AD"], excludes: ["XC"] };
 
     if (cleanCamp === "NDR_CMAD") return { includes: ["NDR", "CMAD"], excludes: ["XCE", "XC", "ES"] };
 
