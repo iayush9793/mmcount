@@ -2219,35 +2219,20 @@ const globalCampaignCalculatedTotals = useMemo(() => {
 
 
 
-                    <div className={`max-h-[350px] overflow-y-auto divide-y font-mono text-sm pr-2 ${isDarkMode ? "divide-zinc-800/40 text-zinc-300" : "divide-slate-200"}`}>
-
-
-
-                      {dashboardAccountWiseMetrics.map((item) => (
-
-
-
-                        <div key={item.account} className="py-3 flex justify-between items-center gap-2">
-
-
-
-                          <span className="font-sans font-bold text-zinc-300">{item.account}</span>
-
-
-
-                          <span className="font-black text-sky-400 shrink-0 text-base">{item.calculatedVolume.toLocaleString()} <span className="text-xs text-zinc-500 font-normal">({item.totalMails} items)</span></span>
-
-
-
-                        </div>
-
-
-
-                      ))}
-
-
-
-                    </div>
+                   <div className={`max-h-[350px] overflow-y-auto divide-y font-mono text-sm pr-2 ${isDarkMode ? "divide-zinc-800/40 text-zinc-300" : "divide-slate-200"}`}>
+  {dashboardAccountWiseMetrics.map((item) => (
+    <div key={item.account} className="py-3 flex justify-between items-center gap-2">
+      {/* Updated to format the raw account string */}
+      <span className="font-sans font-bold text-zinc-300">
+        {formatTabBeautifulLabel(item.account)}
+      </span>
+      <span className="font-black text-sky-400 shrink-0 text-base">
+        {item.calculatedVolume.toLocaleString()}{" "}
+        <span className="text-xs text-zinc-500 font-normal">({item.totalMails} items)</span>
+      </span>
+    </div>
+  ))}
+</div>
 
 
 
