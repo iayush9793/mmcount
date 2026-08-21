@@ -59,11 +59,22 @@ interface BeforeInstallPromptEvent extends Event {
 // GLOBAL UTILITY MAPPERS AND RESOLVERS
 
 function rowMultiplier(tabName: string): number {
-
   const clean = tabName.replace(/[^a-zA-Z0-9]/g, "").toUpperCase();
 
-  return (clean.includes("JSG30MET") || clean.includes("JSG38")) ? 4000 : 5000;
+  const specialTargets = [
+    "JSG30MET",
+    "JSG43 (STACK 13)",
+    "JSG55 (STACK 1)",
+    "JSG50(STACK 7)",
+    "JSG26 (STACK 7)",
+    "JSG 41 (STACK 1)",
+    "JSG 45 (STACK 1)",
+    "JSG48MET"
+  ];
 
+  const hasSpecial = specialTargets.some((target) => clean.includes(target));
+
+  return hasSpecial ? 4000 : 5000;
 }
 
 
