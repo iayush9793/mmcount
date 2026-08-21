@@ -159,71 +159,57 @@ function rowMultiplier(tabName: string): number {
 
 
 
-
 function getReportSubidAccountName(sheetTabName: string): string {
-
-
-
   const txt = sheetTabName.replace(/[^a-zA-Z0-9]/g, "").toUpperCase();
 
-
-
   if (txt.includes("JSG43")) return "JSG43MET";
-
-if (txt.includes("JSG34")) return "JSG34";
+  
+  // Distinguish JSG34 datasets
+  if (txt.includes("JSG34") && (txt.includes("NONCOMCAST") || txt.includes("NC"))) {
+    return "JSG34MET NONCOMCAST";
+  }
+  if (txt.includes("JSG34")) return "JSG34MET";
 
   if (txt.includes("JSG44")) return "JSG44";
-
-
-
   if (txt.includes("JSG50")) return "JSG50";
-
-
-
   if (txt.includes("JSG38NEW") || txt === "JSG38N" || txt === "JSG38") return "JSG38N";
-
-
-
   if (txt.includes("JSG40")) return "JSG40";
-
-
-
   if (txt.includes("JSG47")) return "JSG47";
-
-
-
   if (txt.includes("JSG26")) return "JSG26MET";
-
-
-
   if (txt.includes("JSG36")) return "JSG36MET";
-
-
-
   if (txt.includes("JSG41")) return "JSG41MET";
-
-
-
   if (txt.includes("JSG45")) return "JSG45";
-
-
-
   if (txt.includes("JSG48MET") || txt === "JSG48") return "JSG48MET";
-
-
-
   if (txt.includes("JSG53")) return "JSG53MET";
 
-
-
   return txt;
-
-
-
 }
 
+function formatTabBeautifulLabel(tabName: string): string {
+  const raw = tabName.replace(/[^a-zA-Z0-9]/g, "").toUpperCase();
 
+  if (raw.includes("JSG43")) return "JSG43 (STACK 13)";
+  
+  // Label JSG34 variants explicitly
+  if (raw.includes("JSG34") && (raw.includes("NONCOMCAST") || raw.includes("NC"))) {
+    return "JSG34MET NONCOMCAST";
+  }
+  if (raw.includes("JSG34")) return "JSG34MET (stack 4)";
 
+  if (raw.includes("JSG44")) return "JSG44 (STACK 11)";
+  if (raw.includes("JSG50")) return "JSG50 (STACK 7)";
+  if (raw.includes("JSG38NEW") || raw === "JSG38N" || raw === "JSG38") return "JSG38NEW (STACK 12)";
+  if (raw.includes("JSG40")) return "JSG40 (STACK 12)";
+  if (raw.includes("JSG47")) return "JSG47 (STACK 7)";
+  if (raw.includes("JSG26")) return "JSG26 (STACK 7)";
+  if (raw.includes("JSG36")) return "JSG36 (STACK 6)";
+  if (raw.includes("JSG41")) return "JSG41 (STACK 1)";
+  if (raw.includes("JSG45")) return "JSG45 (STACK 1)";
+  if (raw.includes("JSG48")) return "JSG48MET";
+  if (raw.includes("JSG53")) return "JSG53 (STACK 11)";
+
+  return tabName;
+}
 
 
 
@@ -300,67 +286,6 @@ function getNormalizedTemplateAlias(sheetTemplate: string): string {
 
 
 
-function formatTabBeautifulLabel(tabName: string): string {
-
-
-
-  const raw = tabName.replace(/[^a-zA-Z0-9]/g, "").toUpperCase();
-
-
-
-  if (raw.includes("JSG43")) return "JSG43 (STACK 13)";
-
-if (raw.includes("JSG34")) return "JSG34 (STACK 4)";
-
-  if (raw.includes("JSG44")) return "JSG44 (STACK 11)";
-
-
-
-  if (raw.includes("JSG50")) return "JSG50 (STACK 7)";
-
-
-
-  if (raw.includes("JSG38NEW") || raw === "JSG38N" || raw === "JSG38") return "JSG38NEW (STACK 12)";
-
-
-
-  if (raw.includes("JSG40")) return "JSG40 (STACK 12)";
-
-
-
-  if (raw.includes("JSG47")) return "JSG47 (STACK 7)";
-
-
-
-  if (raw.includes("JSG26")) return "JSG26 (STACK 7)";
-
-
-
-  if (raw.includes("JSG36")) return "JSG36 (STACK 6)";
-
-
-
-  if (raw.includes("JSG41")) return "JSG41 (STACK 1)";
-
-
-
-  if (raw.includes("JSG45")) return "JSG45 (STACK 1)";
-
-
-
-  if (raw.includes("JSG48")) return "JSG48MET";
-
-
-
-  if (raw.includes("JSG53")) return "JSG53 (STACK 11)";
-
-
-
-  return tabName;
-
-
-
-}
 
 
 
