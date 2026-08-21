@@ -168,7 +168,7 @@ function getReportSubidAccountName(sheetTabName: string): string {
   if (txt.includes("JSG34") && (txt.includes("NONCOMCAST") || txt.includes("NC"))) {
     return "JSG34MET NONCOMCAST";
   }
-  if (txt.includes("JSG34")) return "JSG34MET";
+  if (txt.includes("JSG34")) return "JSG34MET (stack 4)";
 
   if (txt.includes("JSG44")) return "JSG44";
   if (txt.includes("JSG50")) return "JSG50";
