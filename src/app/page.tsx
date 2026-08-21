@@ -62,7 +62,7 @@ function rowMultiplier(tabName: string): number {
 
   const clean = tabName.replace(/[^a-zA-Z0-9]/g, "").toUpperCase();
 
-  return (clean.includes("JSG40") || clean.includes("JSG38")) ? 2000 : 5000;
+  return (clean.includes("JSG30MET") || clean.includes("JSG38")) ? 4000 : 5000;
 
 }
 
