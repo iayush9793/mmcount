@@ -84,7 +84,7 @@ function getReportSubidAccountName(sheetTabName: string): string {
   const txt = sheetTabName.replace(/[^a-zA-Z0-9]/g, "").toUpperCase();
 
   if (txt.includes("JSG43")) return "JSG43MET";
-
+if (txt.includes("JSG34")) return "JSG34";
   if (txt.includes("JSG44")) return "JSG44";
 
   if (txt.includes("JSG50")) return "JSG50";
@@ -154,7 +154,7 @@ function formatTabBeautifulLabel(tabName: string): string {
   const raw = tabName.replace(/[^a-zA-Z0-9]/g, "").toUpperCase();
 
   if (raw.includes("JSG43")) return "JSG43 (STACK 13)";
-
+if (raw.includes("JSG34")) return "JSG34 (STACK 4)";
   if (raw.includes("JSG44")) return "JSG44 (STACK 11)";
 
   if (raw.includes("JSG50")) return "JSG50 (STACK 7)";
