@@ -72,7 +72,7 @@ export async function getMailCounts(options: { startDate: string; endDate: strin
   for (const tab of targetTabs) {
     try {
       const cleanedTabName = tab.replace(/[^a-zA-Z0-9]/g, "").toUpperCase();
-      const rowMultiplier = (cleanedTabName.includes("JSG40") || cleanedTabName.includes("JSG38")) ? 2000 : 5000;
+      const rowMultiplier = (cleanedTabName.includes("JSG30MET") || cleanedTabName.includes("JSG38")) ? 4000 : 5000;
 
       const res = await sheets.spreadsheets.values.get({
         spreadsheetId: SPREADSHEET_ID,
