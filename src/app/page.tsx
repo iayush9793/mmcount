@@ -755,8 +755,7 @@ export default function Home() {
 
     if (cleanCamp.includes("IAI_GZ")) return { includes: ["IAI"], excludes: [] };
 
-if (cleanCamp.includes("RBA_AD")) return { includes: ["RBA","D"], excludes: ["XCE"] };
-
+  if (cleanCamp === "RBA_AD" || cleanCamp.startsWith("RBA")) return { includes: ["RBA", "D"], excludes: ["XC", "ES", "GZ", ] };
     if (cleanCamp === "RBA_XCE" || cleanCamp.startsWith("RBA")) return { includes: ["RBA", "XCE"], excludes: ["XC", "ES", "GZ", ] };
 
 
