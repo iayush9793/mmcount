@@ -69,59 +69,80 @@ export async function getMailCounts(options: { startDate: string; endDate: strin
   let grandTotalCalculatedVolume = 0;
   let grandTotalRawMailsTracked = 0;
 
-  for (const tab of targetTabs) {
-    try {
-      const cleanedTabName = tab.replace(/[^a-zA-Z0-9]/g, "").toUpperCase();
-      const rowMultiplier = (cleanedTabName.includes("JSG30MET") || cleanedTabName.includes("JSG38")) ? 4000 : 5000;
+ // Define your 4000 multiplier ET names here (place outside the loop)
+const SPECIAL_4000_ETS = [
+ "JSG30MET",
+    "JSG43 (STACK 13)",
+    "JSG55 (STACK 1)",
+    "JSG50(STACK 7)",
+    "JSG26 (STACK 7)",
+    "JSG 41 (STACK 1)",
+    "JSG 45 (STACK 1)",
+    "JSG48MET"
+];
 
-      const res = await sheets.spreadsheets.values.get({
-        spreadsheetId: SPREADSHEET_ID,
-        range: `'${tab}'!A:ZZ`,
-      });
-      const values = res.data.values ?? [];
-      if (values.length <= 1) continue;
+for (const tab of targetTabs) {
+  try {
+    const cleanedTabName = tab.replace(/[^a-zA-Z0-9]/g, "").toUpperCase();
 
-      const headerRow = values[0];
+    // Check if cleaned tab matches any special ET name
+    const isSpecialET = SPECIAL_4000_ETS.some((et) => cleanedTabName.includes(et));
+    const rowMultiplier = isSpecialET ? 4000 : 5000;
 
-      for (let i = 1; i < values.length; i++) {
-        const row = values[i];
-        const rawDate = normalizeCell(row[0]);
-        const currentTemplate = normalizeCell(row[1]);
+    const res = await sheets.spreadsheets.values.get({
+      spreadsheetId: SPREADSHEET_ID,
+      range: `'${tab}'!A:ZZ`,
+    });
+    const values = res.data.values ?? [];
+    if (values.length <= 1) continue;
 
-        if (!targetedSheetDates.includes(rawDate) || !currentTemplate) continue;
+    const headerRow = values[0];
 
-        for (let colIdx = 2; colIdx < headerRow.length; colIdx++) {
-          const campaignHeader = normalizeCell(headerRow[colIdx]);
-          if (!campaignHeader) continue;
+    for (let i = 1; i < values.length; i++) {
+      const row = values[i];
+      const rawDate = normalizeCell(row[0]);
+      const currentTemplate = normalizeCell(row[1]);
 
-          const cellValue = normalizeCell(row[colIdx]);
-          if (!cellValue) continue;
+      if (!targetedSheetDates.includes(rawDate) || !currentTemplate) continue;
 
-          const valNum = Number(cellValue.replace(/,/g, ""));
-          const countValue = !Number.isNaN(valNum) ? valNum : 0;
+      for (let colIdx = 2; colIdx < headerRow.length; colIdx++) {
+        const campaignHeader = normalizeCell(headerRow[colIdx]);
+        if (!campaignHeader) continue;
 
-          if (countValue > 0) {
-            grandTotalMails += 1;
-            grandTotalRawMailsTracked += countValue;
-            grandTotalCalculatedVolume += (countValue * rowMultiplier);
+        const cellValue = normalizeCell(row[colIdx]);
+        if (!cellValue) continue;
 
-            const groupKey = `${currentTemplate}_${campaignHeader}_${tab}`;
-            const existingItem = breakdownMap.get(groupKey) || { template: currentTemplate, campaignSrc: campaignHeader, etSource: tab, count: 0, multiplier: rowMultiplier };
-            
-            breakdownMap.set(groupKey, {
-              template: currentTemplate,
-              campaignSrc: campaignHeader,
-              etSource: tab,
-              count: existingItem.count + countValue,
-              multiplier: rowMultiplier
-            });
-          }
+        const valNum = Number(cellValue.replace(/,/g, ""));
+        const countValue = !Number.isNaN(valNum) ? valNum : 0;
+
+        if (countValue > 0) {
+          grandTotalMails += 1;
+          grandTotalRawMailsTracked += countValue;
+          grandTotalCalculatedVolume += (countValue * rowMultiplier);
+
+          const groupKey = `${currentTemplate}_${campaignHeader}_${tab}`;
+          const existingItem = breakdownMap.get(groupKey) || {
+            template: currentTemplate,
+            campaignSrc: campaignHeader,
+            etSource: tab,
+            count: 0,
+            multiplier: rowMultiplier,
+          };
+
+          breakdownMap.set(groupKey, {
+            template: currentTemplate,
+            campaignSrc: campaignHeader,
+            etSource: tab,
+            count: existingItem.count + countValue,
+            multiplier: rowMultiplier,
+          });
         }
       }
-    } catch (err) {
-      console.error(`Error processing metrics on tab ${tab}:`, err);
     }
+  } catch (err) {
+    console.error(`Error processing metrics on tab ${tab}:`, err);
   }
+}
 
   return {
     totalMails: grandTotalMails,
