@@ -71,13 +71,13 @@ export async function getMailCounts(options: { startDate: string; endDate: strin
 
  // Define your 4000 multiplier ET names here (place outside the loop)
 const SPECIAL_4000_ETS = [
- "JSG30MET",
-    "JSG43 (STACK 13)",
-    "JSG55 (STACK 1)",
-    "JSG50(STACK 7)",
-    "JSG26 (STACK 7)",
-    "JSG 41 (STACK 1)",
-    "JSG 45 (STACK 1)",
+"JSG30MET",
+    "JSG43",
+    "JSG55",
+    "JSG50",
+    "JSG26",
+    "JSG41",
+    "JSG45",
     "JSG48MET"
 ];
 
