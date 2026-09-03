@@ -102,10 +102,9 @@ for (const tab of targetTabs) {
 
     for (let i = 1; i < values.length; i++) {
       const row = values[i];
-      const rawDate = normalizeCell(row[0]);
-      const currentTemplate = normalizeCell(row[1]);
-
-      if (!targetedSheetDates.includes(rawDate) || !currentTemplate) continue;
+const rawDate = normalizeCell(row[0]);
+const currentTemplate = normalizeCell(row[1]);
+if (!targetedSheetDates.includes(normalizeDateStr(rawDate)) || !currentTemplate) continue;
 
       for (let colIdx = 2; colIdx < headerRow.length; colIdx++) {
         const campaignHeader = normalizeCell(headerRow[colIdx]);
