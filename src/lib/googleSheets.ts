@@ -29,15 +29,17 @@ export async function listETTabs(): Promise<string[]> {
   }
 }
 
-function isoToSheetDate(isoDate: string): string {
-  const [year, month, day] = isoDate.split("-");
-  if (!year || !month || !day) return isoDate;
-  return `${day}-${month}-${year}`;
-}
-
-function normalizeCell(value: unknown): string {
-  if (value == null) return "";
-  return String(value).trim();
+// Replace isoToSheetDate with this normalizing function:
+function normalizeDateStr(dStr: string): string {
+  if (!dStr) return "";
+  const parts = dStr.trim().split(/[-/]/);
+  if (parts.length !== 3) return dStr.trim();
+  // If format is YYYY-MM-DD
+  if (parts[0].length === 4) {
+    return `${Number(parts[2])}-${Number(parts[1])}-${parts[0]}`;
+  }
+  // If format is D-M-YYYY or DD-MM-YYYY -> outputs D-M-YYYY
+  return `${Number(parts[0])}-${Number(parts[1])}-${parts[2]}`;
 }
 
 function getDatesInRange(startDateIso: string, endDateIso: string): string[] {
@@ -45,7 +47,7 @@ function getDatesInRange(startDateIso: string, endDateIso: string): string[] {
   const start = new Date(startDateIso);
   const end = new Date(endDateIso);
   for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
-    dates.push(isoToSheetDate(d.toISOString().slice(0, 10)));
+    dates.push(normalizeDateStr(d.toISOString().slice(0, 10)));
   }
   return dates;
 }
