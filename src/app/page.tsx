@@ -184,7 +184,7 @@ function getReportSubidAccountName(sheetTabName: string): string {
 
   if (txt.includes("JSG40")) return "JSG40";
 
- if (raw.includes("JSG47")) return "JSG47";
+ if (raw.includes("JSG47")) return "JSG 47 (STACK 7)";
 
   if (txt.includes("JSG26")) return "JSG26MET";
 
@@ -236,7 +236,7 @@ function formatTabBeautifulLabel(tabName: string): string {
 
   if (raw.includes("JSG40")) return "JSG40 (STACK 12)";
 
-  if (raw.includes("JSG47")) return "JSG47";
+  if (raw.includes("JSG47")) return "JSG 47 (STACK 7)";
 
   if (raw.includes("JSG26")) return "JSG26 (STACK 7)";
 
