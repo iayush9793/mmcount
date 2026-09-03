@@ -222,7 +222,15 @@ interface BeforeInstallPromptEvent extends Event {
 
 
 
-
+// ---> ADD IT RIGHT HERE <---
+function formatDateToSheet(dateStr: string): string {
+  if (!dateStr) return "";
+  const parts = dateStr.split("-");
+  if (parts.length === 3 && parts[0].length === 4) {
+    return `${parts[2]}-${parts[1]}-${parts[0]}`;
+  }
+  return dateStr;
+}
 
 
 
@@ -309,103 +317,33 @@ function rowMultiplier(tabName: string): number {
 }
 
 
-
 function getReportSubidAccountName(sheetTabName: string): string {
-
-
-
   const txt = sheetTabName.replace(/[^a-zA-Z0-9]/g, "").toUpperCase();
 
-
-
-
-
-
-
   if (txt.includes("JSG43")) return "JSG43MET";
-
-
-
-  
-
-
-
-  // Distinguish JSG34 datasets
-
-
-
-  if (txt.includes("JSG34") && (txt.includes("NONCOMCAST") || txt.includes("NC"))) {
-
-
-
-    return "JSG34MET NONCOMCAST";
-
-
-
-  }
-
-
-
+  if (txt.includes("JSG34") && (txt.includes("NONCOMCAST") || txt.includes("NC"))) return "JSG34MET NONCOMCAST";
   if (txt.includes("JSG34")) return "JSG34MET (stack 4)";
 
+  // Handle JSG47 variants
+  if (txt.includes("JSG47") && txt.includes("COMCAST") && !txt.includes("NON")) return "JSG 47 (STACK 7)COMCAST";
+  if (txt.includes("JSG47")) return "JSG 47 NON COMCAST (STACK 7)";
 
-
-
-
-
+  // Handle JSG48 variants
+  if (txt.includes("JSG48") && txt.includes("COMCAST")) return "JSG48COMCAST";
+  if (txt.includes("JSG48")) return "JSG48MET";
 
   if (txt.includes("JSG44")) return "JSG44";
-
-
-
   if (txt.includes("JSG50")) return "JSG50";
-
-
-
   if (txt.includes("JSG38NEW") || txt === "JSG38N" || txt === "JSG38") return "JSG38N";
-
-
-
   if (txt.includes("JSG40")) return "JSG40";
-
-
-
-
-
   if (txt.includes("JSG26")) return "JSG26MET";
-
-
-
   if (txt.includes("JSG36")) return "JSG36MET";
-
-
-
   if (txt.includes("JSG41")) return "JSG41MET";
-
-
-
   if (txt.includes("JSG45")) return "JSG45";
-
-
-
-  if (txt.includes("JSG48MET") || txt === "JSG48") return "JSG48MET";
-
-
-
   if (txt.includes("JSG53")) return "JSG53MET";
 
-
-
-
-
-
-
   return txt;
-
-
-
 }
-
 
 
 
@@ -413,101 +351,32 @@ function getReportSubidAccountName(sheetTabName: string): string {
 
 
 function formatTabBeautifulLabel(tabName: string): string {
-
-
-
   const raw = tabName.replace(/[^a-zA-Z0-9]/g, "").toUpperCase();
 
-
-
-
-
-
-
   if (raw.includes("JSG43")) return "JSG43 (STACK 13)";
-
-
-
-  
-
-
-
-  // Label JSG34 variants explicitly
-
-
-
-  if (raw.includes("JSG34") && (raw.includes("NONCOMCAST") || raw.includes("NC"))) {
-
-
-
-    return "JSG34MET NONCOMCAST";
-
-
-
-  }
-
-
-
+  if (raw.includes("JSG34") && (raw.includes("NONCOMCAST") || raw.includes("NC"))) return "JSG34MET NONCOMCAST";
   if (raw.includes("JSG34")) return "JSG34MET (stack 4)";
 
+  // Label JSG47 variants
+  if (raw.includes("JSG47") && raw.includes("COMCAST") && !raw.includes("NON")) return "JSG 47 (STACK 7)COMCAST";
+  if (raw.includes("JSG47")) return "JSG 47 NON COMCAST (STACK 7)";
 
-
-
-
-
-
-  if (raw.includes("JSG44")) return "JSG44 (STACK 11)";
-
-
-
-  if (raw.includes("JSG50")) return "JSG50 (STACK 7)";
-
-
-
-  if (raw.includes("JSG38NEW") || raw === "JSG38N" || raw === "JSG38") return "JSG38NEW (STACK 12)";
-
-
-
-  if (raw.includes("JSG40")) return "JSG40 (STACK 12)";
-
-
-
-  if (raw.includes("JSG26")) return "JSG26 (STACK 7)";
-
-
-
-  if (raw.includes("JSG36")) return "JSG36 (STACK 6)";
-
-
-
-  if (raw.includes("JSG41")) return "JSG41 (STACK 1)";
-
-
-
-  if (raw.includes("JSG45")) return "JSG45 (STACK 1)";
-
-
-
+  // Label JSG48 variants
+  if (raw.includes("JSG48") && raw.includes("COMCAST")) return "JSG48COMCAST";
   if (raw.includes("JSG48")) return "JSG48MET";
 
-
-
+  if (raw.includes("JSG44")) return "JSG44 (STACK 11)";
+  if (raw.includes("JSG50")) return "JSG50 (STACK 7)";
+  if (raw.includes("JSG38NEW") || raw === "JSG38N" || raw === "JSG38") return "JSG38NEW (STACK 12)";
+  if (raw.includes("JSG40")) return "JSG40 (STACK 12)";
+  if (raw.includes("JSG26")) return "JSG26 (STACK 7)";
+  if (raw.includes("JSG36")) return "JSG36 (STACK 6)";
+  if (raw.includes("JSG41")) return "JSG41 (STACK 1)";
+  if (raw.includes("JSG45")) return "JSG45 (STACK 1)";
   if (raw.includes("JSG53")) return "JSG53 (STACK 11)";
 
-
-
-
-
-
-
   return tabName;
-
-
-
 }
-
-
-
 
 
 
@@ -2105,7 +1974,12 @@ export default function Home() {
 
 
 
+// Inside handleProcessDataMatrix:
+const lookupEt = selectedEt.toUpperCase().startsWith("ALL") ? "ALL" : selectedEt;
+const sheetStart = formatDateToSheet(startDate);
+const sheetEnd = formatDateToSheet(endDate);
 
+const res = await fetch(`/api/mailCounts?startDate=${sheetStart}&endDate=${sheetEnd}&et=${encodeURIComponent(lookupEt)}`);
 
 
         const lookupEt = selectedEt.toUpperCase().startsWith("ALL") ? "ALL" : selectedEt;
