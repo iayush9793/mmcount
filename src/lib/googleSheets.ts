@@ -78,22 +78,26 @@ function normalizeCell(value: unknown): string {
 
 
 
+// Update date generator to support both padded (05-08-2026) and unpadded (5-08-2026) dates
 function getDatesInRange(startDateIso: string, endDateIso: string): string[] {
-
-  const dates: string[] = [];
-
+  const dates = new Set<string>();
   const start = new Date(startDateIso);
-
   const end = new Date(endDateIso);
 
   for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+    const year = d.getFullYear();
+    const monthPadded = String(d.getMonth() + 1).padStart(2, "0");
+    const monthRaw = String(d.getMonth() + 1);
+    const dayPadded = String(d.getDate()).padStart(2, "0");
+    const dayRaw = String(d.getDate());
 
-    dates.push(isoToSheetDate(d.toISOString().slice(0, 10)));
-
+    // Adds both '05-08-2026' and '5-08-2026', as well as '5-8-2026'
+    dates.add(`${dayPadded}-${monthPadded}-${year}`);
+    dates.add(`${dayRaw}-${monthPadded}-${year}`);
+    dates.add(`${dayPadded}-${monthRaw}-${year}`);
+    dates.add(`${dayRaw}-${monthRaw}-${year}`);
   }
-
-  return dates;
-
+  return Array.from(dates);
 }
 
 
