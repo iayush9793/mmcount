@@ -175,6 +175,7 @@ function getReportSubidAccountName(sheetTabName: string): string {
   if (txt.includes("JSG38NEW") || txt === "JSG38N" || txt === "JSG38") return "JSG38N";
   if (txt.includes("JSG40")) return "JSG40";
   if (txt.includes("JSG47")) return "JSG47";
+  if (raw.includes("C48")) return "C48";
   if (txt.includes("JSG26")) return "JSG26MET";
   if (txt.includes("JSG36")) return "JSG36MET";
   if (txt.includes("JSG41")) return "JSG41MET";
