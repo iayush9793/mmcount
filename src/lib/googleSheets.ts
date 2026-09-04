@@ -61,13 +61,9 @@ export async function listETTabs(): Promise<string[]> {
 
 
 function isoToSheetDate(isoDate: string): string {
-
   const [year, month, day] = isoDate.split("-");
-
   if (!year || !month || !day) return isoDate;
-
-  return `${day}-${month}-${year}`;
-
+  return `${day}-${month}-${year}`; // e.g. converts "2026-08-05" into "05-08-2026"
 }
 
 
