@@ -201,6 +201,7 @@ function formatTabBeautifulLabel(tabName: string): string {
   if (raw.includes("JSG38NEW") || raw === "JSG38N" || raw === "JSG38") return "JSG38NEW (STACK 12)";
   if (raw.includes("JSG40")) return "JSG40 (STACK 12)";
   if (raw.includes("JSG47")) return "JSG47 (STACK 7)";
+    if (raw.includes("C48")) return "C48";
   if (raw.includes("JSG26")) return "JSG26 (STACK 7)";
   if (raw.includes("JSG36")) return "JSG36 (STACK 6)";
   if (raw.includes("JSG41")) return "JSG41 (STACK 1)";
