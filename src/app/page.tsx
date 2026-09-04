@@ -2,43 +2,7 @@
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
 "use client";
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -50,43 +14,7 @@ import { useEffect, useMemo, useState } from "react";
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
 import Image from "next/image";
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -98,31 +26,7 @@ type BreakdownItem = { template: string; campaignSrc: string; etSource: string; 
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
 type MailCountsResponse = { totalMails: number; totalCount: number; calculatedVolume: number; hadData: boolean; breakdown?: BreakdownItem[] };
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -134,43 +38,7 @@ type FetchStatus = "idle" | "loading" | "success" | "error";
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 interface FilterRule {
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -178,59 +46,11 @@ interface FilterRule {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
   excludes: string[];
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -242,31 +62,7 @@ interface RevenueRecord {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
   subid: string;
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -274,43 +70,7 @@ interface RevenueRecord {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -322,31 +82,7 @@ interface BeforeInstallPromptEvent extends Event {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
   readonly platforms: Array<string>;
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -354,31 +90,7 @@ interface BeforeInstallPromptEvent extends Event {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
     outcome: "accepted" | "dismissed";
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -386,31 +98,7 @@ interface BeforeInstallPromptEvent extends Event {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
   }>;
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -418,43 +106,7 @@ interface BeforeInstallPromptEvent extends Event {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -466,127 +118,31 @@ interface BeforeInstallPromptEvent extends Event {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
 function rowMultiplier(tabName: string): number {
-
-
-
-
-
-
 
   const clean = tabName.replace(/[^a-zA-Z0-9]/g, "").toUpperCase();
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
   const specialTargets = [
-
-
-
-
-
-
 
   "JSG30MET",
 
-
-
-
-
-
-
     "JSG43",
-
-
-
-
-
-
 
     "JSG55",
 
-
-
-
-
-
-
     "JSG50",
-
-
-
-
-
-
 
     "JSG26",
 
-
-
-
-
-
-
     "JSG41",
-
-
-
-
-
-
 
     "JSG45",
 
-
-
-
-
-
-
     "JSG48MET"
 
-
-
-
-
-
-
   ];
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -594,28 +150,9 @@ function rowMultiplier(tabName: string): number {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
   return hasSpecial ? 4000 : 5000;
 
-
-
-
-
-
-
 }
-
 
 
 
@@ -623,405 +160,56 @@ function rowMultiplier(tabName: string): number {
 
 
 function getReportSubidAccountName(sheetTabName: string): string {
-
-
-
-
-
-
-
   const txt = sheetTabName.replace(/[^a-zA-Z0-9]/g, "").toUpperCase();
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
   if (txt.includes("JSG43")) return "JSG43MET";
-
-
-
-
-
-
-
   
-
-
-
-
-
-
-
   // Distinguish JSG34 datasets
-
-
-
-
-
-
-
   if (txt.includes("JSG34") && (txt.includes("NONCOMCAST") || txt.includes("NC"))) {
-
-
-
-
-
-
-
     return "JSG34MET NONCOMCAST";
-
-
-
-
-
-
-
   }
-
-
-
-
-
-
-
   if (txt.includes("JSG34")) return "JSG34MET (stack 4)";
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
   if (txt.includes("JSG44")) return "JSG44";
-
-
-
-
-
-
-
   if (txt.includes("JSG50")) return "JSG50";
-
-
-
-
-
-
-
   if (txt.includes("JSG38NEW") || txt === "JSG38N" || txt === "JSG38") return "JSG38N";
-
-
-
-
-
-
-
   if (txt.includes("JSG40")) return "JSG40";
-
-
-
-
-
-
-
-
-
-
-
+  if (txt.includes("JSG47")) return "JSG47";
   if (txt.includes("JSG26")) return "JSG26MET";
-
-
-
-
-
-
-
   if (txt.includes("JSG36")) return "JSG36MET";
-
-
-
-
-
-
-
   if (txt.includes("JSG41")) return "JSG41MET";
-
-
-
-
-
-
-
   if (txt.includes("JSG45")) return "JSG45";
-
-
-
-
-
-
-
   if (txt.includes("JSG48MET") || txt === "JSG48") return "JSG48MET";
-
-
-
-
-
-
-
   if (txt.includes("JSG53")) return "JSG53MET";
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
   return txt;
-
-
-
-
-
-
-
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 function formatTabBeautifulLabel(tabName: string): string {
-
-
-
-
-
-
-
   const raw = tabName.replace(/[^a-zA-Z0-9]/g, "").toUpperCase();
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
   if (raw.includes("JSG43")) return "JSG43 (STACK 13)";
-
-
-
-
-
-
-
   
-
-
-
-
-
-
-
   // Label JSG34 variants explicitly
-
-
-
-
-
-
-
   if (raw.includes("JSG34") && (raw.includes("NONCOMCAST") || raw.includes("NC"))) {
-
-
-
-
-
-
-
     return "JSG34MET NONCOMCAST";
-
-
-
-
-
-
-
   }
-
-
-
-
-
-
-
   if (raw.includes("JSG34")) return "JSG34MET (stack 4)";
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
   if (raw.includes("JSG44")) return "JSG44 (STACK 11)";
-
-
-
-
-
-
-
   if (raw.includes("JSG50")) return "JSG50 (STACK 7)";
-
-
-
-
-
-
-
   if (raw.includes("JSG38NEW") || raw === "JSG38N" || raw === "JSG38") return "JSG38NEW (STACK 12)";
-
-
-
-
-
-
-
   if (raw.includes("JSG40")) return "JSG40 (STACK 12)";
-
-
-
-
-
-
-
+  if (raw.includes("JSG47")) return "JSG47 (STACK 7)";
   if (raw.includes("JSG26")) return "JSG26 (STACK 7)";
-
-
-
-
-
-
-
   if (raw.includes("JSG36")) return "JSG36 (STACK 6)";
-
-
-
-
-
-
-
   if (raw.includes("JSG41")) return "JSG41 (STACK 1)";
-
-
-
-
-
-
-
   if (raw.includes("JSG45")) return "JSG45 (STACK 1)";
-
-
-
-
-
-
-
   if (raw.includes("JSG48")) return "JSG48MET";
-
-
-
-
-
-
-
   if (raw.includes("JSG53")) return "JSG53 (STACK 11)";
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
   return tabName;
-
-
-
-
-
-
-
 }
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -1030,31 +218,7 @@ function getNormalizedTemplateAlias(sheetTemplate: string): string {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
   const original = sheetTemplate.trim().toUpperCase();
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -1062,31 +226,7 @@ function getNormalizedTemplateAlias(sheetTemplate: string): string {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
   if (original === "K_RGR_905_A1") return "RGR_905_A1";
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -1094,31 +234,7 @@ function getNormalizedTemplateAlias(sheetTemplate: string): string {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
   if (original === "P_R_AHS_403_OG2") return "AHS_403_OG2";
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -1126,31 +242,7 @@ function getNormalizedTemplateAlias(sheetTemplate: string): string {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
   if (original === "K_RGR_905_A4") return "RGR_905_A4";
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -1158,31 +250,7 @@ function getNormalizedTemplateAlias(sheetTemplate: string): string {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
   if (original === "E_RGR_028_D") return "RGR_028_D";
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -1190,31 +258,7 @@ function getNormalizedTemplateAlias(sheetTemplate: string): string {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
   if (original === "E_R_RGR_2083_RM") return "RGR_2083_RM";
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -1222,31 +266,7 @@ function getNormalizedTemplateAlias(sheetTemplate: string): string {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
   if (original === "P_R_TRU_541_OG2") return "TRU_541_OG2";
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -1254,80 +274,11 @@ function getNormalizedTemplateAlias(sheetTemplate: string): string {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
   return original;
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -1346,47 +297,11 @@ export default function Home() {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
   const [isAppLoading, setIsAppLoading] = useState(true);
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
   const [isDarkMode, setIsDarkMode] = useState(true);
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -1398,43 +313,7 @@ export default function Home() {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
   // Core Stage 1 Inputs
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -1442,47 +321,11 @@ export default function Home() {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
   const [endDate, setEndDate] = useState("");
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
   const [ets, setEts] = useState<string[]>([]);
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -1494,59 +337,11 @@ export default function Home() {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
   // Dashboard Core States
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
   const [dashboardData, setDashboardData] = useState<BreakdownItem[] | null>(null);
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -1558,43 +353,7 @@ export default function Home() {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
   // Custom Range Query States
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -1602,31 +361,7 @@ export default function Home() {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
   const [selectedCampaign, setSelectedCampaign] = useState("");
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -1634,31 +369,7 @@ export default function Home() {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
   const [status, setStatus] = useState<FetchStatus>("idle");
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -1670,43 +381,7 @@ export default function Home() {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
   // Detailed Analytics Specific States
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -1714,31 +389,7 @@ export default function Home() {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
   const [combinedCsvRecords, setCombinedRevenueRecords] = useState<RevenueRecord[]>([]);
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -1746,31 +397,7 @@ export default function Home() {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
   const [analyticsActive, setAnalyticsActive] = useState(false);
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -1778,47 +405,11 @@ export default function Home() {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
   const [analyticsCampaign, setAnalyticsCampaign] = useState("");
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
   const [isSelectorModalOpen, setIsSelectorModalOpen] = useState(false);
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -1830,59 +421,11 @@ export default function Home() {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
   // Native PWA Prompt States
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -1894,43 +437,7 @@ export default function Home() {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
   useEffect(() => {
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -1938,47 +445,11 @@ export default function Home() {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
     setStartDate(iso);
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
     setEndDate(iso);
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -1990,43 +461,7 @@ export default function Home() {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
     window.addEventListener("beforeinstallprompt", (e) => {
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -2034,31 +469,7 @@ export default function Home() {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
       setDeferredPrompt(e as BeforeInstallPromptEvent);
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -2066,43 +477,7 @@ export default function Home() {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
     });
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -2114,31 +489,7 @@ export default function Home() {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
       setDeferredPrompt(null);
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -2146,31 +497,7 @@ export default function Home() {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
     });
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -2178,31 +505,7 @@ export default function Home() {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
     fetch("/api/ets")
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -2210,31 +513,7 @@ export default function Home() {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
       .then((data) => {
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -2242,31 +521,7 @@ export default function Home() {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
         setEts(structuralTabs);
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -2274,31 +529,7 @@ export default function Home() {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
       })
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -2306,31 +537,7 @@ export default function Home() {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
       .then((data) => {
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -2338,31 +545,7 @@ export default function Home() {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
           setDashboardData(data.breakdown);
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -2370,47 +553,11 @@ export default function Home() {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
         setIsDashboardLoading(false);
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
         setIsAppLoading(false);
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -2418,31 +565,7 @@ export default function Home() {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
       .catch(() => {
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -2450,47 +573,11 @@ export default function Home() {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
         setIsAppLoading(false);
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
       });
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -2502,43 +589,7 @@ export default function Home() {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
   const handlePwaDownloadApp = async () => {
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -2546,31 +597,7 @@ export default function Home() {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
     await deferredPrompt.prompt();
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -2578,31 +605,7 @@ export default function Home() {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
     if (outcome === "accepted") {
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -2610,31 +613,7 @@ export default function Home() {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
       setShowInstallBtn(false);
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -2642,43 +621,7 @@ export default function Home() {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
   };
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -2690,31 +633,7 @@ export default function Home() {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
     const cleanCamp = campaignName.toUpperCase().trim();
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -2722,31 +641,7 @@ export default function Home() {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
     if (cleanCamp === "ARW_AD") return { includes: ["ARW"], excludes: [] };
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -2754,31 +649,7 @@ export default function Home() {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
     if (cleanCamp === "AHS_AD" || cleanCamp.startsWith("AHS")) return { includes: ["AHS"], excludes: ["DB", "XCE", "GZ", "XC", "ES"] };
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -2786,31 +657,7 @@ export default function Home() {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
     if (cleanCamp === "XCE_AIR" || cleanCamp === "AIR") return { includes: ["AIR"], excludes: [] };
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -2818,31 +665,7 @@ export default function Home() {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
     if (cleanCamp === "HEC_AD" || cleanCamp.startsWith("HEC")) return { includes: ["HEC"], excludes: [] };
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -2850,31 +673,7 @@ export default function Home() {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
     if (cleanCamp === "LR_GZ" || cleanCamp.startsWith("LR")) return { includes: ["LR"], excludes: [] };
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -2882,31 +681,7 @@ export default function Home() {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
     if (cleanCamp === "FGLO_DB" || cleanCamp.startsWith("FGLO")) return { includes: ["FGLO"], excludes: [] };
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -2914,31 +689,7 @@ export default function Home() {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
     if (cleanCamp.includes("RYH FLOORING") || cleanCamp.includes("RYH_FLOORING")) return { includes: ["RHF"], excludes: ["DB", "XCE", "GZ", "XC"] };
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -2946,31 +697,7 @@ export default function Home() {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
     if (cleanCamp === "SQMH_ES") return { includes: ["SQMH"], excludes: ["DB", "XCE", "GZ", "XC"] };
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -2978,31 +705,7 @@ export default function Home() {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
     if (cleanCamp === "EAC_CMAD") return { includes: ["EAC"], excludes: ["DB", "XCE", "GZ", "XC"] };
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -3010,47 +713,11 @@ export default function Home() {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
     if (cleanCamp === "LBH_DB" || cleanCamp.startsWith("LBH")) return { includes: ["LBH", "DB"], excludes: ["XCE", "GZ", "XC", "ES"] };
-
-
-
-
-
-
 
  if (cleanCamp === "ENDURANCE_XC") return { includes: ["EAC", "XC"], excludes: [ "AD"] };
 
-
-
-
-
-
-
      if (cleanCamp === "ENDURANCE_AD") return { includes: ["EAC", "AD"], excludes: ["XC"] };
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -3058,31 +725,7 @@ export default function Home() {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
     if (cleanCamp === "NDR_GZ" || cleanCamp === "NDR") return { includes: ["NDR", "GZ"], excludes: ["XCE", "XC", "ES", "CMAD"] };
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -3090,31 +733,7 @@ export default function Home() {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
     if (cleanCamp === "ZBH" || cleanCamp.startsWith("ZBH")) return { includes: ["ZBH", "ES"], excludes: ["XCE", "XC", "DB"] };
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -3122,31 +741,7 @@ export default function Home() {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
     if (cleanCamp === "QLR" || cleanCamp.startsWith("QLR")) return { includes: ["QLR", "ES"], excludes: ["XCE", "XC", "DB"] };
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -3154,59 +749,14 @@ export default function Home() {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
     if (cleanCamp === "TRUGREEN_AD") return { includes: ["TRU"], excludes: ["XCE", "XC", "ES", "GZ", "DB"] };
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
     if (cleanCamp.includes("IAI_GZ")) return { includes: ["IAI"], excludes: [] };
 
-
-
-
-
-
-
   if (cleanCamp === "RBA_AD" || cleanCamp.startsWith("RBA")) return { includes: ["RBA", "D"], excludes: ["XC", "ES", "GZ", ] };
-
-
-
     if (cleanCamp === "RBA_XCE" || cleanCamp.startsWith("RBA")) return { includes: ["RBA", "XCE"], excludes: ["XC", "ES", "GZ", ] };
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -3214,31 +764,7 @@ export default function Home() {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
     if (cleanCamp === "TRUGREEN_DB") return { includes: ["TRU", "DB"], excludes: ["XC", "ES", "GZ", "XCE"] };
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -3246,31 +772,7 @@ export default function Home() {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
     if (cleanCamp === "QUOTIFII_DB") return { includes: ["QTI"], excludes: [] };
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -3278,59 +780,11 @@ export default function Home() {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
     return { includes: [cleanCamp.split("_")[0]], excludes: [] };
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
   };
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -3342,31 +796,7 @@ export default function Home() {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
     const tmplUpper = templateName.toUpperCase();
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -3374,43 +804,7 @@ export default function Home() {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
   };
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -3422,31 +816,7 @@ export default function Home() {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
     if (!dashboardData) return [];
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -3454,31 +824,7 @@ export default function Home() {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
     dashboardData.forEach((item) => {
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -3486,31 +832,7 @@ export default function Home() {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
     });
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -3518,31 +840,7 @@ export default function Home() {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
       .map(([name, volume]) => ({ name, volume }))
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -3550,59 +848,11 @@ export default function Home() {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
       .slice(0, 5);
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
   }, [dashboardData]);
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -3614,31 +864,7 @@ export default function Home() {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
     if (!dashboardData) return [];
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -3646,31 +872,7 @@ export default function Home() {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
     dashboardData.forEach((item) => {
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -3678,31 +880,7 @@ export default function Home() {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
       const existing = accountsMap.get(etUpper) || { totalMails: 0, calculatedVolume: 0 };
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -3710,31 +888,7 @@ export default function Home() {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
     });
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -3742,43 +896,7 @@ export default function Home() {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
   }, [dashboardData]);
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -3790,31 +908,7 @@ export default function Home() {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
     if (!dashboardData) return [];
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -3822,31 +916,7 @@ export default function Home() {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
     dashboardData.forEach((item) => {
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -3854,31 +924,7 @@ export default function Home() {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
       const existing = campaignsMap.get(campUpper) || { totalMails: 0, calculatedVolume: 0 };
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -3886,47 +932,11 @@ export default function Home() {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
     });
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
     return Array.from(campaignsMap.entries()).map(([campaign, meta]) => ({ campaign, ...meta }));
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -3938,43 +948,7 @@ export default function Home() {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
   async function handleProcessDataMatrix() {
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -3982,31 +956,7 @@ export default function Home() {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
     setErrorMessage("");
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -4014,31 +964,7 @@ export default function Home() {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
     if (startDate !== endDate && new Date(endDate) < new Date(startDate)) { 
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -4046,31 +972,7 @@ export default function Home() {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
       return; 
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -4082,43 +984,7 @@ export default function Home() {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
     setAllFetchedData(null);
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -4126,31 +992,7 @@ export default function Home() {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
     setSelectedTemplate("");
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -4162,43 +1004,7 @@ export default function Home() {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
     setTimeout(async () => {
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -4206,31 +1012,7 @@ export default function Home() {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
         const lookupEt = selectedEt.toUpperCase().startsWith("ALL") ? "ALL" : selectedEt;
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -4238,31 +1020,7 @@ export default function Home() {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
         const data = await res.json();
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -4270,31 +1028,7 @@ export default function Home() {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
         setStatus("success");
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -4302,31 +1036,7 @@ export default function Home() {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
         setStatus("error");
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -4334,31 +1044,7 @@ export default function Home() {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
     }, 60);
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -4370,43 +1056,7 @@ export default function Home() {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
   const dynamicCampaignOptions = useMemo(() => {
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -4414,31 +1064,7 @@ export default function Home() {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
     const uniqueCamps = new Set<string>();
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -4446,59 +1072,11 @@ export default function Home() {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
     return Array.from(uniqueCamps).sort();
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
   }, [allFetchedData]);
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -4510,31 +1088,7 @@ export default function Home() {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
     if (!allFetchedData || !selectedCampaign) return [];
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -4542,47 +1096,11 @@ export default function Home() {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
     const options = allFetchedData.filter((item) => item.campaignSrc.toUpperCase().trim() === selectedCampaign.toUpperCase().trim() && matchTemplate(item.template, rule)).map((item) => item.template);
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
     return Array.from(new Set(options)).sort();
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -4594,43 +1112,7 @@ export default function Home() {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
   const currentFilteredBaseRows = useMemo(() => {
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -4638,31 +1120,7 @@ export default function Home() {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
     const rule = getFilterRule(selectedCampaign);
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -4670,47 +1128,11 @@ export default function Home() {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
     if (selectedTemplate !== "ALL") rows = rows.filter((item) => item.template.toLowerCase() === selectedTemplate.toLowerCase());
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
     return rows;
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -4720,113 +1142,23 @@ export default function Home() {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 const globalCampaignCalculatedTotals = useMemo(() => {
-
-
-
-
-
-
 
     if (currentFilteredBaseRows.length === 0) return null;
 
-
-
-
-
-
-
     const uniqueTemplatesCount = new Set(currentFilteredBaseRows.map((r) => r.template.toUpperCase().trim())).size;
-
-
-
-
-
-
 
     return {
 
-
-
-
-
-
-
       totalMails: currentFilteredBaseRows.reduce((sum, item) => sum + item.count, 0),
-
-
-
-
-
-
 
       calculatedVolume: currentFilteredBaseRows.reduce((sum, item) => sum + (item.count * item.multiplier), 0),
 
-
-
-
-
-
-
       uniqueTemplates: uniqueTemplatesCount,
-
-
-
-
-
-
 
     };
 
-
-
-
-
-
-
   }, [currentFilteredBaseRows]);
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -4838,31 +1170,7 @@ const globalCampaignCalculatedTotals = useMemo(() => {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
     const cardsMap = new Map<string, { totalMails: number; totalVolume: number; templates: Array<{ name: string; count: number; vol: number }> }>();
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -4870,31 +1178,7 @@ const globalCampaignCalculatedTotals = useMemo(() => {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
       const etKey = item.etSource.toUpperCase().trim();
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -4902,31 +1186,7 @@ const globalCampaignCalculatedTotals = useMemo(() => {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
       const rowVolume = item.count * item.multiplier;
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -4934,31 +1194,7 @@ const globalCampaignCalculatedTotals = useMemo(() => {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
       if (targetTmpl) { targetTmpl.count += item.count; targetTmpl.vol += rowVolume; }
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -4966,31 +1202,7 @@ const globalCampaignCalculatedTotals = useMemo(() => {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
       cardsMap.set(etKey, { totalMails: existing.totalMails + item.count, totalVolume: existing.totalVolume + rowVolume, templates: existing.templates });
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -4998,31 +1210,7 @@ const globalCampaignCalculatedTotals = useMemo(() => {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
     return Array.from(cardsMap.entries()).map(([account, meta]) => ({ account, ...meta }));
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -5034,43 +1222,7 @@ const globalCampaignCalculatedTotals = useMemo(() => {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
   const analyticsCampaignOptions = useMemo(() => {
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -5078,31 +1230,7 @@ const globalCampaignCalculatedTotals = useMemo(() => {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
     const unique = new Set<string>();
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -5110,31 +1238,7 @@ const globalCampaignCalculatedTotals = useMemo(() => {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
     return Array.from(unique).sort();
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -5146,43 +1250,7 @@ const globalCampaignCalculatedTotals = useMemo(() => {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
   const revenueCalculatedCards = useMemo(() => {
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -5194,43 +1262,7 @@ const globalCampaignCalculatedTotals = useMemo(() => {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
     let filteredBase = allFetchedData;
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -5238,47 +1270,11 @@ const globalCampaignCalculatedTotals = useMemo(() => {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
       filteredBase = filteredBase.filter(item => item.etSource.replace(/[^a-zA-Z0-9]/g, "").toUpperCase() === analyticsEt.replace(/[^a-zA-Z0-9]/g, "").toUpperCase());
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
     }
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -5286,59 +1282,11 @@ const globalCampaignCalculatedTotals = useMemo(() => {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
       filteredBase = filteredBase.filter(item => item.campaignSrc.toUpperCase().trim() === analyticsCampaign.toUpperCase().trim());
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
     }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -5350,31 +1298,7 @@ const globalCampaignCalculatedTotals = useMemo(() => {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
     filteredBase.forEach(item => {
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -5382,31 +1306,7 @@ const globalCampaignCalculatedTotals = useMemo(() => {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
       const existing = accountGroups.get(key) || [];
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -5414,59 +1314,11 @@ const globalCampaignCalculatedTotals = useMemo(() => {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
       accountGroups.set(key, existing);
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
     });
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -5478,31 +1330,7 @@ const globalCampaignCalculatedTotals = useMemo(() => {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
       const templatesList = rows.map(row => {
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -5510,47 +1338,11 @@ const globalCampaignCalculatedTotals = useMemo(() => {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
           const subidStr = rec.subid.trim();
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
           const lastUnderscoreIdx = subidStr.lastIndexOf("_");
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -5562,43 +1354,7 @@ const globalCampaignCalculatedTotals = useMemo(() => {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
           const parsedTemplateName = subidStr.substring(0, lastUnderscoreIdx).trim().toUpperCase();
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -5610,43 +1366,7 @@ const globalCampaignCalculatedTotals = useMemo(() => {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
           const cleanSheetTemplate = getNormalizedTemplateAlias(row.template);
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -5658,43 +1378,7 @@ const globalCampaignCalculatedTotals = useMemo(() => {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
           return parsedTemplateName === cleanSheetTemplate && parsedAccountName === cleanSheetAccount;
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -5706,43 +1390,7 @@ const globalCampaignCalculatedTotals = useMemo(() => {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
         const revenueSum = matchedRevenueHits.reduce((sum, r) => sum + r.revenue, 0);
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -5750,31 +1398,7 @@ const globalCampaignCalculatedTotals = useMemo(() => {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
         const totalSendingVolume = row.count * rowMultiplier(accountName);
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -5786,43 +1410,7 @@ const globalCampaignCalculatedTotals = useMemo(() => {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
         return {
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -5830,31 +1418,7 @@ const globalCampaignCalculatedTotals = useMemo(() => {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
           campaignName: row.campaignSrc,
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -5862,31 +1426,7 @@ const globalCampaignCalculatedTotals = useMemo(() => {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
           sendingVolume: totalSendingVolume,
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -5894,31 +1434,7 @@ const globalCampaignCalculatedTotals = useMemo(() => {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
           conversions: conversionCount,
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -5926,59 +1442,11 @@ const globalCampaignCalculatedTotals = useMemo(() => {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
         };
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
       });
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -5990,47 +1458,11 @@ const globalCampaignCalculatedTotals = useMemo(() => {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
       return { accountName, templates: templatesList, cardTotalRevenue };
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
     });
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -6042,59 +1474,11 @@ const globalCampaignCalculatedTotals = useMemo(() => {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
   const distinctRevenueAccountTabs = useMemo(() => {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
     return revenueCalculatedCards.map(c => c.accountName);
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -6106,43 +1490,7 @@ const globalCampaignCalculatedTotals = useMemo(() => {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
   const targetedActiveFocusedCard = useMemo(() => {
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -6150,31 +1498,7 @@ const globalCampaignCalculatedTotals = useMemo(() => {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
     return revenueCalculatedCards.find(c => c.accountName.toUpperCase() === selectedTabFocus.toUpperCase()) || revenueCalculatedCards[0] || null;
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -6186,59 +1510,11 @@ const globalCampaignCalculatedTotals = useMemo(() => {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
   const handleMultipleCsvFilesLoad = async (e: React.ChangeEvent<HTMLInputElement>) => {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
     const files = e.target.files;
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -6250,43 +1526,7 @@ const globalCampaignCalculatedTotals = useMemo(() => {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
     const namesArray: string[] = [];
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -6298,59 +1538,11 @@ const globalCampaignCalculatedTotals = useMemo(() => {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
     for (let i = 0; i < files.length; i++) {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
       const file = files[i];
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -6362,43 +1554,7 @@ const globalCampaignCalculatedTotals = useMemo(() => {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
       const text = await new Promise<string>((resolve) => {
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -6406,47 +1562,11 @@ const globalCampaignCalculatedTotals = useMemo(() => {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
         reader.onload = (event) => resolve(event.target?.result as string ?? "");
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
         reader.readAsText(file);
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -6458,43 +1578,7 @@ const globalCampaignCalculatedTotals = useMemo(() => {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
       const lines = text.split(/\r?\n/);
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -6506,43 +1590,7 @@ const globalCampaignCalculatedTotals = useMemo(() => {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
       const headers = lines[0].split(",").map(h => h.trim().toUpperCase());
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -6550,47 +1598,11 @@ const globalCampaignCalculatedTotals = useMemo(() => {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
       let revIdx = headers.indexOf("REV");
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
       if (revIdx === -1) revIdx = headers.indexOf("REVENUE");
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -6602,43 +1614,7 @@ const globalCampaignCalculatedTotals = useMemo(() => {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
       for (let j = 1; j < lines.length; j++) {
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -6646,31 +1622,7 @@ const globalCampaignCalculatedTotals = useMemo(() => {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
         const cells = lines[j].split(",");
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -6678,31 +1630,7 @@ const globalCampaignCalculatedTotals = useMemo(() => {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
         const revVal = Number(cells[revIdx]?.trim() ?? 0);
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -6710,31 +1638,7 @@ const globalCampaignCalculatedTotals = useMemo(() => {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
           combinedRecords.push({ subid: subidVal, revenue: Number.isNaN(revVal) ? 0 : revVal });
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -6742,31 +1646,7 @@ const globalCampaignCalculatedTotals = useMemo(() => {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
       }
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -6778,43 +1658,7 @@ const globalCampaignCalculatedTotals = useMemo(() => {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
     setUploadedFilesSummary(namesArray);
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -6822,43 +1666,7 @@ const globalCampaignCalculatedTotals = useMemo(() => {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
   };
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -6870,31 +1678,7 @@ const globalCampaignCalculatedTotals = useMemo(() => {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
     if (!startDate || !endDate || combinedCsvRecords.length === 0) return;
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -6902,47 +1686,11 @@ const globalCampaignCalculatedTotals = useMemo(() => {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
     setAllFetchedData(null);
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
     setAnalyticsActive(false);
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -6954,43 +1702,7 @@ const globalCampaignCalculatedTotals = useMemo(() => {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
     setTimeout(async () => {
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -6998,31 +1710,7 @@ const globalCampaignCalculatedTotals = useMemo(() => {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
         const res = await fetch(`/api/mailCounts?startDate=${startDate}&endDate=${endDate}&et=ALL`);
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -7030,31 +1718,7 @@ const globalCampaignCalculatedTotals = useMemo(() => {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
         setAllFetchedData(data.breakdown ?? []);
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -7062,31 +1726,7 @@ const globalCampaignCalculatedTotals = useMemo(() => {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
         setStatus("success");
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -7094,31 +1734,7 @@ const globalCampaignCalculatedTotals = useMemo(() => {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
         setStatus("error"); 
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -7126,59 +1742,11 @@ const globalCampaignCalculatedTotals = useMemo(() => {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
     }, 60);
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
   };
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -7190,47 +1758,11 @@ const globalCampaignCalculatedTotals = useMemo(() => {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
     setIsSelectorModalOpen(false);
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
     setAnalyticsActive(true);
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -7242,43 +1774,7 @@ const globalCampaignCalculatedTotals = useMemo(() => {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
   return (
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -7286,31 +1782,7 @@ const globalCampaignCalculatedTotals = useMemo(() => {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
       
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -7318,31 +1790,7 @@ const globalCampaignCalculatedTotals = useMemo(() => {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
       <div className="w-full xl:max-w-[80vw] xl:mx-auto flex flex-col gap-6 flex-1">
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -7350,31 +1798,7 @@ const globalCampaignCalculatedTotals = useMemo(() => {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
         {/* GLOBAL PERSISTENT SPINNING PRELOADER OVERLAY */}
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -7382,31 +1806,7 @@ const globalCampaignCalculatedTotals = useMemo(() => {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
           <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-slate-950/80 backdrop-blur-md">
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -7414,31 +1814,7 @@ const globalCampaignCalculatedTotals = useMemo(() => {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
               <div className="relative h-12 w-12">
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -7446,31 +1822,7 @@ const globalCampaignCalculatedTotals = useMemo(() => {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
                 <div className="absolute inset-0 rounded-full border-4 border-t-emerald-500 border-r-emerald-500 animate-spin" />
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -7478,31 +1830,7 @@ const globalCampaignCalculatedTotals = useMemo(() => {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
               <h3 className="text-base font-black text-white tracking-wide uppercase">Compiling System Metrics</h3>
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -7510,31 +1838,7 @@ const globalCampaignCalculatedTotals = useMemo(() => {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
             </div>
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -7542,43 +1846,7 @@ const globalCampaignCalculatedTotals = useMemo(() => {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
         )}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -7590,31 +1858,7 @@ const globalCampaignCalculatedTotals = useMemo(() => {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
         {isSelectorModalOpen && allFetchedData && (
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -7622,31 +1866,7 @@ const globalCampaignCalculatedTotals = useMemo(() => {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
             <div className="w-full max-w-md rounded-2xl border shadow-2xl p-6 flex flex-col bg-[#111726] border-white/10 text-white gap-4">
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -7654,31 +1874,7 @@ const globalCampaignCalculatedTotals = useMemo(() => {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
                 <h3 className="text-base font-black uppercase tracking-wider text-purple-400">🎯 Filter Target Parameters</h3>
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -7686,43 +1882,7 @@ const globalCampaignCalculatedTotals = useMemo(() => {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
               </div>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -7734,31 +1894,7 @@ const globalCampaignCalculatedTotals = useMemo(() => {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
                 <div className="flex flex-col gap-1">
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -7766,31 +1902,7 @@ const globalCampaignCalculatedTotals = useMemo(() => {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
                   <select value={analyticsEt} onChange={e => setAnalyticsEt(e.target.value)} className="h-11 rounded-lg px-3 text-sm outline-none border bg-slate-950 border-zinc-800 text-white focus:border-purple-500">
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -7798,31 +1910,7 @@ const globalCampaignCalculatedTotals = useMemo(() => {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
                     {ets.map(e => <option key={e} value={e}>{e}</option>)}
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -7830,31 +1918,7 @@ const globalCampaignCalculatedTotals = useMemo(() => {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
                 </div>
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -7862,31 +1926,7 @@ const globalCampaignCalculatedTotals = useMemo(() => {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
                   <label className="text-xs font-semibold text-zinc-400">Filter Campaign Segment</label>
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -7894,31 +1934,7 @@ const globalCampaignCalculatedTotals = useMemo(() => {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
                     <option value="ALL">ALL CAMPAIGNS</option>
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -7926,31 +1942,7 @@ const globalCampaignCalculatedTotals = useMemo(() => {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
                   </select>
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -7958,43 +1950,7 @@ const globalCampaignCalculatedTotals = useMemo(() => {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
               </div>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -8006,31 +1962,7 @@ const globalCampaignCalculatedTotals = useMemo(() => {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
                 <button onClick={() => setIsSelectorModalOpen(false)} className="h-10 px-4 rounded-lg bg-zinc-800 text-xs font-bold text-zinc-300 hover:bg-zinc-700 transition">
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -8038,31 +1970,7 @@ const globalCampaignCalculatedTotals = useMemo(() => {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
                 </button>
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -8070,31 +1978,7 @@ const globalCampaignCalculatedTotals = useMemo(() => {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
                   Show Results
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -8102,31 +1986,7 @@ const globalCampaignCalculatedTotals = useMemo(() => {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
               </div>
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -8134,59 +1994,11 @@ const globalCampaignCalculatedTotals = useMemo(() => {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
           </div>
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
         )}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -8198,31 +2010,7 @@ const globalCampaignCalculatedTotals = useMemo(() => {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
           <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 w-full sm:w-auto">
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -8230,47 +2018,11 @@ const globalCampaignCalculatedTotals = useMemo(() => {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
               <Image src="/logo.png" alt="Logo" fill priority className="object-contain object-left" />
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
             </div>
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -8278,31 +2030,7 @@ const globalCampaignCalculatedTotals = useMemo(() => {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
               <button onClick={() => { setCurrentView("standard"); setAllFetchedData(null); setAnalyticsActive(false); }} className={`px-5 py-2 text-xs font-black rounded-md transition ${currentView === "standard" ? "bg-emerald-500 text-white shadow-lg" : "text-zinc-400 hover:text-zinc-200"}`}>
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -8310,31 +2038,7 @@ const globalCampaignCalculatedTotals = useMemo(() => {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
               </button>
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -8342,47 +2046,11 @@ const globalCampaignCalculatedTotals = useMemo(() => {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
                 Detailed Conversion Analytics
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
               </button>
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -8390,31 +2058,7 @@ const globalCampaignCalculatedTotals = useMemo(() => {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
           </div>
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -8422,31 +2066,7 @@ const globalCampaignCalculatedTotals = useMemo(() => {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
           <div className="flex items-center gap-3 w-full sm:w-auto justify-end">
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -8454,31 +2074,7 @@ const globalCampaignCalculatedTotals = useMemo(() => {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
               <button onClick={handlePwaDownloadApp} className="px-4 py-2 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 text-white text-xs font-black shadow-lg shadow-purple-500/10 hover:opacity-90 active:scale-95 transition-all flex items-center gap-2 animate-bounce">
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -8486,31 +2082,7 @@ const globalCampaignCalculatedTotals = useMemo(() => {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
               </button>
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -8518,31 +2090,7 @@ const globalCampaignCalculatedTotals = useMemo(() => {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
             <button onClick={() => setIsDarkMode(!isDarkMode)} className={`p-2.5 rounded-full border text-xs font-bold transition ${isDarkMode ? "border-zinc-800 text-white hover:bg-zinc-900" : "border-slate-300 text-slate-800 hover:bg-slate-100"}`}>
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -8550,47 +2098,11 @@ const globalCampaignCalculatedTotals = useMemo(() => {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
             </button>
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
           </div>
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -8602,43 +2114,7 @@ const globalCampaignCalculatedTotals = useMemo(() => {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
         {currentView === "standard" && (
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -8646,31 +2122,7 @@ const globalCampaignCalculatedTotals = useMemo(() => {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
             {!allFetchedData && (
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -8678,31 +2130,7 @@ const globalCampaignCalculatedTotals = useMemo(() => {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
                 <section className={`rounded-xl p-6 border shadow-xl ${isDarkMode ? "bg-[#111726] border-white/5" : "bg-white border-slate-200"}`}>
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -8710,31 +2138,7 @@ const globalCampaignCalculatedTotals = useMemo(() => {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
                   {isDashboardLoading ? (
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -8742,31 +2146,7 @@ const globalCampaignCalculatedTotals = useMemo(() => {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
                   ) : topFiveCampaignsSummary.length === 0 ? (
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -8774,31 +2154,7 @@ const globalCampaignCalculatedTotals = useMemo(() => {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
                   ) : (
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -8806,31 +2162,7 @@ const globalCampaignCalculatedTotals = useMemo(() => {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
                       {topFiveCampaignsSummary.map((item, idx) => (
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -8838,31 +2170,7 @@ const globalCampaignCalculatedTotals = useMemo(() => {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
                           <span className="text-[10px] font-black text-zinc-500 uppercase tracking-wider">Rank #{idx + 1}</span>
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -8870,31 +2178,7 @@ const globalCampaignCalculatedTotals = useMemo(() => {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
                           <span className="text-lg font-black text-emerald-500 mt-2">{item.volume.toLocaleString()}</span>
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -8902,31 +2186,7 @@ const globalCampaignCalculatedTotals = useMemo(() => {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
                       ))}
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -8934,59 +2194,11 @@ const globalCampaignCalculatedTotals = useMemo(() => {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
                   )}
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
                 </section>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -8998,31 +2210,7 @@ const globalCampaignCalculatedTotals = useMemo(() => {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
                   <section className={`rounded-xl p-6 border shadow-xl ${isDarkMode ? "bg-[#111726] border-white/5" : "bg-white border-slate-200"}`}>
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -9030,111 +2218,24 @@ const globalCampaignCalculatedTotals = useMemo(() => {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
                    <div className={`max-h-[350px] overflow-y-auto divide-y font-mono text-sm pr-2 ${isDarkMode ? "divide-zinc-800/40 text-zinc-300" : "divide-slate-200"}`}>
-
-
-
   {dashboardAccountWiseMetrics.map((item) => (
-
-
-
     <div key={item.account} className="py-3 flex justify-between items-center gap-2">
-
-
-
       {/* Updated to format the raw account string */}
-
-
-
       <span className="font-sans font-bold text-zinc-300">
-
-
-
         {formatTabBeautifulLabel(item.account)}
-
-
-
       </span>
-
-
-
       <span className="font-black text-sky-400 shrink-0 text-base">
-
-
-
         {item.calculatedVolume.toLocaleString()}{" "}
-
-
-
         <span className="text-xs text-zinc-500 font-normal">({item.totalMails} items)</span>
-
-
-
       </span>
-
-
-
     </div>
-
-
-
   ))}
-
-
-
 </div>
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
                   </section>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -9146,31 +2247,7 @@ const globalCampaignCalculatedTotals = useMemo(() => {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
                     <h3 className="text-xs font-black uppercase tracking-wider text-purple-400 mb-4">📊 Broad Campaign Aggregate Metrics</h3>
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -9178,31 +2255,7 @@ const globalCampaignCalculatedTotals = useMemo(() => {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
                       {dashboardCampaignWiseMetrics.map((item) => (
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -9210,31 +2263,7 @@ const globalCampaignCalculatedTotals = useMemo(() => {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
                           <span className="font-sans font-bold text-zinc-300">{item.campaign}</span>
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -9242,31 +2271,7 @@ const globalCampaignCalculatedTotals = useMemo(() => {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
                         </div>
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -9274,31 +2279,7 @@ const globalCampaignCalculatedTotals = useMemo(() => {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
                     </div>
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -9306,31 +2287,7 @@ const globalCampaignCalculatedTotals = useMemo(() => {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
                 </div>
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -9338,43 +2295,7 @@ const globalCampaignCalculatedTotals = useMemo(() => {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
             )}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -9386,47 +2307,11 @@ const globalCampaignCalculatedTotals = useMemo(() => {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
               <div className="grid gap-4 grid-cols-1 sm:grid-cols-3 items-end">
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
                 <div className="flex flex-col gap-1.5">
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -9434,31 +2319,7 @@ const globalCampaignCalculatedTotals = useMemo(() => {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
                   <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className={`h-12 rounded-lg px-3 text-sm outline-none border w-full ${isDarkMode ? "bg-slate-950 border-zinc-800 text-white focus:border-emerald-500" : "bg-white border-slate-300"}`} />
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -9466,31 +2327,7 @@ const globalCampaignCalculatedTotals = useMemo(() => {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
                 <div className="flex flex-col gap-1.5">
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -9498,47 +2335,11 @@ const globalCampaignCalculatedTotals = useMemo(() => {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
                   <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className={`h-12 rounded-lg px-3 text-sm outline-none border w-full ${isDarkMode ? "bg-slate-950 border-zinc-800 text-white focus:border-emerald-500" : "bg-white border-slate-300"}`} />
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
                 </div>
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -9546,31 +2347,7 @@ const globalCampaignCalculatedTotals = useMemo(() => {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
                   <label className="text-xs font-bold uppercase tracking-wider text-zinc-400">Origin Account (ET)</label>
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -9578,31 +2355,7 @@ const globalCampaignCalculatedTotals = useMemo(() => {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
                     <option value="">Select ET Account</option>
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -9610,31 +2363,7 @@ const globalCampaignCalculatedTotals = useMemo(() => {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
                     {ets.map((e) => <option key={e} value={e}>{e}</option>)}
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -9642,31 +2371,7 @@ const globalCampaignCalculatedTotals = useMemo(() => {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
                 </div>
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -9674,31 +2379,7 @@ const globalCampaignCalculatedTotals = useMemo(() => {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
               {errorMessage && <p className="text-xs font-semibold text-rose-500 bg-rose-500/5 p-3 rounded-lg border border-rose-500/10">⚠️ {errorMessage}</p>}
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -9706,31 +2387,7 @@ const globalCampaignCalculatedTotals = useMemo(() => {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
                 Process Data Matrix
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -9738,43 +2395,7 @@ const globalCampaignCalculatedTotals = useMemo(() => {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
             </section>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -9786,31 +2407,7 @@ const globalCampaignCalculatedTotals = useMemo(() => {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
               <div className="flex flex-col gap-6 animate-fadeIn">
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -9818,31 +2415,7 @@ const globalCampaignCalculatedTotals = useMemo(() => {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
                   <div className="flex flex-col gap-1.5">
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -9850,31 +2423,7 @@ const globalCampaignCalculatedTotals = useMemo(() => {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
                     <select value={selectedCampaign} onChange={(e) => { setSelectedCampaign(e.target.value); setSelectedTemplate(""); }} className={`h-12 rounded-lg px-3 text-sm outline-none border w-full ${isDarkMode ? "bg-slate-950 border-zinc-800 text-white" : "bg-white border-slate-300"}`}>
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -9882,31 +2431,7 @@ const globalCampaignCalculatedTotals = useMemo(() => {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
                       {dynamicCampaignOptions.map(c => <option key={c} value={c}>{c}</option>)}
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -9914,31 +2439,7 @@ const globalCampaignCalculatedTotals = useMemo(() => {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
                   </div>
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -9946,31 +2447,7 @@ const globalCampaignCalculatedTotals = useMemo(() => {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
                     <label className="text-xs font-bold uppercase tracking-wider text-zinc-400">Select Target Template</label>
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -9978,31 +2455,7 @@ const globalCampaignCalculatedTotals = useMemo(() => {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
                       <option value="">{selectedCampaign ? "Select Template" : "Choose Campaign first"}</option>
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -10010,31 +2463,7 @@ const globalCampaignCalculatedTotals = useMemo(() => {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
                       {dynamicTemplateOptions.map(t => <option key={t} value={t}>{t}</option>)}
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -10042,31 +2471,7 @@ const globalCampaignCalculatedTotals = useMemo(() => {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
                   </div>
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -10078,207 +2483,45 @@ const globalCampaignCalculatedTotals = useMemo(() => {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
            {selectedCampaign && selectedTemplate && globalCampaignCalculatedTotals && (
-
-
-
-
-
-
 
                   <section className={`rounded-xl p-6 border shadow-xl grid gap-4 grid-cols-1 sm:grid-cols-4 ${isDarkMode ? "bg-[#111726] border-emerald-500/20 text-white" : "bg-white border-slate-200"}`}>
 
-
-
-
-
-
-
                     <div>
-
-
-
-
-
-
 
                       <span className="text-xs uppercase font-bold text-zinc-400 tracking-wider">Campaign Focus</span>
 
-
-
-
-
-
-
                       <p className="text-xl font-black mt-1 text-zinc-100 truncate">{selectedCampaign}</p>
-
-
-
-
-
-
 
                     </div>
 
-
-
-
-
-
-
                     <div>
-
-
-
-
-
-
 
                       <span className="text-xs uppercase font-bold text-zinc-400 tracking-wider">Templates Count</span>
 
-
-
-
-
-
-
                       <p className="text-3xl font-black text-purple-400 mt-1">{globalCampaignCalculatedTotals.uniqueTemplates.toLocaleString()}</p>
-
-
-
-
-
-
 
                     </div>
 
-
-
-
-
-
-
                     <div>
-
-
-
-
-
-
 
                       <span className="text-xs uppercase font-bold text-zinc-400 tracking-wider">Mails Count</span>
 
-
-
-
-
-
-
                       <p className="text-3xl font-black text-sky-400 mt-1">{globalCampaignCalculatedTotals.totalMails.toLocaleString()}</p>
 
-
-
-
-
-
-
                     </div>
-
-
-
-
-
-
 
                     <div>
 
-
-
-
-
-
-
                       <span className="text-xs uppercase font-bold text-emerald-500 tracking-wider">Aggregated Volume</span>
-
-
-
-
-
-
 
                       <p className="text-3xl font-black text-emerald-500 mt-1">{globalCampaignCalculatedTotals.calculatedVolume.toLocaleString()}</p>
 
-
-
-
-
-
-
                     </div>
-
-
-
-
-
-
 
                   </section>
 
-
-
-
-
-
-
                 )}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -10290,31 +2533,7 @@ const globalCampaignCalculatedTotals = useMemo(() => {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
                   <div className="grid gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -10322,31 +2541,7 @@ const globalCampaignCalculatedTotals = useMemo(() => {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
                       <div key={card.account} className={`rounded-xl border shadow-lg flex flex-col justify-between overflow-hidden ${isDarkMode ? "bg-slate-900 border-white/5" : "bg-white border-slate-200"}`}>
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -10354,31 +2549,7 @@ const globalCampaignCalculatedTotals = useMemo(() => {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
                           <span className="px-3 py-1 rounded-md text-xs font-black bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 uppercase tracking-wide">{card.account}</span>
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -10386,31 +2557,7 @@ const globalCampaignCalculatedTotals = useMemo(() => {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
                         </div>
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -10418,31 +2565,7 @@ const globalCampaignCalculatedTotals = useMemo(() => {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
                           {card.templates.map((t, idx) => (
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -10450,31 +2573,7 @@ const globalCampaignCalculatedTotals = useMemo(() => {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
                               <span className="font-sans font-bold truncate break-all text-zinc-400">{t.name}</span>
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -10482,31 +2581,7 @@ const globalCampaignCalculatedTotals = useMemo(() => {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
                             </div>
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -10514,31 +2589,7 @@ const globalCampaignCalculatedTotals = useMemo(() => {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
                         </div>
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -10546,31 +2597,7 @@ const globalCampaignCalculatedTotals = useMemo(() => {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
                           <span>Card Total Mails</span>
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -10578,31 +2605,7 @@ const globalCampaignCalculatedTotals = useMemo(() => {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
                         </div>
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -10610,31 +2613,7 @@ const globalCampaignCalculatedTotals = useMemo(() => {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
                     ))}
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -10642,31 +2621,7 @@ const globalCampaignCalculatedTotals = useMemo(() => {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
                 )}
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -10674,31 +2629,7 @@ const globalCampaignCalculatedTotals = useMemo(() => {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
             )}
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -10706,43 +2637,7 @@ const globalCampaignCalculatedTotals = useMemo(() => {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
         )}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -10754,31 +2649,7 @@ const globalCampaignCalculatedTotals = useMemo(() => {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
           <div className="flex flex-col gap-6 animate-fadeIn">
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -10786,31 +2657,7 @@ const globalCampaignCalculatedTotals = useMemo(() => {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
             <section className={`rounded-xl p-4 sm:p-6 border shadow-xl flex flex-col gap-4 ${isDarkMode ? "bg-[#111726] border-white/5" : "bg-white border-slate-200"}`}>
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -10818,31 +2665,7 @@ const globalCampaignCalculatedTotals = useMemo(() => {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
                 <h3 className="text-xs font-black uppercase tracking-widest text-purple-400">📈 Step 1: Upload Conversion Statement & Specify Bounds</h3>
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -10850,31 +2673,7 @@ const globalCampaignCalculatedTotals = useMemo(() => {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
                 {analyticsActive && (
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -10882,31 +2681,7 @@ const globalCampaignCalculatedTotals = useMemo(() => {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
                     🔄 Change Filters (AGAIN)
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -10914,47 +2689,11 @@ const globalCampaignCalculatedTotals = useMemo(() => {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
                 )}
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
               </div>
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -10962,47 +2701,11 @@ const globalCampaignCalculatedTotals = useMemo(() => {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
               <div className="grid gap-4 grid-cols-1 sm:grid-cols-3 items-end">
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
                 <div className="flex flex-col gap-1.5">
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -11010,31 +2713,7 @@ const globalCampaignCalculatedTotals = useMemo(() => {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
                   <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className={`h-12 rounded-lg px-3 text-sm outline-none border w-full ${isDarkMode ? "bg-slate-950 border-zinc-800 text-white focus:border-purple-500" : "bg-white border-slate-300"}`} />
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -11042,31 +2721,7 @@ const globalCampaignCalculatedTotals = useMemo(() => {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
                 <div className="flex flex-col gap-1.5">
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -11074,47 +2729,11 @@ const globalCampaignCalculatedTotals = useMemo(() => {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
                   <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className={`h-12 rounded-lg px-3 text-sm outline-none border w-full ${isDarkMode ? "bg-slate-950 border-zinc-800 text-white focus:border-purple-500" : "bg-white border-slate-300"}`} />
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
                 </div>
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -11122,31 +2741,7 @@ const globalCampaignCalculatedTotals = useMemo(() => {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
                   <label className="text-xs font-bold uppercase tracking-wider text-zinc-400">Report Days Duration</label>
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -11154,59 +2749,11 @@ const globalCampaignCalculatedTotals = useMemo(() => {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
                 </div>
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
               </div>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -11218,31 +2765,7 @@ const globalCampaignCalculatedTotals = useMemo(() => {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
                 <label className="text-xs font-bold uppercase tracking-wider text-zinc-400">Select Revenue Ledgers Upload (Multiple Allowed .csv)</label>
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -11250,43 +2773,7 @@ const globalCampaignCalculatedTotals = useMemo(() => {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
               </div>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -11298,31 +2785,7 @@ const globalCampaignCalculatedTotals = useMemo(() => {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
                 <div className={`p-4 rounded-xl border text-sm font-mono flex flex-col gap-1.5 ${isDarkMode ? "bg-slate-950 border-zinc-800" : "bg-slate-100 border-slate-200"}`}>
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -11330,31 +2793,7 @@ const globalCampaignCalculatedTotals = useMemo(() => {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
                   {uploadedFilesSummary.map((fName, idx) => (
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -11362,31 +2801,7 @@ const globalCampaignCalculatedTotals = useMemo(() => {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
                   ))}
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -11394,31 +2809,7 @@ const globalCampaignCalculatedTotals = useMemo(() => {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
                 </div>
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -11430,43 +2821,7 @@ const globalCampaignCalculatedTotals = useMemo(() => {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
               <button 
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -11474,31 +2829,7 @@ const globalCampaignCalculatedTotals = useMemo(() => {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
                 disabled={!startDate || !endDate || combinedCsvRecords.length === 0}
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -11506,31 +2837,7 @@ const globalCampaignCalculatedTotals = useMemo(() => {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
               >
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -11538,31 +2845,7 @@ const globalCampaignCalculatedTotals = useMemo(() => {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
               </button>
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -11574,43 +2857,7 @@ const globalCampaignCalculatedTotals = useMemo(() => {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
             {analyticsActive && allFetchedData && revenueCalculatedCards.length > 0 && (
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -11618,31 +2865,7 @@ const globalCampaignCalculatedTotals = useMemo(() => {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
                 
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -11650,31 +2873,7 @@ const globalCampaignCalculatedTotals = useMemo(() => {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
                 <div className={`lg:w-1/3 shrink-0 rounded-2xl p-4 flex flex-row lg:flex-col gap-3 overflow-auto shadow-2xl ${isDarkMode ? "bg-[#111726]/40 border border-white/5" : "bg-white border-slate-200"}`}>
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -11682,31 +2881,7 @@ const globalCampaignCalculatedTotals = useMemo(() => {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
                     <span className="text-[10px] uppercase font-black tracking-widest text-zinc-500">Workspace Ledger</span>
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -11714,31 +2889,7 @@ const globalCampaignCalculatedTotals = useMemo(() => {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
                   </div>
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -11746,31 +2897,7 @@ const globalCampaignCalculatedTotals = useMemo(() => {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
                     const isActive = (selectedTabFocus || distinctRevenueAccountTabs[0])?.toUpperCase() === tabName.toUpperCase();
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -11778,31 +2905,7 @@ const globalCampaignCalculatedTotals = useMemo(() => {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
                     return (
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -11810,31 +2913,7 @@ const globalCampaignCalculatedTotals = useMemo(() => {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
                         key={tabName}
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -11842,31 +2921,7 @@ const globalCampaignCalculatedTotals = useMemo(() => {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
                         className={`px-4 py-3 rounded-xl text-sm font-bold tracking-wide text-left transition-all duration-300 transform ease-in-out shrink-0 whitespace-nowrap lg:whitespace-normal flex justify-between items-center ${
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -11874,31 +2929,7 @@ const globalCampaignCalculatedTotals = useMemo(() => {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
                             ? "bg-purple-600 text-white shadow-purple-500/20 font-black" 
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -11906,31 +2937,7 @@ const globalCampaignCalculatedTotals = useMemo(() => {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
                         }`}
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -11938,31 +2945,7 @@ const globalCampaignCalculatedTotals = useMemo(() => {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
                         <div className="flex items-center gap-2.5">
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -11970,31 +2953,7 @@ const globalCampaignCalculatedTotals = useMemo(() => {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
                           <span className="truncate max-w-[160px] lg:max-w-none">{formatTabBeautifulLabel(tabName)}</span>
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -12002,31 +2961,7 @@ const globalCampaignCalculatedTotals = useMemo(() => {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
                         <span className={`text-xs font-mono font-black ml-3 px-2.5 py-1 rounded-lg transition-colors ${isActive ? "bg-white/20 text-white" : "bg-[#090d16] text-purple-400 border border-purple-500/10"}`}>
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -12034,31 +2969,7 @@ const globalCampaignCalculatedTotals = useMemo(() => {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
                         </span>
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -12066,31 +2977,7 @@ const globalCampaignCalculatedTotals = useMemo(() => {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
                     );
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -12098,43 +2985,7 @@ const globalCampaignCalculatedTotals = useMemo(() => {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
                 </div>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -12146,31 +2997,7 @@ const globalCampaignCalculatedTotals = useMemo(() => {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
                 <div className="flex-1 min-w-0">
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -12178,31 +3005,7 @@ const globalCampaignCalculatedTotals = useMemo(() => {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
                     <div className={`rounded-2xl border shadow-2xl flex flex-col justify-between overflow-hidden h-full w-full ${isDarkMode ? "bg-[#111726] border-white/5" : "bg-white border-slate-200"}`}>
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -12210,31 +3013,7 @@ const globalCampaignCalculatedTotals = useMemo(() => {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
                       <div className={`p-5 border-b flex justify-between items-center ${isDarkMode ? "bg-slate-950/60 border-zinc-800 text-white" : "bg-slate-100 border-slate-200 text-slate-900"}`}>
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -12242,31 +3021,7 @@ const globalCampaignCalculatedTotals = useMemo(() => {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
                           <span className="h-2.5 w-2.5 rounded-full bg-emerald-500 animate-ping" />
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -12274,31 +3029,7 @@ const globalCampaignCalculatedTotals = useMemo(() => {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
                         </div>
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -12306,31 +3037,7 @@ const globalCampaignCalculatedTotals = useMemo(() => {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
                           <span className="text-[10px] text-zinc-500 font-black uppercase tracking-wider block">Card Total Revenue</span>
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -12338,59 +3045,11 @@ const globalCampaignCalculatedTotals = useMemo(() => {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
                         </div>
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
                       </div>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -12402,31 +3061,7 @@ const globalCampaignCalculatedTotals = useMemo(() => {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
                         {targetedActiveFocusedCard.templates.map((tmpl, tIdx) => (
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -12434,31 +3069,7 @@ const globalCampaignCalculatedTotals = useMemo(() => {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
                             
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -12466,31 +3077,7 @@ const globalCampaignCalculatedTotals = useMemo(() => {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
                               <h3 className={`text-base font-bold break-all tracking-tight ${isDarkMode ? "text-zinc-100" : "text-slate-900"}`}>{tmpl.templateName}</h3>
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -12498,31 +3085,7 @@ const globalCampaignCalculatedTotals = useMemo(() => {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
                                 {tmpl.conversions > 0 ? `🏆 ${tmpl.conversions} Conv` : "No Revenue"}
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -12530,31 +3093,7 @@ const globalCampaignCalculatedTotals = useMemo(() => {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
                             </div>
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -12562,47 +3101,11 @@ const globalCampaignCalculatedTotals = useMemo(() => {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
                             <div className="grid grid-cols-2 md:grid-cols-4 gap-x-6 gap-y-2.5 text-xs">
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
                               <div>
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -12610,31 +3113,7 @@ const globalCampaignCalculatedTotals = useMemo(() => {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
                                 <span className={`text-base font-black ${isDarkMode ? "text-zinc-200" : "text-slate-800"}`}>{tmpl.mailsUsed.toLocaleString()}</span>
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -12642,31 +3121,7 @@ const globalCampaignCalculatedTotals = useMemo(() => {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
                               <div>
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -12674,31 +3129,7 @@ const globalCampaignCalculatedTotals = useMemo(() => {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
                                 <span className="text-base font-black text-sky-400">{tmpl.sendingVolume.toLocaleString()}</span>
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -12706,31 +3137,7 @@ const globalCampaignCalculatedTotals = useMemo(() => {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
                               <div>
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -12738,47 +3145,11 @@ const globalCampaignCalculatedTotals = useMemo(() => {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
                                 <span className="text-base font-black text-emerald-400">${tmpl.revenue.toLocaleString()}</span>
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
                               </div>
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -12786,31 +3157,7 @@ const globalCampaignCalculatedTotals = useMemo(() => {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
                                 <span className="block text-[10px] font-bold uppercase tracking-wider text-zinc-500">Count / Conversion</span>
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -12818,31 +3165,7 @@ const globalCampaignCalculatedTotals = useMemo(() => {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
                                   {tmpl.efficiency ? tmpl.efficiency.toLocaleString() : "N/A"}
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -12850,59 +3173,11 @@ const globalCampaignCalculatedTotals = useMemo(() => {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
                               </div>
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
                             </div>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -12914,31 +3189,7 @@ const globalCampaignCalculatedTotals = useMemo(() => {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
                         ))}
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -12950,59 +3201,11 @@ const globalCampaignCalculatedTotals = useMemo(() => {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
                     </div>
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
                   )}
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -13014,59 +3217,11 @@ const globalCampaignCalculatedTotals = useMemo(() => {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
               </div>
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
             )}
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -13074,31 +3229,7 @@ const globalCampaignCalculatedTotals = useMemo(() => {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
             {analyticsActive && allFetchedData && revenueCalculatedCards.length === 0 && (
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -13106,31 +3237,7 @@ const globalCampaignCalculatedTotals = useMemo(() => {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
                 No data parameters matched this criteria combination grid. Try running compiling parameters again.
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -13138,47 +3245,11 @@ const globalCampaignCalculatedTotals = useMemo(() => {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
             )}
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
           </div>
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -13190,43 +3261,7 @@ const globalCampaignCalculatedTotals = useMemo(() => {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
       </div>
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -13234,31 +3269,7 @@ const globalCampaignCalculatedTotals = useMemo(() => {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
   );
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
