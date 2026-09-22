@@ -687,9 +687,9 @@ export default function Home() {
 
     if (cleanCamp === "ADT_AD" || cleanCamp.startsWith("ADT")) return { includes: ["ADT"], excludes: ["DB", "XCE", "GZ", "XC"] };
 
+ if (cleanCamp.includes("RYHF") || cleanCamp.includes("RYHF_AD")) return { includes: ["RYHF"], excludes: ["DB", "XCE", "GZ", "XC"] };
 
-
-    if (cleanCamp.includes("RYH FLOORING") || cleanCamp.includes("RYH_FLOORING")) return { includes: ["RHF"], excludes: ["DB", "XCE", "GZ", "XC"] };
+    if (cleanCamp.includes("RYH FLOORING") || cleanCamp.includes("RYH_FLOORING")) return { includes: ["RYHF"], excludes: ["DB", "XCE", "GZ", "XC"] };
 
 
 
