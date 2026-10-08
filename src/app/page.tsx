@@ -650,7 +650,7 @@ export default function Home() {
 
 
     if (cleanCamp === "AHS_AD" || cleanCamp.startsWith("AHS")) return { includes: ["AHS"], excludes: ["DB", "XCE", "GZ", "XC", "ES"] };
-
+if (cleanCamp === "AHS_DB" || cleanCamp.startsWith("AHS")) return { includes: ["AHS"], excludes: ["AD", "XCE", "GZ", "XC", "ES"] };
 
 
     if (cleanCamp === "SHW_ES" || cleanCamp.startsWith("SHW")) return { includes: ["SHW", "ES"], excludes: ["DB", "XCE", "GZ", "XC"] };
