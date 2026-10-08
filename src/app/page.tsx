@@ -629,163 +629,60 @@ export default function Home() {
 
 
 
-  const getFilterRule = (campaignName: string): FilterRule => {
+ const getFilterRule = (campaignName: string): FilterRule => {
+  const cleanCamp = campaignName.toUpperCase().trim();
 
+  if (cleanCamp === "RGR") return { includes: ["RGR"], excludes: [] };
+  if (cleanCamp === "ARW_AD") return { includes: ["ARW"], excludes: [] };
+  if (cleanCamp === "ICO") return { includes: ["ICO"], excludes: [] };
 
-
-    const cleanCamp = campaignName.toUpperCase().trim();
-
-
-
-    if (cleanCamp === "RGR") return { includes: ["RGR"], excludes: [] };
-
-
-
-    if (cleanCamp === "ARW_AD") return { includes: ["ARW"], excludes: [] };
-
-
-
-    if (cleanCamp === "ICO") return { includes: ["ICO"], excludes: [] };
-
-
-
-    if (cleanCamp === "AHS_AD" || cleanCamp.startsWith("AHS")) return { includes: ["AHS"], excludes: ["DB", "XCE", "GZ", "XC", "ES"] };
-
-
-
-    if (cleanCamp === "SHW_ES" || cleanCamp.startsWith("SHW")) return { includes: ["SHW", "ES"], excludes: ["DB", "XCE", "GZ", "XC"] };
-
-
-
-    if (cleanCamp === "XCE_AIR" || cleanCamp === "AIR") return { includes: ["AIR"], excludes: [] };
-
-
-
-    if (cleanCamp === "FIR_XC" || cleanCamp.startsWith("FIR")) return { includes: ["FIR"], excludes: [] };
-
-
-
-    if (cleanCamp === "HEC_AD" || cleanCamp.startsWith("HEC")) return { includes: ["HEC"], excludes: [] };
-
-
-
-    if (cleanCamp === "INSURIFY_GZ") return { includes: ["IA"], excludes: ["IAI"] };
-
-
-
-    if (cleanCamp === "LR_GZ" || cleanCamp.startsWith("LR")) return { includes: ["LR"], excludes: [] };
-
-
-
-    if (cleanCamp.includes("E-VETERANS_DB") || cleanCamp.includes("VETERANS_DB")) return { includes: ["EVL"], excludes: [] };
-
-
-
-    if (cleanCamp === "FGLO_DB" || cleanCamp.startsWith("FGLO")) return { includes: ["FGLO"], excludes: [] };
-
-
-
-    if (cleanCamp === "ADT_AD" || cleanCamp.startsWith("ADT")) return { includes: ["ADT"], excludes: ["DB", "XCE", "GZ", "XC"] };
-
- if (cleanCamp.includes("RYHF") || cleanCamp.includes("RYHF_AD")) return { includes: ["RHF"], excludes: ["DB", "XCE", "GZ", "XC"] };
-
-    if (cleanCamp.includes("RYH FLOORING") || cleanCamp.includes("RYH_FLOORING")) return { includes: ["RHF"], excludes: ["DB", "XCE", "GZ", "XC"] };
-
-
-
-    if (cleanCamp === "JG_CMAD") return { includes: ["JG"], excludes: ["DB", "XCE", "GZ", "XC"] };
-
-
-
-    if (cleanCamp === "SQMH_ES") return { includes: ["SQMH"], excludes: ["DB", "XCE", "GZ", "XC"] };
-
-
-
-    if (cleanCamp === "EFA_ES") return { includes: ["EFA"], excludes: ["DB", "XCE", "GZ", "XC"] };  
-
-
-
-    if (cleanCamp === "EAC_CMAD") return { includes: ["EAC"], excludes: ["DB", "XCE", "GZ", "XC"] };
-
-
-
-    if (cleanCamp === "CH_XC" || cleanCamp.startsWith("CH")) return { includes: ["CH"], excludes: [] };
-
-
-
-    if (cleanCamp === "LBH_DB" || cleanCamp.startsWith("LBH")) return { includes: ["LBH", "DB"], excludes: ["XCE", "GZ", "XC", "ES"] };
-
- if (cleanCamp === "ENDURANCE_XC") return { includes: ["EAC", "XC"], excludes: [ "AD"] };
-
-     if (cleanCamp === "ENDURANCE_AD") return { includes: ["EAC", "AD"], excludes: ["XC"] };
-
-
-
-    if (cleanCamp === "NDR_CMAD") return { includes: ["NDR", "CMAD"], excludes: ["XCE", "XC", "ES"] };
-
+  // Specific AHS conditions handled before generic startsWith fallback
   if (cleanCamp === "AHS_DB") return { includes: ["AHS", "DB"], excludes: ["XCE", "XC", "AD", "CMAD"] };
+  if (cleanCamp === "AHS_AD" || cleanCamp.startsWith("AHS")) return { includes: ["AHS"], excludes: ["DB", "XCE", "GZ", "XC", "ES"] };
 
-    if (cleanCamp === "NDR_GZ" || cleanCamp === "NDR") return { includes: ["NDR", "GZ"], excludes: ["XCE", "XC", "ES", "CMAD"] };
+  if (cleanCamp === "SHW_ES" || cleanCamp.startsWith("SHW")) return { includes: ["SHW", "ES"], excludes: ["DB", "XCE", "GZ", "XC"] };
+  if (cleanCamp === "XCE_AIR" || cleanCamp === "AIR") return { includes: ["AIR"], excludes: [] };
+  if (cleanCamp === "FIR_XC" || cleanCamp.startsWith("FIR")) return { includes: ["FIR"], excludes: [] };
+  if (cleanCamp === "HEC_AD" || cleanCamp.startsWith("HEC")) return { includes: ["HEC"], excludes: [] };
+  if (cleanCamp === "INSURIFY_GZ") return { includes: ["IA"], excludes: ["IAI"] };
+  if (cleanCamp === "LR_GZ" || cleanCamp.startsWith("LR")) return { includes: ["LR"], excludes: [] };
+  if (cleanCamp.includes("E-VETERANS_DB") || cleanCamp.includes("VETERANS_DB")) return { includes: ["EVL"], excludes: [] };
+  if (cleanCamp === "FGLO_DB" || cleanCamp.startsWith("FGLO")) return { includes: ["FGLO"], excludes: [] };
+  if (cleanCamp === "ADT_AD" || cleanCamp.startsWith("ADT")) return { includes: ["ADT"], excludes: ["DB", "XCE", "GZ", "XC"] };
+  if (cleanCamp.includes("RYHF") || cleanCamp.includes("RYHF_AD")) return { includes: ["RHF"], excludes: ["DB", "XCE", "GZ", "XC"] };
+  if (cleanCamp.includes("RYH FLOORING") || cleanCamp.includes("RYH_FLOORING")) return { includes: ["RHF"], excludes: ["DB", "XCE", "GZ", "XC"] };
 
+  if (cleanCamp === "JG_CMAD") return { includes: ["JG"], excludes: ["DB", "XCE", "GZ", "XC"] };
+  if (cleanCamp === "SQMH_ES") return { includes: ["SQMH"], excludes: ["DB", "XCE", "GZ", "XC"] };
+  if (cleanCamp === "EFA_ES") return { includes: ["EFA"], excludes: ["DB", "XCE", "GZ", "XC"] };
+  if (cleanCamp === "EAC_CMAD") return { includes: ["EAC"], excludes: ["DB", "XCE", "GZ", "XC"] };
+  if (cleanCamp === "CH_XC" || cleanCamp.startsWith("CH")) return { includes: ["CH"], excludes: [] };
+  if (cleanCamp === "LBH_DB" || cleanCamp.startsWith("LBH")) return { includes: ["LBH", "DB"], excludes: ["XCE", "GZ", "XC", "ES"] };
 
+  if (cleanCamp === "ENDURANCE_XC") return { includes: ["EAC", "XC"], excludes: ["AD"] };
+  if (cleanCamp === "ENDURANCE_AD") return { includes: ["EAC", "AD"], excludes: ["XC"] };
 
-    
+  if (cleanCamp === "NDR_CMAD") return { includes: ["NDR", "CMAD"], excludes: ["XCE", "XC", "ES"] };
+  if (cleanCamp === "NDR_GZ" || cleanCamp === "NDR") return { includes: ["NDR", "GZ"], excludes: ["XCE", "XC", "ES", "CMAD"] };
 
+  if (cleanCamp === "ZBH" || cleanCamp.startsWith("ZBH")) return { includes: ["ZBH", "ES"], excludes: ["XCE", "XC", "DB"] };
+  if (cleanCamp === "WS" || cleanCamp.startsWith("WS")) return { includes: ["WS", "CMAD"], excludes: ["XCE", "XC", "ES"] };
+  if (cleanCamp === "QLR" || cleanCamp.startsWith("QLR")) return { includes: ["QLR", "ES"], excludes: ["XCE", "XC", "DB"] };
+  if (cleanCamp === "VIVINT_AD" || cleanCamp === "VIVINT") return { includes: ["VI"], excludes: ["XCE", "XC", "ES", "GZ", "DB"] };
+  if (cleanCamp === "TRUGREEN_AD") return { includes: ["TRU"], excludes: ["XCE", "XC", "ES", "GZ", "DB"] };
+  if (cleanCamp.includes("IAI_GZ")) return { includes: ["IAI"], excludes: [] };
 
+  // Fixed: Specific RBA checks before general fallback
+  if (cleanCamp === "RBA_XCE") return { includes: ["RBA", "XCE"], excludes: ["XC", "ES", "GZ"] };
+  if (cleanCamp === "RBA_AD" || cleanCamp.startsWith("RBA")) return { includes: ["RBA", "D"], excludes: ["XC", "ES", "GZ"] };
 
-    if (cleanCamp === "ZBH" || cleanCamp.startsWith("ZBH")) return { includes: ["ZBH", "ES"], excludes: ["XCE", "XC", "DB"] };
+  if (cleanCamp === "JG_XCE") return { includes: ["JG", "XCE"], excludes: ["XC", "ES", "GZ", "DB"] };
+  if (cleanCamp === "TRUGREEN_DB") return { includes: ["TRU", "DB"], excludes: ["XC", "ES", "GZ", "XCE"] };
+  if (cleanCamp === "ASSURITI_DB") return { includes: ["AAW"], excludes: [] };
+  if (cleanCamp === "QUOTIFII_DB") return { includes: ["QTI"], excludes: [] };
 
-
-
-    if (cleanCamp === "WS" || cleanCamp.startsWith("WS")) return { includes: ["WS", "CMAD"], excludes: ["XCE", "XC", "ES"] };
-
-
-
-    if (cleanCamp === "QLR" || cleanCamp.startsWith("QLR")) return { includes: ["QLR", "ES"], excludes: ["XCE", "XC", "DB"] };
-
-
-
-    if (cleanCamp === "VIVINT_AD" || cleanCamp === "VIVINT") return { includes: ["VI"], excludes: ["XCE", "XC", "ES", "GZ", "DB"] };
-
-
-
-    if (cleanCamp === "TRUGREEN_AD") return { includes: ["TRU"], excludes: ["XCE", "XC", "ES", "GZ", "DB"] };
-
-
-
-    if (cleanCamp.includes("IAI_GZ")) return { includes: ["IAI"], excludes: [] };
-
-  if (cleanCamp === "RBA_AD" || cleanCamp.startsWith("RBA")) return { includes: ["RBA", "D"], excludes: ["XC", "ES", "GZ", ] };
-    if (cleanCamp === "RBA_XCE" || cleanCamp.startsWith("RBA")) return { includes: ["RBA", "XCE"], excludes: ["XC", "ES", "GZ", ] };
-
-
-
-    if (cleanCamp === "JG_XCE") return { includes: ["JG", "XCE"], excludes: ["XC", "ES", "GZ", "DB"] };
-
-
-
-    if (cleanCamp === "TRUGREEN_DB") return { includes: ["TRU", "DB"], excludes: ["XC", "ES", "GZ", "XCE"] };
-
-
-
-    if (cleanCamp === "ASSURITI_DB") return { includes: ["AAW"], excludes: [] };
-
-
-
-    if (cleanCamp === "QUOTIFII_DB") return { includes: ["QTI"], excludes: [] };
-
-
-
- 
-
-
-
-    return { includes: [cleanCamp.split("_")[0]], excludes: [] };
-
-
-
-  };
-
+  return { includes: [cleanCamp.split("_")[0]], excludes: [] };
+};
 
 
 
