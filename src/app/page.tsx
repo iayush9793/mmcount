@@ -723,7 +723,7 @@ export default function Home() {
 
     if (cleanCamp === "NDR_CMAD") return { includes: ["NDR", "CMAD"], excludes: ["XCE", "XC", "ES"] };
 
-  if (cleanCamp === "AHS_DB" || cleanCamp === "AHS") return { includes: ["AHS", "DB"], excludes: ["XCE", "XC", "ES", "CMAD"] };
+  if (cleanCamp === "AHS_DB") return { includes: ["AHS", "DB"], excludes: ["XCE", "XC", "AD", "CMAD"] };
 
     if (cleanCamp === "NDR_GZ" || cleanCamp === "NDR") return { includes: ["NDR", "GZ"], excludes: ["XCE", "XC", "ES", "CMAD"] };
 
