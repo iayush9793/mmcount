@@ -650,7 +650,7 @@ export default function Home() {
 
 
     if (cleanCamp === "AHS_AD" || cleanCamp.startsWith("AHS")) return { includes: ["AHS"], excludes: ["DB", "XCE", "GZ", "XC", "ES"] };
-if (cleanCamp === "AHS_DB" || cleanCamp.startsWith("AHS")) return { includes: ["AHS"], excludes: ["AD", "XCE", "GZ", "XC", "ES"] };
+
 
 
     if (cleanCamp === "SHW_ES" || cleanCamp.startsWith("SHW")) return { includes: ["SHW", "ES"], excludes: ["DB", "XCE", "GZ", "XC"] };
@@ -723,7 +723,7 @@ if (cleanCamp === "AHS_DB" || cleanCamp.startsWith("AHS")) return { includes: ["
 
     if (cleanCamp === "NDR_CMAD") return { includes: ["NDR", "CMAD"], excludes: ["XCE", "XC", "ES"] };
 
-
+  if (cleanCamp === "AHS_DB" || cleanCamp === "AHS") return { includes: ["AHS", "DB"], excludes: ["XCE", "XC", "ES", "CMAD"] };
 
     if (cleanCamp === "NDR_GZ" || cleanCamp === "NDR") return { includes: ["NDR", "GZ"], excludes: ["XCE", "XC", "ES", "CMAD"] };
 
