@@ -147,17 +147,18 @@ const SPECIAL_4000_ETS = [
 "JSG30MET",
 
     "JSG43",
-
+"JSG56",
+  "JSG60",
     "JSG55",
-
+"JSG38NR",
     "JSG50",
-
+"JSG47",
     "JSG26",
-
+"JSG36",
     "JSG41",
-
+ "JSG50",
     "JSG45",
-
+ "JSG52",
     "JSG48MET"
 
 ];
