@@ -33,13 +33,21 @@ function rowMultiplier(tabName: string): number {
   const clean = tabName.replace(/[^a-zA-Z0-9]/g, "").toUpperCase();
 
   const specialTargets = [
-    "JSG30MET",
+ "JSG30MET",
+ 
     "JSG43",
+"JSG56",
+  "JSG60",
     "JSG55",
+"JSG38NR",
     "JSG50",
+"JSG47",
     "JSG26",
+"JSG36",
     "JSG41",
+"JSG50",
     "JSG45",
+"JSG52",
     "JSG48MET"
   ];
 
