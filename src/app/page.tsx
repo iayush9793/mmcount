@@ -32,36 +32,28 @@ interface BeforeInstallPromptEvent extends Event {
 function rowMultiplier(tabName: string): number {
   const clean = tabName.replace(/[^a-zA-Z0-9]/g, "").toUpperCase();
 
-const SPECIAL_4000_ETS = [
-  "JSG30MET",
-  "JSG43",
-  "JSG56",
+  const specialTargets = [
+ "JSG30MET",
+ 
+    "JSG43",
+"JSG56",
   "JSG60",
-  "JSG38NR",
-  "JSG50",
-  "JSG47",
-  "JSG26",
-  "JSG36",
-  "JSG45",
-  "JSG52",
-];
+    "JSG55",
+"JSG38NR",
+    "JSG50",
+"JSG47",
+    "JSG26",
+"JSG36",
+    "JSG41",
+"JSG50",
+    "JSG45",
+"JSG52",
+    "JSG48MET"
+  ];
 
-// Add your 4500 multiplier ET names here
-const SPECIAL_4500_ETS = [
-  "JSG41",
-  "JSG48MET",
-   "JSG55",
-];
+  const hasSpecial = specialTargets.some((target) => clean.includes(target));
 
-  if (special4000Targets.some((target) => clean.includes(target))) {
-    return 4000;
-  }
-
-  if (special4500Targets.some((target) => clean.includes(target))) {
-    return 4500;
-  }
-
-  return 5000;
+  return hasSpecial ? 4000 : 5000;
 }
 
 function getReportSubidAccountName(sheetTabName: string): string {
