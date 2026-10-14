@@ -1,84 +1,62 @@
 import { google } from "googleapis";
 
-
-
 const SPREADSHEET_ID = process.env.GOOGLE_SHEETS_ID;
-
 const CLIENT_EMAIL = process.env.GOOGLE_CLIENT_EMAIL;
-
 const RAW_PRIVATE_KEY = process.env.GOOGLE_PRIVATE_KEY;
 
+// ET lists placed outside the functions so they aren't redeclared on every call
+const SPECIAL_4000_ETS = [
+  "JSG30MET",
+  "JSG43",
+  "JSG56",
+  "JSG60",
+ 
+  "JSG38NR",
+  "JSG50",
+  "JSG47",
+  "JSG26",
+  "JSG36",
+  "JSG45",
+  "JSG52",
+];
 
+// Add your 4500 multiplier ET names here
+const SPECIAL_4500_ETS = [
+  "JSG41",
+  "JSG48MET",
+   "JSG55",
+];
 
 function getPrivateKey(): string {
-
   return RAW_PRIVATE_KEY?.replace(/\\n/g, "\n") ?? "";
-
 }
-
-
 
 async function getSheetsClient() {
-
   const auth = new google.auth.JWT({
-
     email: CLIENT_EMAIL,
-
     key: getPrivateKey(),
-
     scopes: ["https://www.googleapis.com/auth/spreadsheets.readonly"],
-
   });
-
   return google.sheets({ version: "v4", auth });
-
 }
-
-
 
 export async function listETTabs(): Promise<string[]> {
-
   if (!SPREADSHEET_ID) return [];
-
   try {
-
     const sheets = await getSheetsClient();
-
     const res = await sheets.spreadsheets.get({ spreadsheetId: SPREADSHEET_ID });
-
     return res.data.sheets?.map((s) => s.properties?.title).filter((t): t is string => Boolean(t)) ?? [];
-
   } catch (e) {
-
     console.error(e);
-
     return [];
-
   }
-
 }
-
-
-
-function isoToSheetDate(isoDate: string): string {
-  const [year, month, day] = isoDate.split("-");
-  if (!year || !month || !day) return isoDate;
-  return `${day}-${month}-${year}`; // e.g. converts "2026-08-05" into "05-08-2026"
-}
-
-
 
 function normalizeCell(value: unknown): string {
-
   if (value == null) return "";
-
   return String(value).trim();
-
 }
 
-
-
-// Update date generator to support both padded (05-08-2026) and unpadded (5-08-2026) dates
 function getDatesInRange(startDateIso: string, endDateIso: string): string[] {
   const dates = new Set<string>();
   const start = new Date(startDateIso);
@@ -91,7 +69,6 @@ function getDatesInRange(startDateIso: string, endDateIso: string): string[] {
     const dayPadded = String(d.getDate()).padStart(2, "0");
     const dayRaw = String(d.getDate());
 
-    // Adds both '05-08-2026' and '5-08-2026', as well as '5-8-2026'
     dates.add(`${dayPadded}-${monthPadded}-${year}`);
     dates.add(`${dayRaw}-${monthPadded}-${year}`);
     dates.add(`${dayPadded}-${monthRaw}-${year}`);
@@ -100,210 +77,95 @@ function getDatesInRange(startDateIso: string, endDateIso: string): string[] {
   return Array.from(dates);
 }
 
-
-
 export async function getMailCounts(options: { startDate: string; endDate: string; etNameOrAll: string }) {
-
   const { startDate, endDate, etNameOrAll } = options;
-
   if (!SPREADSHEET_ID || !startDate || !endDate) {
-
     return { totalMails: 0, totalCount: 0, calculatedVolume: 0, hadData: false, breakdown: [] };
-
   }
-
-
 
   const tabs = await listETTabs();
-
-  const targetTabs = etNameOrAll.toUpperCase().startsWith("ALL") 
-
-    ? tabs 
-
+  const targetTabs = etNameOrAll.toUpperCase().startsWith("ALL")
+    ? tabs
     : tabs.filter((t) => t.replace(/[^a-zA-Z0-9]/g, "").toLowerCase() === etNameOrAll.replace(/[^a-zA-Z0-9]/g, "").toLowerCase());
 
-
-
   const sheets = await getSheetsClient();
-
   const targetedSheetDates = getDatesInRange(startDate, endDate);
-
   const breakdownMap = new Map<string, { template: string; campaignSrc: string; etSource: string; count: number; multiplier: number }>();
 
-
-
   let grandTotalMails = 0;
-
   let grandTotalCalculatedVolume = 0;
-
   let grandTotalRawMailsTracked = 0;
 
-
-
- // Define your 4000 multiplier ET names here (place outside the loop)
-
-const SPECIAL_4000_ETS = [
-
-"JSG30MET",
-
-    "JSG43",
-"JSG56",
-  "JSG60",
-    "JSG55",
-"JSG38NR",
-    "JSG50",
-"JSG47",
-    "JSG26",
-"JSG36",
-    "JSG41",
- "JSG50",
-    "JSG45",
- "JSG52",
-    "JSG48MET"
-
-];
-
-
-
-for (const tab of targetTabs) {
-
-  try {
-
-    const cleanedTabName = tab.replace(/[^a-zA-Z0-9]/g, "").toUpperCase();
-
-
-
-    // Check if cleaned tab matches any special ET name
-
-    const isSpecialET = SPECIAL_4000_ETS.some((et) => cleanedTabName.includes(et));
-
-    const rowMultiplier = isSpecialET ? 4000 : 5000;
-
-
-
-    const res = await sheets.spreadsheets.values.get({
-
-      spreadsheetId: SPREADSHEET_ID,
-
-      range: `'${tab}'!A:ZZ`,
-
-    });
-
-    const values = res.data.values ?? [];
-
-    if (values.length <= 1) continue;
-
-
-
-    const headerRow = values[0];
-
-
-
-    for (let i = 1; i < values.length; i++) {
-
-      const row = values[i];
-
-      const rawDate = normalizeCell(row[0]);
-
-      const currentTemplate = normalizeCell(row[1]);
-
-
-
-      if (!targetedSheetDates.includes(rawDate) || !currentTemplate) continue;
-
-
-
-      for (let colIdx = 2; colIdx < headerRow.length; colIdx++) {
-
-        const campaignHeader = normalizeCell(headerRow[colIdx]);
-
-        if (!campaignHeader) continue;
-
-
-
-        const cellValue = normalizeCell(row[colIdx]);
-
-        if (!cellValue) continue;
-
-
-
-        const valNum = Number(cellValue.replace(/,/g, ""));
-
-        const countValue = !Number.isNaN(valNum) ? valNum : 0;
-
-
-
-        if (countValue > 0) {
-
-          grandTotalMails += 1;
-
-          grandTotalRawMailsTracked += countValue;
-
-          grandTotalCalculatedVolume += (countValue * rowMultiplier);
-
-
-
-          const groupKey = `${currentTemplate}_${campaignHeader}_${tab}`;
-
-          const existingItem = breakdownMap.get(groupKey) || {
-
-            template: currentTemplate,
-
-            campaignSrc: campaignHeader,
-
-            etSource: tab,
-
-            count: 0,
-
-            multiplier: rowMultiplier,
-
-          };
-
-
-
-          breakdownMap.set(groupKey, {
-
-            template: currentTemplate,
-
-            campaignSrc: campaignHeader,
-
-            etSource: tab,
-
-            count: existingItem.count + countValue,
-
-            multiplier: rowMultiplier,
-
-          });
-
-        }
-
+  for (const tab of targetTabs) {
+    try {
+      const cleanedTabName = tab.replace(/[^a-zA-Z0-9]/g, "").toUpperCase();
+
+      // Resolve tab multiplier hierarchy: 4000 -> 4500 -> default (5000)
+      let rowMultiplier = 5000;
+      if (SPECIAL_4000_ETS.some((et) => cleanedTabName.includes(et))) {
+        rowMultiplier = 4000;
+      } else if (SPECIAL_4500_ETS.some((et) => cleanedTabName.includes(et))) {
+        rowMultiplier = 4500;
       }
 
+      const res = await sheets.spreadsheets.values.get({
+        spreadsheetId: SPREADSHEET_ID,
+        range: `'${tab}'!A:ZZ`,
+      });
+      const values = res.data.values ?? [];
+      if (values.length <= 1) continue;
+
+      const headerRow = values[0];
+
+      for (let i = 1; i < values.length; i++) {
+        const row = values[i];
+        const rawDate = normalizeCell(row[0]);
+        const currentTemplate = normalizeCell(row[1]);
+
+        if (!targetedSheetDates.includes(rawDate) || !currentTemplate) continue;
+
+        for (let colIdx = 2; colIdx < headerRow.length; colIdx++) {
+          const campaignHeader = normalizeCell(headerRow[colIdx]);
+          if (!campaignHeader) continue;
+
+          const cellValue = normalizeCell(row[colIdx]);
+          if (!cellValue) continue;
+
+          const valNum = Number(cellValue.replace(/,/g, ""));
+          const countValue = !Number.isNaN(valNum) ? valNum : 0;
+
+          if (countValue > 0) {
+            grandTotalMails += 1;
+            grandTotalRawMailsTracked += countValue;
+            grandTotalCalculatedVolume += countValue * rowMultiplier;
+
+            const groupKey = `${currentTemplate}_${campaignHeader}_${tab}`;
+            const existingItem = breakdownMap.get(groupKey) || {
+              template: currentTemplate,
+              campaignSrc: campaignHeader,
+              etSource: tab,
+              count: 0,
+              multiplier: rowMultiplier,
+            };
+
+            breakdownMap.set(groupKey, {
+              ...existingItem,
+              count: existingItem.count + countValue,
+              multiplier: rowMultiplier,
+            });
+          }
+        }
+      }
+    } catch (err) {
+      console.error(`Error processing metrics on tab ${tab}:`, err);
     }
-
-  } catch (err) {
-
-    console.error(`Error processing metrics on tab ${tab}:`, err);
-
   }
 
-}
-
-
-
   return {
-
     totalMails: grandTotalMails,
-
     totalCount: grandTotalRawMailsTracked,
-
-    calculatedVolume: grandTotalCalculatedVolume, 
-
+    calculatedVolume: grandTotalCalculatedVolume,
     hadData: grandTotalCalculatedVolume > 0,
-
     breakdown: Array.from(breakdownMap.values()),
-
   };
-
 }
-
