@@ -29,38 +29,45 @@ interface BeforeInstallPromptEvent extends Event {
 
 // GLOBAL UTILITY MAPPERS AND RESOLVERS
 
+const SPECIAL_4000_ETS = [
+  "JSG30MET",
+  "JSG43",
+  "JSG56",
+  "JSG60",
+  "JSG38NR",
+  "JSG50",
+  "JSG47",
+  "JSG26",
+  "JSG36",
+  "JSG45",
+  "JSG52",
+];
+
+const SPECIAL_4500_ETS = [
+  "JSG41",
+  "JSG48MET",
+  "JSG55",
+];
+
 function rowMultiplier(tabName: string): number {
   const clean = tabName.replace(/[^a-zA-Z0-9]/g, "").toUpperCase();
 
-  const specialTargets = [
- "JSG30MET",
- 
-    "JSG43",
-"JSG56",
-  "JSG60",
-    "JSG55",
-"JSG38NR",
-    "JSG50",
-"JSG47",
-    "JSG26",
-"JSG36",
-    "JSG41",
-"JSG50",
-    "JSG45",
-"JSG52",
-    "JSG48MET"
-  ];
+  if (SPECIAL_4000_ETS.some((target) => clean.includes(target))) {
+    return 4000;
+  }
 
-  const hasSpecial = specialTargets.some((target) => clean.includes(target));
+  if (SPECIAL_4500_ETS.some((target) => clean.includes(target))) {
+    return 4500;
+  }
 
-  return hasSpecial ? 4000 : 5000;
+  return 5000;
 }
 
 function getReportSubidAccountName(sheetTabName: string): string {
   const txt = sheetTabName.replace(/[^a-zA-Z0-9]/g, "").toUpperCase();
 
   if (txt.includes("JSG43")) return "JSG43MET";
-  
+
   if (txt.includes("JSG34") && (txt.includes("NONCOMCAST") || txt.includes("NC"))) {
     return "JSG34MET NONCOMCAST";
   }
@@ -85,7 +92,7 @@ function formatTabBeautifulLabel(tabName: string): string {
   const raw = tabName.replace(/[^a-zA-Z0-9]/g, "").toUpperCase();
 
   if (raw.includes("JSG43")) return "JSG43 (STACK 13)";
-  
+
   if (raw.includes("JSG34") && (raw.includes("NONCOMCAST") || raw.includes("NC"))) {
     return "JSG34MET NONCOMCAST";
   }
@@ -178,7 +185,7 @@ export default function Home() {
       setDeferredPrompt(null);
       setShowInstallBtn(false);
     });
-    
+
     fetch("/api/ets")
       .then((res) => res.json())
       .then((data) => {
@@ -186,7 +193,7 @@ export default function Home() {
         setEts(structuralTabs);
         return fetch(`/api/mailCounts?startDate=${iso}&endDate=${iso}&et=ALL`);
       })
-      .then((res) => res ? res.json() : null)
+      .then((res) => (res ? res.json() : null))
       .then((data) => {
         if (data && data.breakdown) {
           setDashboardData(data.breakdown);
@@ -267,14 +274,14 @@ export default function Home() {
 
   const matchTemplate = (templateName: string, rule: FilterRule): boolean => {
     const tmplUpper = templateName.toUpperCase();
-    return rule.includes.every(inc => tmplUpper.includes(inc)) && !rule.excludes.some(exc => tmplUpper.includes(exc));
+    return rule.includes.every((inc) => tmplUpper.includes(inc)) && !rule.excludes.some((exc) => tmplUpper.includes(exc));
   };
 
   const topFiveCampaignsSummary = useMemo(() => {
     if (!dashboardData) return [];
     const aggregated = new Map<string, number>();
     dashboardData.forEach((item) => {
-      aggregated.set(item.campaignSrc.toUpperCase().trim(), (aggregated.get(item.campaignSrc.toUpperCase().trim()) || 0) + (item.count * item.multiplier));
+      aggregated.set(item.campaignSrc.toUpperCase().trim(), (aggregated.get(item.campaignSrc.toUpperCase().trim()) || 0) + item.count * item.multiplier);
     });
     return Array.from(aggregated.entries())
       .map(([name, volume]) => ({ name, volume }))
@@ -288,7 +295,7 @@ export default function Home() {
     dashboardData.forEach((item) => {
       const etUpper = item.etSource.toUpperCase().trim();
       const existing = accountsMap.get(etUpper) || { totalMails: 0, calculatedVolume: 0 };
-      accountsMap.set(etUpper, { totalMails: existing.totalMails + item.count, calculatedVolume: existing.calculatedVolume + (item.count * item.multiplier) });
+      accountsMap.set(etUpper, { totalMails: existing.totalMails + item.count, calculatedVolume: existing.calculatedVolume + item.count * item.multiplier });
     });
     return Array.from(accountsMap.entries()).map(([account, meta]) => ({ account, ...meta }));
   }, [dashboardData]);
@@ -299,7 +306,7 @@ export default function Home() {
     dashboardData.forEach((item) => {
       const campUpper = item.campaignSrc.toUpperCase().trim();
       const existing = campaignsMap.get(campUpper) || { totalMails: 0, calculatedVolume: 0 };
-      campaignsMap.set(campUpper, { totalMails: existing.totalMails + item.count, calculatedVolume: existing.calculatedVolume + (item.count * item.multiplier) });
+      campaignsMap.set(campUpper, { totalMails: existing.totalMails + item.count, calculatedVolume: existing.calculatedVolume + item.count * item.multiplier });
     });
     return Array.from(campaignsMap.entries()).map(([campaign, meta]) => ({ campaign, ...meta }));
   }, [dashboardData]);
@@ -307,10 +314,10 @@ export default function Home() {
   async function handleProcessDataMatrix() {
     if (!startDate || !endDate || !selectedEt) return;
     setErrorMessage("");
-    
-    if (startDate !== endDate && new Date(endDate) < new Date(startDate)) { 
-      setErrorMessage("End Date cannot be earlier than Start Date."); 
-      return; 
+
+    if (startDate !== endDate && new Date(endDate) < new Date(startDate)) {
+      setErrorMessage("End Date cannot be earlier than Start Date.");
+      return;
     }
 
     setAllFetchedData(null);
@@ -334,7 +341,9 @@ export default function Home() {
   const dynamicCampaignOptions = useMemo(() => {
     if (!allFetchedData) return [];
     const uniqueCamps = new Set<string>();
-    allFetchedData.forEach((item) => { if (item.campaignSrc) uniqueCamps.add(item.campaignSrc.toUpperCase().trim()); });
+    allFetchedData.forEach((item) => {
+      if (item.campaignSrc) uniqueCamps.add(item.campaignSrc.toUpperCase().trim());
+    });
     return Array.from(uniqueCamps).sort();
   }, [allFetchedData]);
 
@@ -360,7 +369,7 @@ export default function Home() {
     const uniqueTemplatesCount = new Set(currentFilteredBaseRows.map((r) => r.template.toUpperCase().trim())).size;
     return {
       totalMails: currentFilteredBaseRows.reduce((sum, item) => sum + item.count, 0),
-      calculatedVolume: currentFilteredBaseRows.reduce((sum, item) => sum + (item.count * item.multiplier), 0),
+      calculatedVolume: currentFilteredBaseRows.reduce((sum, item) => sum + item.count * item.multiplier, 0),
       uniqueTemplates: uniqueTemplatesCount,
     };
   }, [currentFilteredBaseRows]);
@@ -371,9 +380,13 @@ export default function Home() {
       const etKey = item.etSource.toUpperCase().trim();
       const existing = cardsMap.get(etKey) || { totalMails: 0, totalVolume: 0, templates: [] };
       const rowVolume = item.count * item.multiplier;
-      const targetTmpl = existing.templates.find(t => t.name === item.template);
-      if (targetTmpl) { targetTmpl.count += item.count; targetTmpl.vol += rowVolume; }
-      else { existing.templates.push({ name: item.template, count: item.count, vol: rowVolume }); }
+      const targetTmpl = existing.templates.find((t) => t.name === item.template);
+      if (targetTmpl) {
+        targetTmpl.count += item.count;
+        targetTmpl.vol += rowVolume;
+      } else {
+        existing.templates.push({ name: item.template, count: item.count, vol: rowVolume });
+      }
       cardsMap.set(etKey, { totalMails: existing.totalMails + item.count, totalVolume: existing.totalVolume + rowVolume, templates: existing.templates });
     });
     return Array.from(cardsMap.entries()).map(([account, meta]) => ({ account, ...meta }));
@@ -382,7 +395,9 @@ export default function Home() {
   const analyticsCampaignOptions = useMemo(() => {
     if (!allFetchedData) return [];
     const unique = new Set<string>();
-    allFetchedData.forEach(item => { if (item.campaignSrc) unique.add(item.campaignSrc.toUpperCase().trim()); });
+    allFetchedData.forEach((item) => {
+      if (item.campaignSrc) unique.add(item.campaignSrc.toUpperCase().trim());
+    });
     return Array.from(unique).sort();
   }, [allFetchedData]);
 
@@ -391,14 +406,14 @@ export default function Home() {
 
     let filteredBase = allFetchedData;
     if (analyticsEt && !analyticsEt.toUpperCase().startsWith("ALL")) {
-      filteredBase = filteredBase.filter(item => item.etSource.replace(/[^a-zA-Z0-9]/g, "").toUpperCase() === analyticsEt.replace(/[^a-zA-Z0-9]/g, "").toUpperCase());
+      filteredBase = filteredBase.filter((item) => item.etSource.replace(/[^a-zA-Z0-9]/g, "").toUpperCase() === analyticsEt.replace(/[^a-zA-Z0-9]/g, "").toUpperCase());
     }
     if (analyticsCampaign && !analyticsCampaign.toUpperCase().startsWith("ALL")) {
-      filteredBase = filteredBase.filter(item => item.campaignSrc.toUpperCase().trim() === analyticsCampaign.toUpperCase().trim());
+      filteredBase = filteredBase.filter((item) => item.campaignSrc.toUpperCase().trim() === analyticsCampaign.toUpperCase().trim());
     }
 
     const accountGroups = new Map<string, BreakdownItem[]>();
-    filteredBase.forEach(item => {
+    filteredBase.forEach((item) => {
       const key = item.etSource.toUpperCase().trim();
       const existing = accountGroups.get(key) || [];
       existing.push(item);
@@ -406,8 +421,8 @@ export default function Home() {
     });
 
     return Array.from(accountGroups.entries()).map(([accountName, rows]) => {
-      const templatesList = rows.map(row => {
-        const matchedRevenueHits = combinedCsvRecords.filter(rec => {
+      const templatesList = rows.map((row) => {
+        const matchedRevenueHits = combinedCsvRecords.filter((rec) => {
           const subidStr = rec.subid.trim();
           const lastUnderscoreIdx = subidStr.lastIndexOf("_");
           if (lastUnderscoreIdx === -1) return false;
@@ -433,7 +448,7 @@ export default function Home() {
           sendingVolume: totalSendingVolume,
           revenue: revenueSum,
           conversions: conversionCount,
-          efficiency: countNeededPerConversion
+          efficiency: countNeededPerConversion,
         };
       });
 
@@ -443,12 +458,12 @@ export default function Home() {
   }, [allFetchedData, analyticsActive, analyticsEt, analyticsCampaign, combinedCsvRecords]);
 
   const distinctRevenueAccountTabs = useMemo(() => {
-    return revenueCalculatedCards.map(c => c.accountName);
+    return revenueCalculatedCards.map((c) => c.accountName);
   }, [revenueCalculatedCards]);
 
   const targetedActiveFocusedCard = useMemo(() => {
     if (!selectedTabFocus || revenueCalculatedCards.length === 0) return revenueCalculatedCards[0] || null;
-    return revenueCalculatedCards.find(c => c.accountName.toUpperCase() === selectedTabFocus.toUpperCase()) || revenueCalculatedCards[0] || null;
+    return revenueCalculatedCards.find((c) => c.accountName.toUpperCase() === selectedTabFocus.toUpperCase()) || revenueCalculatedCards[0] || null;
   }, [selectedTabFocus, revenueCalculatedCards]);
 
   const handleMultipleCsvFilesLoad = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -464,14 +479,14 @@ export default function Home() {
 
       const text = await new Promise<string>((resolve) => {
         const reader = new FileReader();
-        reader.onload = (event) => resolve(event.target?.result as string ?? "");
+        reader.onload = (event) => resolve((event.target?.result as string) ?? "");
         reader.readAsText(file);
       });
 
       const lines = text.split(/\r?\n/);
       if (lines.length <= 1) continue;
 
-      const headers = lines[0].split(",").map(h => h.trim().toUpperCase());
+      const headers = lines[0].split(",").map((h) => h.trim().toUpperCase());
       const subidIdx = headers.indexOf("SUBID");
       let revIdx = headers.indexOf("REV");
       if (revIdx === -1) revIdx = headers.indexOf("REVENUE");
@@ -494,7 +509,7 @@ export default function Home() {
 
   const handleCompileAnalytics = () => {
     if (!startDate || !endDate || combinedCsvRecords.length === 0) return;
-    
+
     setAllFetchedData(null);
     setAnalyticsActive(false);
     setStatus("loading");
@@ -506,8 +521,8 @@ export default function Home() {
         setAllFetchedData(data.breakdown ?? []);
         setIsSelectorModalOpen(true);
         setStatus("success");
-      } catch { 
-        setStatus("error"); 
+      } catch {
+        setStatus("error");
       }
     }, 60);
   };
@@ -519,10 +534,8 @@ export default function Home() {
 
   return (
     <div className={`min-h-screen transition-colors duration-500 p-4 sm:p-8 flex flex-col justify-between ${isDarkMode ? "bg-[#090d16] text-zinc-100 font-sans" : "bg-slate-50 text-slate-900 font-sans"}`}>
-      
       {/* 80% SCREEN SIZE CONTAINER */}
       <div className="w-full xl:max-w-[80vw] xl:mx-auto flex flex-col gap-6 flex-1">
-        
         {/* GLOBAL PERSISTENT SPINNING PRELOADER OVERLAY */}
         {(isAppLoading || status === "loading") && (
           <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-slate-950/80 backdrop-blur-md">
@@ -549,17 +562,25 @@ export default function Home() {
               <div className="flex flex-col gap-3">
                 <div className="flex flex-col gap-1">
                   <label className="text-xs font-semibold text-zinc-400">Filter Account (ET)</label>
-                  <select value={analyticsEt} onChange={e => setAnalyticsEt(e.target.value)} className="h-11 rounded-lg px-3 text-sm outline-none border bg-slate-950 border-zinc-800 text-white focus:border-purple-500">
+                  <select value={analyticsEt} onChange={(e) => setAnalyticsEt(e.target.value)} className="h-11 rounded-lg px-3 text-sm outline-none border bg-slate-950 border-zinc-800 text-white focus:border-purple-500">
                     <option value="ALL">ALL ACCOUNTS</option>
-                    {ets.map(e => <option key={e} value={e}>{e}</option>)}
+                    {ets.map((e) => (
+                      <option key={e} value={e}>
+                        {e}
+                      </option>
+                    ))}
                   </select>
                 </div>
 
                 <div className="flex flex-col gap-1">
                   <label className="text-xs font-semibold text-zinc-400">Filter Campaign Segment</label>
-                  <select value={analyticsCampaign} onChange={e => setAnalyticsCampaign(e.target.value)} className="h-11 rounded-lg px-3 text-sm outline-none border bg-slate-950 border-zinc-800 text-white focus:border-purple-500">
+                  <select value={analyticsCampaign} onChange={(e) => setAnalyticsCampaign(e.target.value)} className="h-11 rounded-lg px-3 text-sm outline-none border bg-slate-950 border-zinc-800 text-white focus:border-purple-500">
                     <option value="ALL">ALL CAMPAIGNS</option>
-                    {analyticsCampaignOptions.map(c => <option key={c} value={c}>{c}</option>)}
+                    {analyticsCampaignOptions.map((c) => (
+                      <option key={c} value={c}>
+                        {c}
+                      </option>
+                    ))}
                   </select>
                 </div>
               </div>
@@ -583,15 +604,28 @@ export default function Home() {
             </div>
 
             <div className="flex rounded-lg p-1 bg-slate-900/60 border border-white/5 shadow-inner">
-              <button onClick={() => { setCurrentView("standard"); setAllFetchedData(null); setAnalyticsActive(false); }} className={`px-5 py-2 text-xs font-black rounded-md transition ${currentView === "standard" ? "bg-emerald-500 text-white shadow-lg" : "text-zinc-400 hover:text-zinc-200"}`}>
+              <button
+                onClick={() => {
+                  setCurrentView("standard");
+                  setAllFetchedData(null);
+                  setAnalyticsActive(false);
+                }}
+                className={`px-5 py-2 text-xs font-black rounded-md transition ${currentView === "standard" ? "bg-emerald-500 text-white shadow-lg" : "text-zinc-400 hover:text-zinc-200"}`}
+              >
                 Standard Volume Tracking
               </button>
-              <button onClick={() => { setCurrentView("analytics"); setAllFetchedData(null); }} className={`px-5 py-2 text-xs font-black rounded-md transition ${currentView === "analytics" ? "bg-emerald-500 text-white shadow-lg" : "text-zinc-400 hover:text-zinc-200"}`}>
+              <button
+                onClick={() => {
+                  setCurrentView("analytics");
+                  setAllFetchedData(null);
+                }}
+                className={`px-5 py-2 text-xs font-black rounded-md transition ${currentView === "analytics" ? "bg-emerald-500 text-white shadow-lg" : "text-zinc-400 hover:text-zinc-200"}`}
+              >
                 Detailed Conversion Analytics
               </button>
             </div>
           </div>
-          
+
           <div className="flex items-center gap-3 w-full sm:w-auto justify-end">
             {showInstallBtn && (
               <button onClick={handlePwaDownloadApp} className="px-4 py-2 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 text-white text-xs font-black shadow-lg shadow-purple-500/10 hover:opacity-90 active:scale-95 transition-all flex items-center gap-2 animate-bounce">
@@ -619,7 +653,9 @@ export default function Home() {
                       {topFiveCampaignsSummary.map((item, idx) => (
                         <div key={item.name} className={`p-4 rounded-xl border flex flex-col justify-between ${isDarkMode ? "bg-slate-950/40 border-zinc-800 text-white" : "bg-slate-50 border-slate-200"}`}>
                           <span className="text-[10px] font-black text-zinc-500 uppercase tracking-wider">Rank #{idx + 1}</span>
-                          <span className="text-sm font-black truncate mt-1 text-zinc-200" title={item.name}>{item.name}</span>
+                          <span className="text-sm font-black truncate mt-1 text-zinc-200" title={item.name}>
+                            {item.name}
+                          </span>
                           <span className="text-lg font-black text-emerald-500 mt-2">{item.volume.toLocaleString()}</span>
                         </div>
                       ))}
@@ -633,12 +669,9 @@ export default function Home() {
                     <div className={`max-h-[350px] overflow-y-auto divide-y font-mono text-sm pr-2 ${isDarkMode ? "divide-zinc-800/40 text-zinc-300" : "divide-slate-200"}`}>
                       {dashboardAccountWiseMetrics.map((item) => (
                         <div key={item.account} className="py-3 flex justify-between items-center gap-2">
-                          <span className="font-sans font-bold text-zinc-300">
-                            {formatTabBeautifulLabel(item.account)}
-                          </span>
+                          <span className="font-sans font-bold text-zinc-300">{formatTabBeautifulLabel(item.account)}</span>
                           <span className="font-black text-sky-400 shrink-0 text-base">
-                            {item.calculatedVolume.toLocaleString()}{" "}
-                            <span className="text-xs text-zinc-500 font-normal">({item.totalMails} items)</span>
+                            {item.calculatedVolume.toLocaleString()} <span className="text-xs text-zinc-500 font-normal">({item.totalMails} items)</span>
                           </span>
                         </div>
                       ))}
@@ -651,7 +684,9 @@ export default function Home() {
                       {dashboardCampaignWiseMetrics.map((item) => (
                         <div key={item.campaign} className="py-3 flex justify-between items-center gap-2">
                           <span className="font-sans font-bold text-zinc-300">{item.campaign}</span>
-                          <span className="font-black text-purple-400 shrink-0 text-base">{item.calculatedVolume.toLocaleString()} <span className="text-[10px] text-zinc-500 font-normal">({item.totalMails} items)</span></span>
+                          <span className="font-black text-purple-400 shrink-0 text-base">
+                            {item.calculatedVolume.toLocaleString()} <span className="text-[10px] text-zinc-500 font-normal">({item.totalMails} items)</span>
+                          </span>
                         </div>
                       ))}
                     </div>
@@ -675,7 +710,11 @@ export default function Home() {
                   <select value={selectedEt} onChange={(e) => setSelectedEt(e.target.value)} className={`h-12 rounded-lg px-3 text-sm outline-none border w-full ${isDarkMode ? "bg-slate-950 border-zinc-800 text-white focus:border-emerald-500" : "bg-white border-slate-300"}`}>
                     <option value="">Select ET Account</option>
                     <option value="ALL">ALL ET'S (Combine All Sheets)</option>
-                    {ets.map((e) => <option key={e} value={e}>{e}</option>)}
+                    {ets.map((e) => (
+                      <option key={e} value={e}>
+                        {e}
+                      </option>
+                    ))}
                   </select>
                 </div>
               </div>
@@ -692,9 +731,20 @@ export default function Home() {
                 <section className={`rounded-xl p-6 grid gap-4 sm:grid-cols-2 border shadow-xl ${isDarkMode ? "bg-[#111726] border-white/5" : "bg-white border-slate-200"}`}>
                   <div className="flex flex-col gap-1.5">
                     <label className="text-xs font-bold uppercase tracking-wider text-zinc-400">Select Campaign Group</label>
-                    <select value={selectedCampaign} onChange={(e) => { setSelectedCampaign(e.target.value); setSelectedTemplate(""); }} className={`h-12 rounded-lg px-3 text-sm outline-none border w-full ${isDarkMode ? "bg-slate-950 border-zinc-800 text-white" : "bg-white border-slate-300"}`}>
+                    <select
+                      value={selectedCampaign}
+                      onChange={(e) => {
+                        setSelectedCampaign(e.target.value);
+                        setSelectedTemplate("");
+                      }}
+                      className={`h-12 rounded-lg px-3 text-sm outline-none border w-full ${isDarkMode ? "bg-slate-950 border-zinc-800 text-white" : "bg-white border-slate-300"}`}
+                    >
                       <option value="">Select Campaign</option>
-                      {dynamicCampaignOptions.map(c => <option key={c} value={c}>{c}</option>)}
+                      {dynamicCampaignOptions.map((c) => (
+                        <option key={c} value={c}>
+                          {c}
+                        </option>
+                      ))}
                     </select>
                   </div>
 
@@ -703,7 +753,11 @@ export default function Home() {
                     <select value={selectedTemplate} onChange={(e) => setSelectedTemplate(e.target.value)} disabled={!selectedCampaign} className={`h-12 rounded-lg px-3 text-sm outline-none border w-full ${isDarkMode ? "bg-slate-950 border-zinc-800 text-white" : "bg-white border-slate-300"}`}>
                       <option value="">{selectedCampaign ? "Select Template" : "Choose Campaign first"}</option>
                       {dynamicTemplateOptions.length > 0 && <option value="ALL">ALL MATCHED TEMPLATES</option>}
-                      {dynamicTemplateOptions.map(t => <option key={t} value={t}>{t}</option>)}
+                      {dynamicTemplateOptions.map((t) => (
+                        <option key={t} value={t}>
+                          {t}
+                        </option>
+                      ))}
                     </select>
                   </div>
                 </section>
@@ -794,13 +848,15 @@ export default function Home() {
                 <div className={`p-4 rounded-xl border text-sm font-mono flex flex-col gap-1.5 ${isDarkMode ? "bg-slate-950 border-zinc-800" : "bg-slate-100 border-slate-200"}`}>
                   <span className="text-xs font-black text-zinc-500 uppercase tracking-wider font-sans">Stacked Source Files Linked ({uploadedFilesSummary.length})</span>
                   {uploadedFilesSummary.map((fName, idx) => (
-                    <span key={idx} className={isDarkMode ? "text-zinc-400" : "text-slate-600"}>📄 {fName}</span>
+                    <span key={idx} className={isDarkMode ? "text-zinc-400" : "text-slate-600"}>
+                      📄 {fName}
+                    </span>
                   ))}
                   <span className="text-emerald-400 font-black mt-1 font-sans text-base">✓ Combined {combinedCsvRecords.length.toLocaleString()} total raw entries.</span>
                 </div>
               )}
 
-              <button 
+              <button
                 onClick={handleCompileAnalytics}
                 disabled={!startDate || !endDate || combinedCsvRecords.length === 0}
                 className="w-full h-12 rounded-lg bg-purple-600 hover:bg-purple-500 font-bold text-xs uppercase text-white tracking-widest cursor-pointer disabled:opacity-40 transition active:scale-95 shadow-xl mt-2"
@@ -819,15 +875,17 @@ export default function Home() {
                   </div>
                   {distinctRevenueAccountTabs.map((tabName) => {
                     const isActive = (selectedTabFocus || distinctRevenueAccountTabs[0])?.toUpperCase() === tabName.toUpperCase();
-                    const cardData = revenueCalculatedCards.find(c => c.accountName === tabName);
+                    const cardData = revenueCalculatedCards.find((c) => c.accountName === tabName);
                     return (
-                      <button 
+                      <button
                         key={tabName}
                         onClick={() => setSelectedTabFocus(tabName)}
                         className={`px-4 py-3 rounded-xl text-sm font-bold tracking-wide text-left transition-all duration-300 transform ease-in-out shrink-0 whitespace-nowrap lg:whitespace-normal flex justify-between items-center ${
-                          isActive 
-                            ? "bg-purple-600 text-white shadow-purple-500/20 font-black" 
-                            : isDarkMode ? "bg-[#161f33] text-zinc-300 border border-zinc-800/60 hover:text-zinc-100 hover:bg-[#1c2942]" : "bg-slate-100 text-slate-700 hover:bg-slate-200"
+                          isActive
+                            ? "bg-purple-600 text-white shadow-purple-500/20 font-black"
+                            : isDarkMode
+                            ? "bg-[#161f33] text-zinc-300 border border-zinc-800/60 hover:text-zinc-100 hover:bg-[#1c2942]"
+                            : "bg-slate-100 text-slate-700 hover:bg-slate-200"
                         }`}
                       >
                         <div className="flex items-center gap-2.5">
@@ -882,9 +940,7 @@ export default function Home() {
                               </div>
                               <div>
                                 <span className="block text-[10px] font-bold uppercase tracking-wider text-zinc-500">Count / Conversion</span>
-                                <span className={`text-base font-black ${tmpl.efficiency ? "text-purple-400" : "text-rose-500"}`}>
-                                  {tmpl.efficiency ? tmpl.efficiency.toLocaleString() : "N/A"}
-                                </span>
+                                <span className={`text-base font-black ${tmpl.efficiency ? "text-purple-400" : "text-rose-500"}`}>{tmpl.efficiency ? tmpl.efficiency.toLocaleString() : "N/A"}</span>
                               </div>
                             </div>
                           </div>
@@ -895,15 +951,12 @@ export default function Home() {
                 </div>
               </div>
             )}
-            
+
             {analyticsActive && allFetchedData && revenueCalculatedCards.length === 0 && (
-              <div className="p-12 border-2 border-dashed border-zinc-800 rounded-2xl text-center text-zinc-500 text-sm font-bold bg-[#111726]/40">
-                No data parameters matched this criteria combination grid. Try running compiling parameters again.
-              </div>
+              <div className="p-12 border-2 border-dashed border-zinc-800 rounded-2xl text-center text-zinc-500 text-sm font-bold bg-[#111726]/40">No data parameters matched this criteria combination grid. Try running compiling parameters again.</div>
             )}
           </div>
         )}
-
       </div>
     </div>
   );
