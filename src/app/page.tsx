@@ -32,27 +32,26 @@ interface BeforeInstallPromptEvent extends Event {
 function rowMultiplier(tabName: string): number {
   const clean = tabName.replace(/[^a-zA-Z0-9]/g, "").toUpperCase();
 
-  const special4000Targets = [
-    "JSG30MET",
-    "JSG43",
-    "JSG56",
-    "JSG60",
-    "JSG55",
-    "JSG38NR",
-    "JSG50",
-    "JSG47",
-    "JSG26",
-    "JSG36",
-    "JSG41",
-    "JSG45",
-    "JSG52",
-    "JSG48MET",
-  ];
+const SPECIAL_4000_ETS = [
+  "JSG30MET",
+  "JSG43",
+  "JSG56",
+  "JSG60",
+  "JSG38NR",
+  "JSG50",
+  "JSG47",
+  "JSG26",
+  "JSG36",
+  "JSG45",
+  "JSG52",
+];
 
-  // Add your 4500 multiplier ET names here
-  const special4500Targets = [
-    // e.g. "JSG33", "JSG34MET"
-  ];
+// Add your 4500 multiplier ET names here
+const SPECIAL_4500_ETS = [
+  "JSG41",
+  "JSG48MET",
+   "JSG55",
+];
 
   if (special4000Targets.some((target) => clean.includes(target))) {
     return 4000;
